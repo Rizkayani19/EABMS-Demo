@@ -275,7 +275,7 @@
         <section class="lg:col-span-3 space-y-5">
             <!-- 1. Centered Document Header (Executive formal SD Standard) -->
             <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-5 text-center print-doc-header">
-                <div class="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">EABMS — Accts &amp; Budget Mgmt Sys</div>
+                <div class="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">EABMS — Enterprise Accounts &amp; Business Management System</div>
                 <h1 class="text-2xl sm:text-3xl font-black text-slate-900 mt-1 tracking-tight">Report: {{ report.title }}</h1>
                 <div class="mt-2 text-xs font-semibold text-slate-600 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
                     <span><strong class="text-slate-400 font-medium">Acct / Fund:</strong> <span class="text-slate-900 font-bold">{{ filters.account.name|default:'All Accts / Funds' }}</span></span>
@@ -544,7 +544,7 @@
                             <div class="text-[10px] uppercase tracking-wider font-bold text-slate-400">Record Set</div>
                             <div class="text-sm font-bold text-slate-800 mt-0.5">{{ dataset|length }} rows</div>
                         </div>
-                        <div class="text-[10px] text-slate-500 font-medium">Amounts shown in {% if report.display_in_millions %}Millions (Mn){% else %}Exact Rupees ($){% endif %}</div>
+                        <div class="text-[10px] text-slate-500 font-medium">Amounts shown in {% if report.display_in_millions %}Millions (Mn){% else %}Exact Rupees ({{ currency_symbol }}){% endif %}</div>
                     </div>
                     <div class="overflow-x-auto max-h-[70vh]">
                         {% if report.slug == 'dynamic-transactions' %}
@@ -555,7 +555,7 @@
                                     <th class="px-3.5 py-2.5 whitespace-nowrap w-28">Date &amp; Txn ID</th>
                                     <th class="px-4 py-2.5 min-w-[280px]">Description &amp; Type</th>
                                     <th class="px-4 py-2.5 min-w-[200px]">Acct Head</th>
-                                    <th class="px-4 py-2.5 whitespace-nowrap text-right w-36">Amount ($)</th>
+                                    <th class="px-4 py-2.5 whitespace-nowrap text-right w-36">Amount ({{ currency_symbol }})</th>
                                     {% if fund_code == 'CPF' %}
                                     <th class="px-3.5 py-2.5 whitespace-nowrap">Cohort</th>
                                     <th class="px-3.5 py-2.5 whitespace-nowrap">Package</th>

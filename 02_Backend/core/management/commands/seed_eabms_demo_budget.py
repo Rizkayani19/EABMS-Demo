@@ -1,10 +1,12 @@
 """Seed an approved demo budget for each fund that has demo transactions.
 
 Budgets are derived from the seeded demo transactions: actual activity for the
-months covered is annualised, given 5% headroom and rounded to the nearest
-thousand. Re-running the command replaces the demo budget lines; it never
+months covered is annualised, multiplied by a per-head headroom factor
+(0.95x-1.45x, fixed per head so re-runs give the same figures) and rounded to
+the nearest thousand, so heads show realistic, differing utilisation. Re-running the command replaces the demo budget lines; it never
 touches a budget that is not marked as the demo budget.
 """
+import zlib
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.core.management.base import BaseCommand
@@ -15,11 +17,15 @@ from core.budget_inflow_models import BudgetInflowLine
 from core.models import Account, Budget, BudgetLine, BudgetType, FinancialYear, Transaction
 
 DEMO_REFERENCE = 'DEMO-BUDGET'
-HEADROOM = Decimal('1.05')
 
 
-def _annualise(amount, months):
-    projected = amount * Decimal(12) / Decimal(months) * HEADROOM
+def _headroom(head_id):
+    """Deterministic factor between 0.95 and 1.45 for each account head."""
+    return Decimal('0.95') + Decimal(zlib.crc32(str(head_id).encode()) % 51) / Decimal(100)
+
+
+def _annualise(amount, months, head_id):
+    projected = amount * Decimal(12) / Decimal(months) * _headroom(head_id)
     return (projected / Decimal(1000)).quantize(Decimal('1'), rounding=ROUND_HALF_UP) * Decimal(1000)
 
 
@@ -74,7 +80,7 @@ class Command(BaseCommand):
                     rows = (txns.filter(direction=direction)
                             .values('account_head').annotate(total=Sum('amount')).order_by('account_head'))
                     for row in rows:
-                        amount = _annualise(row['total'], months)
+                        amount = _annualise(row['total'], months, row['account_head'])
                         model.objects.create(budget=budget, account_head_id=row['account_head'],
                                              budget_type=budget_type, amount=amount)
                         if direction == 'OUTFLOW':

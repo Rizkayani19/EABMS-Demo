@@ -51,3 +51,14 @@ class CurrencyAndDatabaseDefaultsTests(TestCase):
             self.assertEqual(engine, 'django.db.backends.postgresql')
         else:
             self.assertEqual(engine, 'django.db.backends.sqlite3')
+
+
+class DemoTransactionSeedGuardTests(TestCase):
+    def test_second_run_does_not_duplicate_transactions(self):
+        from core.models import Transaction
+        call_command('seed_eabms_corporate', verbosity=0)
+        call_command('seed_eabms_demo_transactions', verbosity=0)
+        first = Transaction.objects.count()
+        self.assertGreater(first, 0)
+        call_command('seed_eabms_demo_transactions', verbosity=0)
+        self.assertEqual(Transaction.objects.count(), first)

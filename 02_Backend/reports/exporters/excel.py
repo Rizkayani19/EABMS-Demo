@@ -63,7 +63,7 @@ def export_to_excel(report_def, dataset, filters, applied_filters=None, report_k
     # ---------------------------------------------------------
     # REPORT HEADER BLOCK (Center Aligned)
     # ---------------------------------------------------------
-    ws.append(["ABMS — Accts & Budget Mgmt Sys"])
+    ws.append(["EABMS — Enterprise Accounts & Business Management System"])
     title = getattr(report_def, 'title', 'Report')
     ws.append([f"Report: {title}"])
 

@@ -186,7 +186,7 @@ def export_to_pdf(report_def, dataset, filters, applied_filters=None, report_kpi
     )
 
     # 1. Centered Document Header
-    elements.append(Paragraph("ABMS — Accts & Budget Mgmt Sys", title_style))
+    elements.append(Paragraph("EABMS — Enterprise Accounts & Business Management System", title_style))
     elements.append(Paragraph(f"Report: {report_title}", subtitle_style))
 
     acct_name = filters['account'].name if filters.get('account') else 'All Accts / Funds'

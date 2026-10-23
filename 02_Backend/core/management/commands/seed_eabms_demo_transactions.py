@@ -24,6 +24,10 @@ from core.models import (
 class Command(BaseCommand):
     help = "Seeds realistic 3-month demo transactions for NexGen Holdings Ltd. (NGL) — FY 2026-27."
 
+    def add_arguments(self, parser):
+        parser.add_argument('--force', action='store_true',
+                            help='Add demo transactions even if the fund already has transactions for the year.')
+
     def handle(self, *args, **options):
         self.stdout.write(self.style.NOTICE("Seeding EABMS demo transactions..."))
 
@@ -32,6 +36,13 @@ class Command(BaseCommand):
             fy  = FinancialYear.objects.get(code='2026-27')
         except (Account.DoesNotExist, FinancialYear.DoesNotExist) as e:
             self.stderr.write(f"Prerequisites missing: {e}. Run seed_eabms_corporate first.")
+            return
+
+        existing = Transaction.objects.filter(account=ngl, financial_year=fy).count()
+        if existing and not options.get('force'):
+            self.stdout.write(self.style.WARNING(
+                f"  [SKIP] NGL already has {existing} transactions for {fy.code}. "
+                "Use --force to add another set."))
             return
 
         admin_user = User.objects.filter(is_superuser=True).first()
