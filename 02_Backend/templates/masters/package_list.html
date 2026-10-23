@@ -1,0 +1,266 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Cohort Packages (Benefits & Provident) — EABMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header with Prominent Action Buttons -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">📦</span>
+                <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Cohort Packages Master</h1>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+                Differentiated profiles for <span class="font-bold text-teal-700">🕋 Benefits Packages</span> (simple Medina &amp; Makkah stays) and <span class="font-bold text-amber-700">🕌 Provident Packages</span> (full Mashair &amp; Azizia staging).
+            </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+            <a href="{% url 'masters:package_create' %}?type=UMRA" class="bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition inline-flex items-center gap-1.5">
+                <span>🕋</span> + New Benefits Package
+            </a>
+            <a href="{% url 'masters:package_create' %}?type=HAJ" class="bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition inline-flex items-center gap-1.5">
+                <span>🕌</span> + New Provident Package
+            </a>
+            <a href="{% url 'masters:package_create' %}" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition inline-flex items-center">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                General Package
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Filter Tabs: Benefits vs Provident (Conspicuous & Clean) -->
+    <div class="flex flex-col sm:flex-row gap-3">
+        <!-- All Packages Tab -->
+        <a href="{% url 'masters:package_list' %}"
+           class="flex-1 p-4 rounded-xl border transition {% if not package_type %}bg-white border-slate-900 shadow-md ring-2 ring-slate-900/10{% else %}bg-slate-50 border-slate-200 hover:bg-white text-slate-600{% endif %}">
+            <div class="flex items-center justify-between">
+                <div class="text-xs font-bold uppercase tracking-wider text-slate-500">All Packages</div>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-slate-200 text-slate-800">{{ total_count }}</span>
+            </div>
+            <div class="text-sm font-bold text-slate-800 mt-2">Combined Roster</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">All Benefits and Provident registered packages</div>
+        </a>
+
+        <!-- Benefits Packages Tab -->
+        <a href="{% url 'masters:package_list' %}?package_type=UMRA"
+           class="flex-1 p-4 rounded-xl border transition {% if package_type == 'UMRA' %}bg-teal-50 border-teal-600 shadow-md ring-2 ring-teal-600/20{% else %}bg-slate-50 border-slate-200 hover:bg-teal-50/50 text-slate-600{% endif %}">
+            <div class="flex items-center justify-between">
+                <div class="text-xs font-bold uppercase tracking-wider text-teal-700 flex items-center gap-1.5">
+                    <span>🕋</span> Benefits Packages
+                </div>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-teal-200 text-teal-900">{{ umra_count }}</span>
+            </div>
+            <div class="text-sm font-bold text-teal-900 mt-2">Simple 2-Stay Pilgrimage</div>
+            <div class="text-[11px] text-teal-700 mt-0.5">Medina Munawwarah &amp; Makkah Mukarramah stays only (no Mashair/Azizia)</div>
+        </a>
+
+        <!-- Provident Packages Tab -->
+        <a href="{% url 'masters:package_list' %}?package_type=HAJ"
+           class="flex-1 p-4 rounded-xl border transition {% if package_type == 'HAJ' %}bg-amber-50 border-amber-600 shadow-md ring-2 ring-amber-600/20{% else %}bg-slate-50 border-slate-200 hover:bg-amber-50/50 text-slate-600{% endif %}">
+            <div class="flex items-center justify-between">
+                <div class="text-xs font-bold uppercase tracking-wider text-amber-700 flex items-center gap-1.5">
+                    <span>🕌</span> Provident Packages
+                </div>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-200 text-amber-900">{{ haj_count }}</span>
+            </div>
+            <div class="text-sm font-bold text-amber-900 mt-2">Full Comprehensive Itinerary</div>
+            <div class="text-[11px] text-amber-700 mt-0.5">Holy Mashair rituals (Mina/Arafat) + Azizia building + Medina &amp; Makkah</div>
+        </a>
+    </div>
+
+    <!-- Search & Filter Bar -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <form method="get" class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            {% if package_type %}<input type="hidden" name="package_type" value="{{ package_type }}">{% endif %}
+            <div class="sm:col-span-2">
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Search Package</label>
+                <input type="text" name="q" value="{{ q }}" placeholder="Search package code, name, airline, hotel..."
+                       class="w-full px-3 py-2 border border-slate-300 rounded-md text-xs focus:ring-2 focus:ring-emerald-500">
+            </div>
+
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Cohort</label>
+                <select name="cohort_id" class="w-full px-3 py-2 border border-slate-300 rounded-md text-xs bg-white focus:ring-2 focus:ring-emerald-500">
+                    <option value="">All Cohorts</option>
+                    {% for c in cohorts %}
+                    <option value="{{ c.id }}" {% if cohort_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.code }} - {{ c.title }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="flex items-end space-x-2">
+                <button type="submit" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-md text-xs font-semibold">
+                    Filter
+                </button>
+                <a href="{% url 'masters:package_list' %}" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-medium">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table of Packages -->
+    <div class="bg-white shadow-sm border border-slate-200 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-left text-xs" data-bulk-delete-url="{% url 'masters:package_bulk_delete' %}">
+                <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider">
+                    <tr>
+                        <th class="w-10 px-3 py-3 text-center"><input type="checkbox" class="abms-select-all rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4" title="Select / Deselect All"></th>
+                        <th class="px-4 py-3 w-32">Package Type</th>
+                        <th class="px-4 py-3 w-40">Code &amp; Name</th>
+                        <th class="px-4 py-3 w-48">Cohort &amp; Flight</th>
+                        <th class="px-4 py-3">Sequential Stay Breakdown</th>
+                        <th class="px-4 py-3 w-44">Approved Sharing Tariff</th>
+                        <th class="px-4 py-3 w-20 text-center">Status</th>
+                        <th class="px-4 py-3 w-48 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                    {% for item in items %}
+                    <tr class="hover:bg-slate-50 transition {% if not item.is_active %}opacity-60 bg-slate-50/50{% endif %}">
+                        <td class="w-10 px-3 py-3 text-center align-middle">
+                            <input type="checkbox" value="{{ item.id }}" class="abms-row-select rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4">
+                        </td>
+
+                        <!-- Conspicuous Type Badge -->
+                        <td class="px-4 py-3 align-top whitespace-nowrap">
+                            {% if item.is_umra %}
+                            <span class="inline-flex flex-col items-start gap-0.5">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold bg-teal-100 text-teal-800 border border-teal-300">
+                                    <span class="mr-1">🕋</span> UMRA PACKAGE
+                                </span>
+                                <span class="text-[10px] text-teal-700 font-medium">Simple 2-Stay</span>
+                            </span>
+                            {% else %}
+                            <span class="inline-flex flex-col items-start gap-0.5">
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                                    <span class="mr-1">🕌</span> HAJ PACKAGE
+                                </span>
+                                <span class="text-[10px] text-amber-700 font-medium">Full Holy Mashair</span>
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Code & Name -->
+                        <td class="px-4 py-3 align-top">
+                            <div class="font-mono font-bold text-slate-800">{{ item.package_code }}</div>
+                            <div class="font-semibold text-slate-900 text-xs mt-0.5">{{ item.package_name }}</div>
+                            <div class="text-[11px] text-slate-500 mt-1">Total: <strong class="text-slate-800 font-semibold">{{ item.total_days }} Days</strong></div>
+                        </td>
+
+                        <!-- Cohort & Flight -->
+                        <td class="px-4 py-3 align-top">
+                            <div class="font-medium text-slate-700">{{ item.cohort.code }}</div>
+                            <div class="text-[11px] text-slate-500 truncate" title="{{ item.cohort.title }}">{{ item.cohort.title|truncatechars:28 }}</div>
+                            <div class="text-[11px] text-slate-600 mt-1.5 flex items-center gap-1">
+                                <span>✈️</span> {{ item.airline|default:"Airline TBD" }} ({{ item.get_flight_route_display }})
+                            </div>
+                        </td>
+
+                        <!-- Stay Breakdown (The core distinction!) -->
+                        <td class="px-4 py-3 align-top">
+                            {% if item.is_umra %}
+                            <div class="p-2.5 bg-teal-50/60 border border-teal-100 rounded-lg space-y-1">
+                                <div class="flex items-center justify-between text-[11px]">
+                                    <span class="font-semibold text-teal-900">1. Medina Stay:</span>
+                                    <span class="font-bold text-teal-800">{{ item.medina_days }} Days</span>
+                                </div>
+                                <div class="text-[10px] text-slate-600 truncate">Hotel: {{ item.medina_hotel_name|default:"Markazia Hotel" }} ({{ item.get_medina_boarding_display }})</div>
+                                <div class="text-[10px] text-teal-700 font-medium pt-0.5">Transit: {{ item.get_transfer_mode_display }} ➔</div>
+                                <div class="flex items-center justify-between text-[11px] pt-1 border-t border-teal-100">
+                                    <span class="font-semibold text-teal-900">2. Makkah Stay:</span>
+                                    <span class="font-bold text-teal-800">{{ item.makkah_p1_days }} Days</span>
+                                </div>
+                                <div class="text-[10px] text-slate-600 truncate">Hotel: {{ item.makkah_p1_hotel_name|default:"Haram Proximity Hotel" }} ({{ item.get_makkah_p1_boarding_display }})</div>
+                                <div class="pt-1 text-[10px] font-semibold text-teal-600 flex items-center gap-1">
+                                    <span>✓</span> No Mashair • No Azizia Building Stay
+                                </div>
+                            </div>
+                            {% else %}
+                            <div class="p-2.5 bg-amber-50/60 border border-amber-100 rounded-lg space-y-1">
+                                <div class="text-[11px] text-slate-700">
+                                    Medina: <strong>{{ item.medina_days }}d</strong> • Makkah Hotel: <strong>{{ item.makkah_p1_days }}d</strong>
+                                </div>
+                                <div class="text-[10px] text-slate-600 truncate">Medina: {{ item.medina_hotel_name|default:"Hotel" }} | Makkah: {{ item.makkah_p1_hotel_name|default:"Hotel" }}</div>
+                                {% if item.makkah_p2_days > 0 %}
+                                <div class="text-[11px] text-indigo-700 pt-0.5">
+                                    Azizia Assembly: <strong>{{ item.makkah_p2_days }}d</strong> ({{ item.makkah_p2_building_name|default:"Building" }})
+                                </div>
+                                {% endif %}
+                                <div class="text-[11px] text-amber-800 font-bold pt-0.5 flex items-center justify-between">
+                                    <span>Holy Mashair (Mina/Arafat):</span>
+                                    <span>{{ item.mashair_days }} Days</span>
+                                </div>
+                                <div class="text-[10px] text-amber-700">{{ item.mina_maktab|default:"Maktab A" }} • {{ item.mina_zone|default:"Zone 1" }} ({{ item.get_mashair_boarding_display }})</div>
+                            </div>
+                            {% endif %}
+                        </td>
+
+                        <!-- Room Sharing Rates -->
+                        <td class="px-4 py-3 align-top font-mono">
+                            <div class="text-xs font-bold text-emerald-800">
+                                Quad: <span class="font-mono">{{ item.rate_quad_sharing|rs }}</span>
+                            </div>
+                            <div class="text-[11px] text-slate-600 mt-1">
+                                Triple: <span class="font-mono">{{ item.rate_triple_sharing|rs }}</span>
+                            </div>
+                            <div class="text-[11px] text-slate-600 mt-0.5">
+                                Double: <span class="font-mono">{{ item.rate_double_sharing|rs }}</span>
+                            </div>
+                        </td>
+
+                        <!-- Status -->
+                        <td class="px-4 py-3 align-top text-center">
+                            {% if item.is_active %}
+                            <span class="inline-flex items-center text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                                Active
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center text-[10px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
+                                Inactive
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Actions: Itinerary, Copy Profile, Edit -->
+                        <td class="px-4 py-3 align-top text-right space-y-1.5 whitespace-nowrap">
+                            <div class="flex items-center justify-end gap-1.5">
+                                <a href="{% url 'masters:package_detail' item.id %}"
+                                   class="text-xs text-blue-700 hover:text-blue-900 font-semibold px-2.5 py-1 bg-blue-50 hover:bg-blue-100 rounded transition border border-blue-200"
+                                   title="View Itinerary & Full Rates">
+                                    👁 View
+                                </a>
+                                <a href="{% url 'masters:package_copy' item.id %}"
+                                   class="text-xs text-emerald-800 hover:text-emerald-950 font-semibold px-2.5 py-1 bg-emerald-100 hover:bg-emerald-200 rounded transition border border-emerald-300 inline-flex items-center gap-1"
+                                   title="Copy profile to create new package with 1 click">
+                                    <span>📋</span> Copy
+                                </a>
+                                <a href="{% url 'masters:package_update' item.id %}"
+                                   class="text-xs text-slate-700 hover:text-slate-900 font-medium px-2 py-1 bg-slate-100 hover:bg-slate-200 rounded transition border border-slate-200"
+                                   title="Edit Package">
+                                    ✏️
+                                </a>
+                                <a href="{% url 'masters:package_toggle' item.id %}"
+                                   class="text-[11px] text-amber-700 hover:bg-amber-50 font-medium px-1.5 py-1 rounded transition border border-slate-200"
+                                   title="Toggle Active Status">
+                                    {% if item.is_active %}Off{% else %}On{% endif %}
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-4 py-12 text-center text-slate-400">
+                            <div class="text-3xl mb-2">📦</div>
+                            <div class="text-sm font-semibold text-slate-700">No packages found matching criteria.</div>
+                            <div class="text-xs text-slate-400 mt-1">Use the action buttons above to create a new Benefits or Provident package profile.</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

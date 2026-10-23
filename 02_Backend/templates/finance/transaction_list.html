@@ -1,0 +1,515 @@
+﻿{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}Transactions — EABMS{% endblock %}
+{% block content %}
+<div class="space-y-4">
+    <!-- Top Hub Navigation Tabs -->
+    <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+        <a href="{% url 'core:transaction_list' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-slate-900 text-white shadow-xs">
+            <span>▤</span> General Ledger
+        </a>
+        <a href="{% url 'core:internal_transfer_create' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-slate-100 text-slate-700 hover:bg-amber-100 hover:text-amber-900 border border-slate-200 transition">
+            <span class="text-amber-600">⇄</span> Division Distribution &amp; Inter-Transfers
+            <span class="px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 text-[10px] font-extrabold">{{ division_count|default:"Reconcile" }} Divisions</span>
+        </a>
+    </div>
+
+    <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3 pb-3 border-b border-slate-200"><div><div class="flex items-center gap-2.5 flex-wrap"><h1 class="text-2xl font-black text-slate-800 tracking-tight">Txn Ledger</h1><span class="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-wider">Live Ledger</span>{% include 'partials/fund_badge.html' %}</div><p class="text-xs text-slate-500 mt-1 font-bold">{{ request.account.name }} <span class="text-slate-300 mx-1">•</span> Fin Yr {{ request.fy.code|default:request.fy.name }}</p></div><div class="flex items-center gap-2"><a href="{% url 'core:transaction_bulk_edit' %}" class="inline-flex items-center px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold rounded-lg">⚡ Mass / Bulk Grid</a><a href="{% url 'core:inflow_create' %}" class="inline-flex items-center px-3.5 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-lg">↓ Record Inflow</a><a href="{% url 'core:outflow_create' %}" class="inline-flex items-center px-3.5 py-2 bg-rose-600 text-white text-xs font-semibold rounded-lg">↑ Record Outflow</a><a href="{% url 'core:internal_transfer_create' %}" class="inline-flex items-center px-3.5 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg shadow-sm">⇄ Division Transfers &amp; Reconcile</a></div></div>
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden"><div class="px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100"><div><div class="text-sm font-bold text-slate-800">Ledger Filters</div><div class="text-[11px] text-slate-400 mt-0.5">Primary filters are always visible. Expand for detailed classification.</div></div><button type="button" id="toggle-more-filters" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-xs font-semibold text-slate-700" aria-expanded="false"><span>More Filters</span><span id="filter-count" class="hidden px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold">0 active</span><svg id="filter-chevron" class="w-4 h-4 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 9 6 6 6-6"/></svg></button></div>
+        <form method="get" id="ledger-filter-form" class="p-3 space-y-3"><div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2.5"><div><label class="abms-filter-label">Acct</label><select name="account" class="abms-filter-control"><option value="">Current Acct</option>{% for acc in accounts %}<option value="{{ acc.id }}" {% if request.GET.account == acc.id|stringformat:"s" or not request.GET.account and acc.id == request.account.id %}selected{% endif %}>{{ acc.code }} — {{ acc.name }}</option>{% endfor %}</select></div><div><label class="abms-filter-label">Fin Yr</label><select name="financial_year" class="abms-filter-control"><option value="">Current Fin Yr</option>{% for f in financial_years %}<option value="{{ f.id }}" {% if request.GET.financial_year == f.id|stringformat:"s" or not request.GET.financial_year and f.id == request.fy.id %}selected{% endif %}>{{ f.code }}</option>{% endfor %}</select></div><div><label class="abms-filter-label">Dir</label><select name="direction" class="abms-filter-control"><option value="">All Dirs</option><option value="INFLOW" {% if request.GET.direction == 'INFLOW' %}selected{% endif %}>Inflow</option><option value="OUTFLOW" {% if request.GET.direction == 'OUTFLOW' %}selected{% endif %}>Outflow</option></select></div><div><label class="abms-filter-label">Search</label><input type="text" name="q" value="{{ request.GET.q }}" placeholder="Txn no., ref, payee, description…" class="abms-filter-control"></div></div><div id="more-filters" class="hidden pt-3 border-t border-slate-100"><div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-2.5">{% for name,label in filter_fields %}{% endfor %}<div><label class="abms-filter-label">Division (Tier 1)</label><select name="major_head" class="abms-filter-control"><option value="">All Divisions</option>{% for mh in major_heads %}<option value="{{ mh.id }}" {% if request.GET.major_head == mh.id|stringformat:"s" %}selected{% endif %}>{{ mh.name }}</option>{% endfor %}</select></div><div><label class="abms-filter-label">Acct Head (Tier 2)</label><select name="account_head" class="abms-filter-control"><option value="">All Acct Heads</option>{% for ah in account_heads %}<option value="{{ ah.id }}" {% if request.GET.account_head == ah.id|stringformat:"s" %}selected{% endif %}>{{ ah.name }}</option>{% endfor %}</select></div><div><label class="abms-filter-label">Sub Head (Tier 3)</label><select name="sub_head" class="abms-filter-control"><option value="">All Sub Heads</option>{% for sh in sub_heads %}<option value="{{ sh.id }}" {% if request.GET.sub_head == sh.id|stringformat:"s" %}selected{% endif %}>{{ sh.name }}</option>{% endfor %}</select></div><div><label class="abms-filter-label">Organisation</label><select name="unit" class="abms-filter-control"><option value="">All</option>{% for u in units %}<option value="{{ u.id }}" {% if request.GET.unit == u.id|stringformat:"s" %}selected{% endif %}>{{ u.name }}</option>{% endfor %}</select></div><div><label class="abms-filter-label">Outflow Nature</label><select name="nature" class="abms-filter-control"><option value="">All</option>{% for nat in outflow_natures %}<option value="{{ nat.id }}" {% if request.GET.nature == nat.id|stringformat:"s" %}selected{% endif %}>{{ nat.name }}</option>{% endfor %}</select></div><div><label class="abms-filter-label">Pass-Through</label><select name="pass_through" class="abms-filter-control"><option value="">All</option><option value="True" {% if request.GET.pass_through == 'True' %}selected{% endif %}>Yes</option><option value="False" {% if request.GET.pass_through == 'False' %}selected{% endif %}>No</option></select></div><div><label class="abms-filter-label">Status</label><select name="status" class="abms-filter-control"><option value="">All</option><option value="ACTIVE" {% if request.GET.status == 'ACTIVE' %}selected{% endif %}>Active</option><option value="DRAFT" {% if request.GET.status == 'DRAFT' %}selected{% endif %}>Draft</option><option value="CANCELLED" {% if request.GET.status == 'CANCELLED' %}selected{% endif %}>Cancelled</option></select></div><div><label class="abms-filter-label">From</label><input type="text" name="date_from" value="{{ request.GET.date_from }}" placeholder="DD-MM-YYYY" class="abms-filter-control"></div><div><label class="abms-filter-label">To</label><input type="text" name="date_to" value="{{ request.GET.date_to }}" placeholder="DD-MM-YYYY" class="abms-filter-control"></div></div></div><div class="flex flex-wrap items-center justify-between gap-2 pt-1"><div class="text-[10px] text-slate-400">Filters apply to the ledger and summary cards together.</div><div class="flex items-center gap-2"><a href="{% url 'core:transaction_list' %}" class="px-3.5 py-1.5 bg-slate-100 text-slate-600 text-xs font-semibold rounded-lg">Clear</a><button type="submit" class="px-4 py-1.5 bg-slate-800 text-white text-xs font-semibold rounded-lg">Apply Filters</button></div></div></form></div>
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3"><div class="abms-stat-card bg-gradient-to-br from-slate-100 to-white shadow"><div class="abms-stat-label">Record Count</div><div class="abms-stat-value text-slate-800">{{ record_count|intcomma }}</div></div><div class="abms-stat-card bg-gradient-to-br from-emerald-100 to-emerald-50 shadow"><div class="abms-stat-label text-emerald-700">Total Inflows</div><div class="abms-stat-value text-emerald-800">{{ total_inflows|rs_mn }}</div><div class="text-[10px] text-emerald-700">Exact: {{ total_inflows|rs }}</div></div><div class="abms-stat-card bg-gradient-to-br from-rose-100 to-rose-50 shadow"><div class="abms-stat-label text-rose-700">Outflows (Excl. Pass-Through)</div><div class="abms-stat-value text-rose-800">{{ total_outflows|rs_mn }}</div><div class="text-[10px] text-rose-700">Operational Total: {{ total_outflows|rs }}</div></div><div class="abms-stat-card bg-gradient-to-br from-amber-100 to-amber-50 shadow"><div class="abms-stat-label text-amber-700">Pass-Through Tfrs</div><div class="abms-stat-value text-amber-800">{{ total_pass_through|rs_mn }}</div><div class="text-[10px] text-amber-700">Gross Outflow: {{ gross_outflows|rs_mn }} ({{ gross_outflows|rs }})</div></div></div>
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs"><div class="text-slate-500 font-medium">Showing {{ page_obj.start_index|default:0 }}–{{ page_obj.end_index|default:0 }} of {{ paginator.count|intcomma }}</div><form method="get" class="flex items-center gap-2" onchange="this.submit()">{% for key,value in request.GET.items %}{% if key != 'page_size' and key != 'page' %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}<label class="text-slate-500 font-medium">Show</label><select name="page_size" class="border border-slate-300 rounded-lg px-2 py-1 bg-white"><option value="25" {% if request.GET.page_size == '25' or not request.GET.page_size %}selected{% endif %}>25</option><option value="50" {% if request.GET.page_size == '50' %}selected{% endif %}>50</option><option value="100" {% if request.GET.page_size == '100' %}selected{% endif %}>100</option></select></form></div>
+    <div class="bg-white shadow-sm border border-slate-200 rounded-2xl overflow-hidden"><div class="overflow-x-auto"><table class="min-w-[1180px] w-full text-left text-[11px]" data-bulk-delete-url="{% url 'core:transaction_bulk_delete' %}"><thead class="bg-slate-900 text-white font-semibold uppercase tracking-wider"><tr><th class="w-8 px-2 py-2.5 text-center"><input type="checkbox" class="abms-select-all rounded w-4 h-4" title="Select / Deselect All"></th><th class="px-2.5 py-2.5 w-28">Date / Txn</th><th class="px-2.5 py-2.5 min-w-[210px]">Payee &amp; Description</th><th class="px-2.5 py-2.5 min-w-[175px]">Budget Head &amp; Sub-Head</th><th class="px-2.5 py-2.5 min-w-[155px]">Organisation(s)</th><th class="px-2.5 py-2.5 min-w-[155px]">Internal Sec(s)</th><th class="px-2.5 py-2.5 text-right w-36">Amount</th><th class="px-2 py-2.5 text-center w-24">Status</th><th class="px-2 py-2.5 text-center w-28">Action</th></tr></thead><tbody class="divide-y divide-slate-100">{% for tx in transactions %}<tr id="tx-row-{{ tx.pk }}" class="group hover:bg-slate-50/80 transition border-l-4 {% if tx.pass_through %}border-l-amber-500{% elif tx.direction == 'INFLOW' %}border-l-emerald-500{% else %}border-l-rose-500{% endif %}" data-pk="{{ tx.pk }}" data-direction="{{ tx.direction }}" data-date="{{ tx.transaction_date|date:'Y-m-d' }}" data-date-display="{{ tx.transaction_date|dmy }}" data-txn-number="{{ tx.transaction_number }}" data-ref="{{ tx.reference|default:'' }}" data-payee="{{ tx.payee_or_source|default:'' }}" data-desc="{{ tx.description|default:tx.purpose|default:'' }}" data-amount="{{ tx.amount|stringformat:'.2f' }}" data-major-head-id="{{ tx.major_head_id|default:'' }}" data-major-head-name="{{ tx.major_head.name|default:'' }}" data-account-head-id="{{ tx.account_head_id|default:'' }}" data-account-head-name="{{ tx.account_head.name|default:'' }}" data-sub-head-id="{{ tx.sub_head_id|default:'' }}" data-sub-head-name="{{ tx.sub_head.name|default:'' }}" data-unit-id="{{ tx.unit_id|default:'' }}" data-unit-name="{{ tx.unit.name|default:'' }}" data-section-id="{{ tx.department_id|default:'' }}" data-section-name="{{ tx.department.name|default:'' }}" data-nature-id="{{ tx.outflow_nature_id|default:'' }}" data-nature-name="{{ tx.outflow_nature.name|default:'' }}" data-inflow-type-id="{{ tx.inflow_type_id|default:'' }}" data-inflow-type-name="{{ tx.inflow_type.name|default:'' }}" data-pass-through="{% if tx.pass_through %}1{% else %}0{% endif %}" data-status="{{ tx.status }}" data-status-display="{{ tx.get_status_display }}" data-can-delete="{% if not tx.is_historical and can_edit %}1{% else %}0{% endif %}" ondblclick="if(typeof abmsEditRow === 'function') abmsEditRow(this, '{{ tx.pk }}');"><td class="px-2 py-2.5 text-center align-top" data-col="select"><input type="checkbox" value="{{ tx.pk }}" class="abms-row-select rounded w-4 h-4"></td><td class="px-2.5 py-2.5 align-top" data-col="date-txn"><div class="font-bold text-slate-800">{{ tx.transaction_date|dmy }}</div><div class="mt-1"><span class="inline-block px-1.5 py-0.5 rounded font-mono text-[10px] font-extrabold bg-emerald-700 text-white max-w-[125px] truncate" title="{{ tx.transaction_number }}">{{ tx.transaction_number }}</span></div>{% if tx.reference %}<div class="text-[9px] text-slate-500 mt-0.5 truncate max-w-[110px]">Ref: {{ tx.reference }}</div>{% endif %}</td><td class="px-2.5 py-2.5 align-top" data-col="payee-desc">{% if tx.payee_or_source %}<div class="mb-1"><span class="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-600 text-white max-w-[250px] truncate" data-field="payee">{{ tx.payee_or_source }}</span></div>{% endif %}<div class="text-[11px] text-slate-800 font-semibold max-w-[315px] truncate" data-field="desc"><a href="{% url 'core:transaction_detail' tx.pk %}" class="hover:text-emerald-700 hover:underline">{{ tx.description|default:tx.purpose|default:"—" }}</a></div><div class="mt-1 flex items-center gap-1 flex-wrap badges-row">{% if tx.outflow_nature %}<span class="inline-block px-1.5 py-0.5 bg-indigo-600 text-white font-bold rounded text-[9px]">{{ tx.outflow_nature.name }}</span>{% endif %}{% if tx.inflow_type %}<span class="inline-block px-1.5 py-0.5 bg-cyan-700 text-white font-bold rounded text-[9px]">{{ tx.get_inflow_type_display }}</span>{% endif %}{% if tx.pass_through %}<span class="inline-block px-1.5 py-0.5 bg-amber-500 text-white font-extrabold text-[9px] rounded">PT</span>{% endif %}</div></td><td class="px-2.5 py-2.5 align-top" data-col="heads">{% if tx.major_head %}<div class="text-[9px] text-indigo-600 font-semibold mb-0.5 truncate" title="Division: {{ tx.major_head.name }}">SF: {{ tx.major_head.name }}</div>{% endif %}{% if tx.account_head %}<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-700 text-white max-w-[170px] truncate" title="{{ tx.account_head.name }}">{{ tx.account_head.name }}</span>{% else %}<span class="text-slate-400">—</span>{% endif %}{% if tx.sub_head %}<div class="text-[9px] text-slate-600 font-medium mt-1 pl-1.5 border-l-2 border-slate-400 truncate max-w-[170px]">{{ tx.sub_head.name }}</div>{% endif %}</td><td class="px-2.5 py-2.5 align-top" data-col="units"><div class="flex flex-wrap gap-1">{% for unit in tx.transaction_units.all %}<span class="inline-block px-1.5 py-0.5 rounded bg-slate-700 text-white text-[9px] font-semibold whitespace-nowrap" title="{{ unit.name }}">{{ unit.name }}</span>{% empty %}{% if tx.unit %}<span class="inline-block px-1.5 py-0.5 rounded bg-slate-500 text-white text-[9px] font-semibold whitespace-nowrap">{{ tx.unit.name }}</span>{% else %}<span class="text-slate-400">—</span>{% endif %}{% endfor %}</div></td><td class="px-2.5 py-2.5 align-top" data-col="sections"><div class="flex flex-wrap gap-1">{% for section in tx.transaction_sections.all %}<span class="inline-block px-1.5 py-0.5 rounded bg-indigo-700 text-white text-[9px] font-semibold whitespace-nowrap" title="{{ section.name }}">{{ section.name }}</span>{% empty %}{% if tx.department %}<span class="inline-block px-1.5 py-0.5 rounded bg-indigo-500 text-white text-[9px] font-semibold whitespace-nowrap">{{ tx.department.name }}</span>{% else %}<span class="text-slate-400">—</span>{% endif %}{% endfor %}</div></td><td class="px-2.5 py-2.5 align-top text-right" data-col="amount">{% if tx.direction == 'INFLOW' %}<div class="font-mono font-bold text-sm text-emerald-700 whitespace-nowrap" data-amount="{{ tx.amount }}">+{{ tx.amount|rs }}</div>{% else %}<div class="font-mono font-bold text-sm text-rose-700 whitespace-nowrap" data-amount="{{ tx.amount }}">-{{ tx.amount|rs }}</div>{% endif %}</td><td class="px-2 py-2.5 align-top text-center" data-col="status">{% if tx.status == 'ACTIVE' %}<span class="abms-badge bg-emerald-50 text-emerald-700 border border-emerald-100"><span class="abms-dot bg-emerald-500"></span>Active</span>{% elif tx.status == 'CANCELLED' %}<span class="abms-badge bg-rose-50 text-rose-700 border border-rose-100"><span class="abms-dot bg-rose-500"></span>Cancelled</span>{% else %}<span class="abms-badge bg-amber-50 text-amber-700 border border-amber-100"><span class="abms-dot bg-amber-500"></span>{{ tx.get_status_display }}</span>{% endif %}</td><td class="px-2 py-2.5 align-top text-center" data-col="actions"><div class="flex items-center justify-center gap-1 action-buttons"><button type="button" onclick="abmsEditRow(this, '{{ tx.pk }}')" class="btn-edit inline-flex items-center gap-1 px-1.5 py-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-semibold" title="Edit">✎</button><a href="{% url 'core:transaction_detail' tx.pk %}" class="inline-flex items-center justify-center p-1.5 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-500" title="View details">→</a>{% if not tx.is_historical and can_edit %}<button type="button" onclick="abmsDiscardSingleTx('{{ tx.pk }}', '{{ tx.transaction_number }}')" class="inline-flex items-center justify-center p-1.5 rounded border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600" title="Discard/Delete transaction">🗑</button>{% endif %}</div></td></tr>{% empty %}<tr><td colspan="9" class="px-6 py-12 text-center"><div class="text-3xl mb-2">⌕</div><div class="font-semibold text-slate-700">No transactions found</div><div class="text-xs text-slate-400 mt-1">Try clearing filters or recording a new transaction.</div></td></tr>{% endfor %}</tbody></table></div></div>
+    {% if is_paginated %}<div class="flex flex-wrap items-center justify-center gap-1.5 text-xs py-3">{% if page_obj.has_previous %}<a class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold shadow-xs transition" href="?page=1{% if query_string %}&{{ query_string|safe }}{% endif %}">« First</a><a class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold shadow-xs transition" href="?page={{ page_obj.previous_page_number }}{% if query_string %}&{{ query_string|safe }}{% endif %}">‹ Prev</a>{% endif %}<span class="px-4 py-1.5 rounded-lg bg-slate-900 text-white font-bold tracking-wide shadow-xs">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold shadow-xs transition" href="?page={{ page_obj.next_page_number }}{% if query_string %}&{{ query_string|safe }}{% endif %}">Next ›</a><a class="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold shadow-xs transition" href="?page={{ page_obj.paginator.num_pages }}{% if query_string %}&{{ query_string|safe }}{% endif %}">Last »</a>{% endif %}</div>{% endif %}
+</div>
+<form id="ledger-csrf" style="display:none">{% csrf_token %}</form>
+{{ ledger_options_json|json_script:"ledger-options-data" }}
+{% endblock %}
+{% block extra_scripts %}
+<script>
+(function(){
+    const toggle=document.getElementById('toggle-more-filters'),
+          panel=document.getElementById('more-filters'),
+          chevron=document.getElementById('filter-chevron'),
+          form=document.getElementById('ledger-filter-form'),
+          badge=document.getElementById('filter-count');
+    if(!toggle||!panel||!form)return;
+    function updateCount(){
+        const advanced=['major_head','sub_head','account_head','unit','nature','pass_through','status','date_from','date_to'];
+        let count=0;
+        advanced.forEach(n=>{
+            const el=form.elements[n];
+            if(el&&el.value)count++;
+        });
+        if(count){badge.textContent=count+' active';badge.classList.remove('hidden')}else badge.classList.add('hidden');
+    }
+    toggle.addEventListener('click',()=>{
+        const open=!panel.classList.contains('hidden');
+        panel.classList.toggle('hidden',open);
+        toggle.setAttribute('aria-expanded',String(!open));
+        chevron.classList.toggle('rotate-180',!open);
+    });
+    updateCount();
+})();
+
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function getLedgerOptions() {
+    const el = document.getElementById('ledger-options-data');
+    if (!el) return {};
+    try {
+        let data = JSON.parse(el.textContent);
+        if (typeof data === 'string') {
+            try {
+                data = JSON.parse(data);
+            } catch(e2) {}
+        }
+        return (typeof data === 'object' && data !== null) ? data : {};
+    } catch(e) {
+        console.error('Error loading ledger options:', e);
+        return {};
+    }
+}
+
+window.abmsEditRow = function(btnOrTr, pk) {
+    const tr = (btnOrTr.tagName === 'TR') ? btnOrTr : btnOrTr.closest('tr');
+    if (!tr || tr.classList.contains('editing')) return;
+
+    tr.classList.add('editing', 'bg-amber-50/40');
+    const opts = getLedgerOptions();
+
+    // Store original html of all columns in case of cancel
+    const cells = tr.querySelectorAll('td[data-col]');
+    cells.forEach(td => {
+        td.dataset.origHtml = td.innerHTML;
+    });
+
+    const isOutflow = tr.dataset.direction === 'OUTFLOW';
+
+    // 1. Date & Txn cell
+    const dateTd = tr.querySelector('td[data-col="date-txn"]');
+    if (dateTd) {
+        dateTd.innerHTML = `
+            <div class="space-y-1">
+                <input type="date" class="edit-date-input w-full px-1 py-0.5 border border-slate-300 rounded text-[10px] font-semibold bg-white" value="${escapeHtml(tr.dataset.date)}">
+                <div class="font-mono text-[9px] text-slate-500 font-bold truncate" title="${escapeHtml(tr.dataset.txnNumber)}">${escapeHtml(tr.dataset.txnNumber)}</div>
+                <input type="text" class="edit-ref-input w-full px-1 py-0.5 border border-slate-300 rounded text-[10px] bg-white" value="${escapeHtml(tr.dataset.ref)}" placeholder="Ref...">
+            </div>
+        `;
+    }
+
+    // 2. Payee & Description cell
+    const payeeDescTd = tr.querySelector('td[data-col="payee-desc"]');
+    if (payeeDescTd) {
+        let classificationHtml = '';
+        if (isOutflow) {
+            let natOptions = '<option value="">-- Nature --</option>';
+            (opts.outflow_natures || []).forEach(n => {
+                const sel = String(n.id) === String(tr.dataset.natureId) ? 'selected' : '';
+                natOptions += `<option value="${n.id}" ${sel}>${escapeHtml(n.name)}</option>`;
+            });
+            classificationHtml = `<select class="edit-nature-select text-[9px] px-1 py-0.5 border border-slate-300 rounded bg-white max-w-[130px] font-medium">${natOptions}</select>`;
+        } else {
+            let inTypeOptions = '<option value="">-- Inflow Type --</option>';
+            (opts.inflow_types || []).forEach(t => {
+                const sel = String(t.id) === String(tr.dataset.inflowTypeId) ? 'selected' : '';
+                inTypeOptions += `<option value="${t.id}" ${sel}>${escapeHtml(t.name)}</option>`;
+            });
+            classificationHtml = `<select class="edit-inflow-type-select text-[9px] px-1 py-0.5 border border-slate-300 rounded bg-white max-w-[130px] font-medium">${inTypeOptions}</select>`;
+        }
+
+        const isPtChecked = tr.dataset.passThrough === '1' ? 'checked' : '';
+        payeeDescTd.innerHTML = `
+            <div class="space-y-1">
+                <input type="text" class="edit-payee-input w-full px-1.5 py-0.5 border border-slate-300 rounded text-[10px] bg-white font-medium" value="${escapeHtml(tr.dataset.payee)}" placeholder="Payee / Source...">
+                <input type="text" class="edit-desc-input w-full px-1.5 py-0.5 border border-slate-300 rounded text-[10px] bg-white" value="${escapeHtml(tr.dataset.desc)}" placeholder="Description...">
+                <div class="flex items-center gap-1.5 pt-0.5 flex-wrap">
+                    ${classificationHtml}
+                    <label class="inline-flex items-center gap-1 text-[9px] font-extrabold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200 cursor-pointer select-none" title="Pass-Through Internal Transfer">
+                        <input type="checkbox" class="edit-pt-checkbox rounded w-3 h-3 text-amber-600" ${isPtChecked}> PT
+                    </label>
+                </div>
+            </div>
+        `;
+    }
+
+    // 3. Heads (Division, Account Head, Sub Head) cell
+    const headsTd = tr.querySelector('td[data-col="heads"]');
+    if (headsTd) {
+        let majorHeadOptions = '<option value="">-- Division (Tier 1) --</option>';
+        (opts.major_heads || []).forEach(mh => {
+            const sel = String(mh.id) === String(tr.dataset.majorHeadId) ? 'selected' : '';
+            majorHeadOptions += `<option value="${mh.id}" ${sel}>${escapeHtml(mh.name)}</option>`;
+        });
+
+        let accountHeadOptions = '<option value="">-- Acct Head (Tier 2) --</option>';
+        (opts.account_heads || []).forEach(ah => {
+            const sel = String(ah.id) === String(tr.dataset.accountHeadId) ? 'selected' : '';
+            accountHeadOptions += `<option value="${ah.id}" data-major="${ah.major_head_id || ''}" ${sel}>${escapeHtml(ah.name)}</option>`;
+        });
+
+        headsTd.innerHTML = `
+            <div class="space-y-1">
+                <select class="edit-major-head-select w-full px-1 py-0.5 border border-slate-300 rounded text-[10px] bg-white font-semibold text-indigo-700">${majorHeadOptions}</select>
+                <select class="edit-account-head-select w-full px-1 py-0.5 border border-slate-300 rounded text-[10px] bg-white font-bold text-slate-800">${accountHeadOptions}</select>
+                <select class="edit-sub-head-select w-full px-1 py-0.5 border border-slate-300 rounded text-[10px] bg-white text-slate-700"></select>
+            </div>
+        `;
+
+        const acctSel = headsTd.querySelector('.edit-account-head-select');
+        const majorSel = headsTd.querySelector('.edit-major-head-select');
+        const subSel = headsTd.querySelector('.edit-sub-head-select');
+
+        function updateSubHeadOptions(selectedAcctId, currentSubId) {
+            if (!subSel) return;
+            let subHeadOptions = '<option value="">-- Sub Head (Tier 3) --</option>';
+            (opts.sub_heads || []).forEach(sh => {
+                if (!selectedAcctId || !sh.account_head_id || String(sh.account_head_id) === String(selectedAcctId)) {
+                    const sel = String(sh.id) === String(currentSubId) ? 'selected' : '';
+                    subHeadOptions += `<option value="${sh.id}" data-account-head="${sh.account_head_id || ''}" data-major="${sh.major_head_id || ''}" ${sel}>${escapeHtml(sh.name)}</option>`;
+                }
+            });
+            subSel.innerHTML = subHeadOptions;
+        }
+
+        updateSubHeadOptions(tr.dataset.accountHeadId, tr.dataset.subHeadId);
+
+        // Smart sync: changing Account Head updates Division and filters Sub Heads
+        if (acctSel) {
+            acctSel.addEventListener('change', () => {
+                const opt = acctSel.options[acctSel.selectedIndex];
+                const majorId = opt?.dataset?.major;
+                if (majorId && majorSel) {
+                    majorSel.value = majorId;
+                }
+                updateSubHeadOptions(acctSel.value, subSel ? subSel.value : '');
+            });
+        }
+        if (subSel) {
+            subSel.addEventListener('change', () => {
+                const opt = subSel.options[subSel.selectedIndex];
+                const shAcctId = opt?.dataset?.accountHead;
+                const shMajorId = opt?.dataset?.major;
+                if (shAcctId && acctSel && !acctSel.value) {
+                    acctSel.value = shAcctId;
+                }
+                if (shMajorId && majorSel && !majorSel.value) {
+                    majorSel.value = shMajorId;
+                }
+            });
+        }
+    }
+
+    // 4. Organisations cell
+    const unitsTd = tr.querySelector('td[data-col="units"]');
+    if (unitsTd) {
+        let unitOptions = '<option value="">-- No Organisation --</option>';
+        (opts.units || []).forEach(u => {
+            const sel = String(u.id) === String(tr.dataset.unitId) ? 'selected' : '';
+            unitOptions += `<option value="${u.id}" ${sel}>${escapeHtml(u.name)}</option>`;
+        });
+        unitsTd.innerHTML = `<select class="edit-unit-select w-full px-1 py-0.5 border border-slate-300 rounded text-[10px] bg-white font-medium">${unitOptions}</select>`;
+    }
+
+    // 5. Departments cell
+    const sectionsTd = tr.querySelector('td[data-col="sections"]');
+    if (sectionsTd) {
+        let secOptions = '<option value="">-- No Section --</option>';
+        (opts.departments || []).forEach(s => {
+            const sel = String(s.id) === String(tr.dataset.sectionId) ? 'selected' : '';
+            secOptions += `<option value="${s.id}" ${sel}>${escapeHtml(s.name)}</option>`;
+        });
+        sectionsTd.innerHTML = `<select class="edit-section-select w-full px-1 py-0.5 border border-slate-300 rounded text-[10px] bg-white font-medium">${secOptions}</select>`;
+    }
+
+    // 6. Amount cell
+    const amtTd = tr.querySelector('td[data-col="amount"]');
+    if (amtTd) {
+        amtTd.innerHTML = `<input type="number" step="0.01" class="edit-amount-input w-28 px-1.5 py-0.5 border border-slate-300 rounded text-[11px] font-mono font-bold text-right bg-white" value="${escapeHtml(tr.dataset.amount)}">`;
+    }
+
+    // 7. Status cell
+    const statusTd = tr.querySelector('td[data-col="status"]');
+    if (statusTd) {
+        let statusOptions = '';
+        (opts.statuses || [
+            {id:'ACTIVE', name:'Active'},
+            {id:'DRAFT', name:'Draft'},
+            {id:'CANCELLED', name:'Cancelled'}
+        ]).forEach(st => {
+            const sel = st.id === tr.dataset.status ? 'selected' : '';
+            statusOptions += `<option value="${st.id}" ${sel}>${escapeHtml(st.name)}</option>`;
+        });
+        statusTd.innerHTML = `<select class="edit-status-select px-1 py-0.5 border border-slate-300 rounded text-[10px] font-bold bg-white">${statusOptions}</select>`;
+    }
+
+    // 8. Actions cell
+    const actionsTd = tr.querySelector('td[data-col="actions"]');
+    if (actionsTd) {
+        actionsTd.innerHTML = `
+            <div class="flex items-center justify-center gap-1">
+                <button type="button" class="btn-save px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold shadow-xs" title="Save changes">✓</button>
+                <button type="button" class="btn-cancel px-2 py-1 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded text-[10px] font-bold" title="Cancel edit">✕</button>
+            </div>
+        `;
+
+        const saveBtn = actionsTd.querySelector('.btn-save');
+        const cancelBtn = actionsTd.querySelector('.btn-cancel');
+
+        function cancelEdit() {
+            cells.forEach(td => {
+                if (td.dataset.origHtml !== undefined) {
+                    td.innerHTML = td.dataset.origHtml;
+                }
+            });
+            tr.classList.remove('editing', 'bg-amber-50/40');
+        }
+
+        cancelBtn.addEventListener('click', cancelEdit);
+
+        saveBtn.addEventListener('click', async () => {
+            saveBtn.disabled = true;
+            saveBtn.textContent = '…';
+
+            const payload = {
+                transaction_date: tr.querySelector('.edit-date-input')?.value || '',
+                reference: tr.querySelector('.edit-ref-input')?.value || '',
+                payee_or_source: tr.querySelector('.edit-payee-input')?.value || '',
+                description: tr.querySelector('.edit-desc-input')?.value || '',
+                amount: tr.querySelector('.edit-amount-input')?.value || '',
+                major_head_id: tr.querySelector('.edit-major-head-select')?.value || '',
+                account_head_id: tr.querySelector('.edit-account-head-select')?.value || '',
+                sub_head_id: tr.querySelector('.edit-sub-head-select')?.value || '',
+                unit_id: tr.querySelector('.edit-unit-select')?.value || '',
+                department_id: tr.querySelector('.edit-section-select')?.value || '',
+                status: tr.querySelector('.edit-status-select')?.value || '',
+                pass_through: tr.querySelector('.edit-pt-checkbox')?.checked ? 'true' : 'false',
+            };
+
+            const natEl = tr.querySelector('.edit-nature-select');
+            if (natEl) payload.outflow_nature_id = natEl.value;
+
+            const inTypeEl = tr.querySelector('.edit-inflow-type-select');
+            if (inTypeEl) payload.inflow_type_id = inTypeEl.value;
+
+            const csrf = document.querySelector('#ledger-csrf [name=csrfmiddlewaretoken]')?.value || '';
+
+            try {
+                const res = await fetch(`/transactions/${pk}/inline-update/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': csrf
+                    },
+                    body: new URLSearchParams(payload)
+                });
+
+                const data = await res.json();
+                if (res.ok && data.status === 'ok') {
+                    // 1. Update tr dataset
+                    tr.dataset.date = data.transaction_date;
+                    tr.dataset.dateDisplay = data.transaction_date_display;
+                    tr.dataset.ref = data.reference;
+                    tr.dataset.payee = data.payee_or_source;
+                    tr.dataset.desc = data.description;
+                    tr.dataset.amount = data.amount;
+                    tr.dataset.passThrough = data.pass_through ? '1' : '0';
+                    tr.dataset.majorHeadId = data.major_head_id;
+                    tr.dataset.majorHeadName = data.major_head_name;
+                    tr.dataset.accountHeadId = data.account_head_id;
+                    tr.dataset.accountHeadName = data.account_head_name;
+                    tr.dataset.subHeadId = data.sub_head_id;
+                    tr.dataset.subHeadName = data.sub_head_name;
+                    tr.dataset.unitId = data.unit_id;
+                    tr.dataset.unitName = data.unit_name;
+                    tr.dataset.sectionId = data.department_id;
+                    tr.dataset.sectionName = data.department_name;
+                    tr.dataset.natureId = data.outflow_nature_id;
+                    tr.dataset.natureName = data.outflow_nature_name;
+                    tr.dataset.inflowTypeId = data.inflow_type_id;
+                    tr.dataset.inflowTypeName = data.inflow_type_name;
+                    tr.dataset.status = data.tx_status;
+                    tr.dataset.statusDisplay = data.status_display;
+
+                    // 2. Render row cells dynamically
+                    renderSavedRow(tr, data, pk);
+
+                    // 3. Highlight success
+                    tr.classList.remove('editing', 'bg-amber-50/40');
+                    tr.classList.add('bg-emerald-100');
+                    setTimeout(() => tr.classList.remove('bg-emerald-100'), 1500);
+                } else {
+                    alert('Save failed: ' + (data.message || 'Unknown error'));
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = '✓';
+                }
+            } catch (err) {
+                alert('Server connection error while saving transaction.');
+                saveBtn.disabled = false;
+                saveBtn.textContent = '✓';
+            }
+        });
+    }
+};
+
+function renderSavedRow(tr, data, pk) {
+    // Update border color
+    tr.classList.remove('border-l-amber-500', 'border-l-emerald-500', 'border-l-rose-500');
+    if (data.pass_through) {
+        tr.classList.add('border-l-amber-500');
+    } else if (data.direction === 'INFLOW') {
+        tr.classList.add('border-l-emerald-500');
+    } else {
+        tr.classList.add('border-l-rose-500');
+    }
+
+    // 1. Date & Txn
+    const dateTd = tr.querySelector('td[data-col="date-txn"]');
+    if (dateTd) {
+        let refHtml = data.reference ? `<div class="text-[9px] text-slate-500 mt-0.5 truncate max-w-[110px]">Ref: ${escapeHtml(data.reference)}</div>` : '';
+        dateTd.innerHTML = `
+            <div class="font-bold text-slate-800">${escapeHtml(data.transaction_date_display)}</div>
+            <div class="mt-1">
+                <span class="inline-block px-1.5 py-0.5 rounded font-mono text-[10px] font-extrabold bg-emerald-700 text-white max-w-[125px] truncate" title="${escapeHtml(data.transaction_number)}">${escapeHtml(data.transaction_number)}</span>
+            </div>
+            ${refHtml}
+        `;
+    }
+
+    // 2. Payee & Desc
+    const payeeDescTd = tr.querySelector('td[data-col="payee-desc"]');
+    if (payeeDescTd) {
+        let payeeHtml = data.payee_or_source ? `
+            <div class="mb-1">
+                <span class="inline-block px-2 py-0.5 rounded text-[10px] font-extrabold bg-blue-600 text-white max-w-[250px] truncate" data-field="payee">${escapeHtml(data.payee_or_source)}</span>
+            </div>
+        ` : '';
+
+        let naturePill = data.outflow_nature_name ? `<span class="inline-block px-1.5 py-0.5 bg-indigo-600 text-white font-bold rounded text-[9px]">${escapeHtml(data.outflow_nature_name)}</span>` : '';
+        let inTypePill = data.inflow_type_name ? `<span class="inline-block px-1.5 py-0.5 bg-cyan-700 text-white font-bold rounded text-[9px]">${escapeHtml(data.inflow_type_name)}</span>` : '';
+        let ptPill = data.pass_through ? `<span class="inline-block px-1.5 py-0.5 bg-amber-500 text-white font-extrabold text-[9px] rounded">PT</span>` : '';
+
+        payeeDescTd.innerHTML = `
+            ${payeeHtml}
+            <div class="text-[11px] text-slate-800 font-semibold max-w-[315px] truncate" data-field="desc">
+                <a href="/transactions/${pk}/" class="hover:text-emerald-700 hover:underline">${escapeHtml(data.description || '—')}</a>
+            </div>
+            <div class="mt-1 flex items-center gap-1 flex-wrap badges-row">
+                ${naturePill}
+                ${inTypePill}
+                ${ptPill}
+            </div>
+        `;
+    }
+
+    // 3. Heads
+    const headsTd = tr.querySelector('td[data-col="heads"]');
+    if (headsTd) {
+        let majorHtml = data.major_head_name ? `<div class="text-[9px] text-indigo-600 font-semibold mb-0.5 truncate" title="Division: ${escapeHtml(data.major_head_name)}">SF: ${escapeHtml(data.major_head_name)}</div>` : '';
+        let acctHeadHtml = data.account_head_name ? `<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-700 text-white max-w-[170px] truncate" title="${escapeHtml(data.account_head_name)}">${escapeHtml(data.account_head_name)}</span>` : '<span class="text-slate-400">—</span>';
+        let subHeadHtml = data.sub_head_name ? `<div class="text-[9px] text-slate-600 font-medium mt-1 pl-1.5 border-l-2 border-slate-400 truncate max-w-[170px]">${escapeHtml(data.sub_head_name)}</div>` : '';
+
+        headsTd.innerHTML = `
+            ${majorHtml}
+            ${acctHeadHtml}
+            ${subHeadHtml}
+        `;
+    }
+
+    // 4. Organisations
+    const unitsTd = tr.querySelector('td[data-col="units"]');
+    if (unitsTd) {
+        let uHtml = '';
+        if (data.units && data.units.length > 0) {
+            uHtml = data.units.map(u => `<span class="inline-block px-1.5 py-0.5 rounded bg-slate-700 text-white text-[9px] font-semibold whitespace-nowrap" title="${escapeHtml(u)}">${escapeHtml(u)}</span>`).join(' ');
+        } else if (data.unit_name) {
+            uHtml = `<span class="inline-block px-1.5 py-0.5 rounded bg-slate-500 text-white text-[9px] font-semibold whitespace-nowrap">${escapeHtml(data.unit_name)}</span>`;
+        } else {
+            uHtml = '<span class="text-slate-400">—</span>';
+        }
+        unitsTd.innerHTML = `<div class="flex flex-wrap gap-1">${uHtml}</div>`;
+    }
+
+    // 5. Sections
+    const sectionsTd = tr.querySelector('td[data-col="sections"]');
+    if (sectionsTd) {
+        let sHtml = '';
+        if (data.sections && data.sections.length > 0) {
+            sHtml = data.sections.map(s => `<span class="inline-block px-1.5 py-0.5 rounded bg-indigo-700 text-white text-[9px] font-semibold whitespace-nowrap" title="${escapeHtml(s)}">${escapeHtml(s)}</span>`).join(' ');
+        } else if (data.department_name) {
+            sHtml = `<span class="inline-block px-1.5 py-0.5 rounded bg-indigo-500 text-white text-[9px] font-semibold whitespace-nowrap">${escapeHtml(data.department_name)}</span>`;
+        } else {
+            sHtml = '<span class="text-slate-400">—</span>';
+        }
+        sectionsTd.innerHTML = `<div class="flex flex-wrap gap-1">${sHtml}</div>`;
+    }
+
+    // 6. Amount
+    const amtTd = tr.querySelector('td[data-col="amount"]');
+    if (amtTd) {
+        const num = Number(data.amount);
+        const formatted = num.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        if (data.direction === 'INFLOW') {
+            amtTd.innerHTML = `<div class="font-mono font-bold text-sm text-emerald-700 whitespace-nowrap" data-amount="${data.amount}">+$ ${formatted}</div>`;
+        } else {
+            amtTd.innerHTML = `<div class="font-mono font-bold text-sm text-rose-700 whitespace-nowrap" data-amount="${data.amount}">-$ ${formatted}</div>`;
+        }
+    }
+
+    // 7. Status
+    const statusTd = tr.querySelector('td[data-col="status"]');
+    if (statusTd) {
+        if (data.tx_status === 'ACTIVE') {
+            statusTd.innerHTML = `<span class="abms-badge bg-emerald-50 text-emerald-700 border border-emerald-100"><span class="abms-dot bg-emerald-500"></span>Active</span>`;
+        } else if (data.tx_status === 'CANCELLED') {
+            statusTd.innerHTML = `<span class="abms-badge bg-rose-50 text-rose-700 border border-rose-100"><span class="abms-dot bg-rose-500"></span>Cancelled</span>`;
+        } else {
+            statusTd.innerHTML = `<span class="abms-badge bg-amber-50 text-amber-700 border border-amber-100"><span class="abms-dot bg-amber-500"></span>${escapeHtml(data.status_display)}</span>`;
+        }
+    }
+
+    // 8. Actions
+    const actionsTd = tr.querySelector('td[data-col="actions"]');
+    if (actionsTd) {
+        let delBtn = '';
+        if (tr.dataset.canDelete === '1') {
+            delBtn = `<button type="button" onclick="abmsDiscardSingleTx('${pk}', '${escapeHtml(data.transaction_number)}')" class="inline-flex items-center justify-center p-1.5 rounded border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600" title="Discard/Delete transaction">🗑</button>`;
+        }
+        actionsTd.innerHTML = `
+            <div class="flex items-center justify-center gap-1 action-buttons">
+                <button type="button" onclick="abmsEditRow(this, '${pk}')" class="btn-edit inline-flex items-center gap-1 px-1.5 py-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-semibold" title="Edit">✎</button>
+                <a href="/transactions/${pk}/" class="inline-flex items-center justify-center p-1.5 rounded border border-slate-200 bg-white hover:bg-slate-50 text-slate-500" title="View details">→</a>
+                ${delBtn}
+            </div>
+        `;
+    }
+}
+
+window.abmsDiscardSingleTx = function(pk, txNum) {
+    if (!confirm('Are you sure you want to permanently discard/delete transaction ' + (txNum || '') + ' from the database?')) return;
+    const f = document.createElement('form');
+    f.method = 'POST';
+    f.action = "{% url 'core:transaction_bulk_delete' %}";
+    const c = document.createElement('input');
+    c.type = 'hidden';
+    c.name = 'csrfmiddlewaretoken';
+    c.value = document.querySelector('#ledger-csrf [name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+    f.appendChild(c);
+    const id = document.createElement('input');
+    id.type = 'hidden';
+    id.name = 'selected_ids';
+    id.value = pk;
+    f.appendChild(id);
+    document.body.appendChild(f);
+    f.submit();
+};
+</script>
+{% endblock %}

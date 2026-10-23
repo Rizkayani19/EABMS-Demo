@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-9xl mx-auto">
+    <div class="sm:flex sm:items-center sm:justify-between mb-8">
+        <div class="mb-4 sm:mb-0">
+            <h1 class="text-2xl md:text-3xl text-slate-800 font-bold">
+                Preparation: {{ future_budget.target_fy.code|rs }}
+            </h1>
+            <p class="text-sm text-slate-500">Source Baseline: {{ future_budget.source_fy.code|rs }} | Account: {{ future_budget.account.code|rs }}</p>
+        </div>
+        <div class="grid grid-flow-col sm:auto-cols-max justify-start sm:justify-end gap-2">
+            {% if future_budget.status == 'DRAFT' %}
+            <a href="{% url 'core:future_budget_edit' future_budget.id %}" class="btn bg-slate-200 hover:bg-slate-300 text-slate-700">Edit</a>
+            <form method="post" action="{% url 'core:future_budget_delete' future_budget.id %}" class="inline" onsubmit="return confirm('Permanently delete this Draft future budget and all its lines?');">
+                {% csrf_token %}
+                <button type="submit" class="btn bg-rose-100 hover:bg-rose-200 text-rose-700">Delete</button>
+            </form>
+            <form method="post" action="{% url 'core:future_budget_build' future_budget.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn bg-indigo-500 hover:bg-indigo-600 text-white">Build from History</button>
+            </form>
+            <form method="post" action="{% url 'core:propose_future_budget' future_budget.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn bg-emerald-500 hover:bg-emerald-600 text-white">Propose Budget</button>
+            </form>
+            {% elif future_budget.status == 'PROPOSED' %}
+            <a href="{% url 'core:future_budget_edit' future_budget.id %}" class="btn bg-slate-200 hover:bg-slate-300 text-slate-700">Edit</a>
+            <form method="post" action="{% url 'core:future_budget_build' future_budget.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn bg-indigo-500 hover:bg-indigo-600 text-white">Rebuild from History</button>
+            </form>
+            <form method="post" action="{% url 'core:approve_future_budget' future_budget.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn bg-emerald-500 hover:bg-emerald-600 text-white">Approve Budget</button>
+            </form>
+            <form method="post" action="{% url 'core:revert_future_budget_draft' future_budget.id %}" class="inline" onsubmit="return confirm('Return this budget to Draft status?');">
+                {% csrf_token %}
+                <button type="submit" class="btn bg-slate-200 hover:bg-slate-300 text-slate-700">Revert to Draft</button>
+            </form>
+            {% endif %}
+            <a href="{% url 'core:future_budget_review' future_budget.id %}" class="btn bg-slate-700 hover:bg-slate-800 text-white">Budget Review / Analysis</a>
+            <a href="{% url 'core:future_budget_word' future_budget.id %}" class="btn bg-blue-100 hover:bg-blue-200 text-blue-800 border border-blue-300 font-medium">Word (.docx)</a>
+            <a href="{% url 'core:future_budget_pdf' future_budget.id %}" class="btn bg-slate-200 hover:bg-slate-300 text-slate-800">PDF</a>
+            <a href="{% url 'core:future_budget_excel' future_budget.id %}" class="btn bg-slate-200 hover:bg-slate-300 text-slate-800">Excel</a>
+        </div>
+    </div>
+    
+    <div class="bg-white shadow-lg rounded-sm border border-slate-200 mb-8">
+        <header class="px-5 py-4 border-b border-slate-100 flex justify-between items-center">
+            <h2 class="font-semibold text-slate-800">Budget Lines</h2>
+        </header>
+        <div class="overflow-x-auto">
+            <table class="table-auto w-full" data-bulk-delete-url="{% url 'core:future_budget_line_bulk_delete' future_budget.id %}">
+                <thead class="text-xs font-semibold uppercase text-slate-500 bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="w-10 px-3 py-3 text-center"><input type="checkbox" class="abms-select-all rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4" title="Select / Deselect All"></th>
+                        <th class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"><div class="font-semibold text-left">Account Head</div></th>
+                        <th class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"><div class="font-semibold text-right">Prev Budget</div></th>
+                        <th class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"><div class="font-semibold text-right">Prev Actual</div></th>
+                        <th class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"><div class="font-semibold text-center">Routine?</div></th>
+                        <th class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"><div class="font-semibold text-right text-indigo-500">Sys Suggested</div></th>
+                        <th class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"><div class="font-semibold text-right text-emerald-600">User Proposed</div></th>
+                        <th class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap"><div class="font-semibold text-left">Actions</div></th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm divide-y divide-slate-200">
+                    {% for line in lines %}
+                    <tr>
+                        <td class="w-10 px-3 py-3 text-center align-middle"><input type="checkbox" value="{{ line.pk }}" class="abms-row-select rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4"></td>
+                        <td class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">{{ line.account_head.name }}</td>
+                        <td class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap text-right">{{ line.previous_budget|rs }}</td>
+                        <td class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap text-right">{{ line.previous_actual|rs }}</td>
+                        <td class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap text-center">
+                            {% if line.is_routine %}<span class="text-emerald-500">Yes</span>{% else %}<span class="text-slate-400">No</span>{% endif %}
+                        </td>
+                        <td class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap text-right text-indigo-600 font-medium">{{ line.system_suggested|rs }}</td>
+                        <td class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap text-right text-emerald-600 font-medium">{{ line.user_proposed|default:"-"|rs }}</td>
+                        <td class="px-2 first:pl-5 last:pr-5 py-3 whitespace-nowrap">
+                            <a href="{% url 'core:future_budget_line_edit' line.id %}" class="text-indigo-500 hover:text-indigo-600">Edit</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="8" class="p-4 text-center text-slate-500">No lines built yet.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="px-5 py-4 border-t border-slate-200 bg-slate-50">
+            <div class="flex justify-between items-center text-sm">
+                <span class="font-medium text-slate-800">Totals:</span>
+                <div class="space-x-4">
+                    <span>Prev Budget: <strong>{{ summary.previous_budget_total|rs }}</strong></span>
+                    <span>Prev Actual: <strong>{{ summary.previous_actual_total|rs }}</strong></span>
+                    <span class="text-indigo-600">Suggested: <strong>{{ summary.system_suggested_total|rs }}</strong></span>
+                    <span class="text-emerald-600">Proposed: <strong>{{ summary.user_proposed_total|rs }}</strong></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Known Changes Section -->
+    <div class="bg-white shadow-lg rounded-sm border border-slate-200 mb-8 p-5">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="font-semibold text-slate-800">Known Changes</h2>
+            <a href="{% url 'core:known_change_create' future_budget.id %}" class="btn-sm bg-indigo-500 text-white">Add Change</a>
+        </div>
+        <ul>
+            {% for kc in known_changes %}
+            <li class="border-b py-2 flex justify-between">
+                <span>{{ kc.description }} ({{ kc.get_change_type_display }})</span>
+                <span class="font-medium">{{ kc.amount|rs }}</span>
+            </li>
+            {% empty %}
+            <li class="text-slate-500 text-sm">No known changes.</li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <!-- Personnel Section -->
+    <div class="bg-white shadow-lg rounded-sm border border-slate-200 p-5">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="font-semibold text-slate-800">Personnel Planning</h2>
+            <a href="{% url 'core:personnel_plan' future_budget.id %}" class="btn-sm bg-indigo-500 text-white">Manage Personnel</a>
+        </div>
+        <ul>
+            {% for pl in personnel_lines %}
+            <li class="border-b py-2 flex justify-between">
+                <span>{{ pl.category_label }}</span>
+                <span class="font-medium">Projected: {{ pl.projected_cost|rs }}</span>
+            </li>
+            {% empty %}
+            <li class="text-slate-500 text-sm">No personnel baseline populated yet.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}

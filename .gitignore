@@ -1,0 +1,68 @@
+# ==============================================================================
+# EABMS - Enterprise Accounts & Business Management System
+# Git Ignore Configuration
+# ==============================================================================
+
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+
+# Virtual Environments
+venv/
+.venv/
+env/
+ENV/
+02_Backend/venv/
+
+# Environment Variables & Secrets (CRITICAL)
+.env
+.env.*
+!.env.example
+
+# Database files & dumps
+*.sqlite3
+*.db
+*.dump
+*.backup
+*.sql
+backups/
+
+# Logs & Runtime
+*.log
+02_Backend/logs/
+waitress_*.log
+
+# Static & Media files
+02_Backend/staticfiles/
+media/
+browser_profiles/
+
+# Large binary distributions & wheels
+*.whl
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Backups & ad-hoc scripts (never commit data exports)
+*_backup*.json
+backup_*/
+*.abmsbackup
+debug_*.py
+analyze_dups.py
+fix_transaction_model.py

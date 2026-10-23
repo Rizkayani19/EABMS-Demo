@@ -1,0 +1,48 @@
+﻿{% extends 'base.html' %}
+{% block title %}{{ title }} — EABMS{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+    <div>
+        <p class="text-xs font-semibold uppercase tracking-wider text-emerald-600">Administrator</p>
+        <h1 class="text-2xl font-bold text-slate-900">{{ title }}</h1>
+        <p class="text-sm text-slate-500 mt-1">
+            {% if mode == 'edit' %}Change the user's name, email, role, default account and active status. Username cannot be changed here.{% else %}Create an EABMS login and assign one application role.{% endif %}
+        </p>
+    </div>
+    <form method="post" class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-6">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="rounded-lg bg-rose-50 border border-rose-200 p-3 text-sm text-rose-700">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for field in form %}
+                {% if field.name != 'password1' and field.name != 'password2' %}
+                <div class="{% if field.name == 'email' %}md:col-span-2{% endif %}">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% for error in field.errors %}<p class="text-xs text-rose-600 mt-1">{{ error }}</p>{% endfor %}
+                    {% if field.help_text %}<p class="text-[11px] text-slate-400 mt-1">{{ field.help_text }}</p>{% endif %}
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% if mode == 'create' %}
+        <div class="border-t border-slate-200 pt-5">
+            <h2 class="text-sm font-bold text-slate-800">Password</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                <div><label class="block text-xs font-semibold text-slate-600 mb-1" for="{{ form.password1.id_for_label }}">{{ form.password1.label }}</label>{{ form.password1 }}{% for error in form.password1.errors %}<p class="text-xs text-rose-600 mt-1">{{ error }}</p>{% endfor %}</div>
+                <div><label class="block text-xs font-semibold text-slate-600 mb-1" for="{{ form.password2.id_for_label }}">{{ form.password2.label }}</label>{{ form.password2 }}{% for error in form.password2.errors %}<p class="text-xs text-rose-600 mt-1">{{ error }}</p>{% endfor %}</div>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-2">Use a strong password. The system's password checks are applied.</p>
+        </div>
+        {% else %}
+        <div class="border-t border-slate-200 pt-5 flex items-center justify-between gap-4">
+            <div><p class="text-sm font-semibold text-slate-800">Password</p><p class="text-xs text-slate-500 mt-1">Use “Reset Password” from User Management when the password must be changed.</p></div>
+            <a href="{% url 'accounts:user_password_reset' target_user.id %}" class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">Reset Password</a>
+        </div>
+        {% endif %}
+        {% if mode == 'edit' and target_user.id == request.user.id %}
+        <div class="rounded-lg bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800">You are editing your own account. You cannot deactivate or remove yourself.</div>
+        {% endif %}
+        <div class="flex justify-end gap-3"><a href="{% url 'accounts:user_list' %}" class="px-4 py-2 rounded-lg border border-slate-300 text-sm font-semibold text-slate-700">Cancel</a><button type="submit" class="px-5 py-2 rounded-lg bg-emerald-600 text-white text-sm font-semibold hover:bg-emerald-700">{% if mode == 'edit' %}Save Changes{% else %}Create User{% endif %}</button></div>
+    </form>
+</div>
+{% endblock %}

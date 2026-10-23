@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-7xl mx-auto p-6">
+  <h1 class="text-2xl font-bold mb-2">Import Review — Batch #{{ batch.pk }}</h1>
+  <p class="text-gray-600 mb-6">Map source columns to ABMS fields, validate the preview, then commit only valid records.</p>
+
+  <form method="post" class="border rounded p-5 mb-6 bg-gray-50">
+    {% csrf_token %}
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {% for key,label,required in fields %}{% endfor %}
+      <div><label class="font-medium">Date *</label><select name="date" required class="w-full p-2 border rounded"><option value="">Select</option>{% for h in headers %}<option value="{{ h }}">{{ h }}</option>{% endfor %}</select></div>
+      <div><label class="font-medium">Amount *</label><select name="amount" required class="w-full p-2 border rounded"><option value="">Select</option>{% for h in headers %}<option value="{{ h }}">{{ h }}</option>{% endfor %}</select></div>
+      <div><label class="font-medium">Account Head *</label><select name="head_code" required class="w-full p-2 border rounded"><option value="">Select</option>{% for h in headers %}<option value="{{ h }}">{{ h }}</option>{% endfor %}</select></div>
+      <div><label class="font-medium">Unit</label><select name="unit" class="w-full p-2 border rounded"><option value="">Not supplied</option>{% for h in headers %}<option value="{{ h }}">{{ h }}</option>{% endfor %}</select></div>
+      <div><label class="font-medium">Internal Section</label><select name="section" class="w-full p-2 border rounded"><option value="">Not supplied</option>{% for h in headers %}<option value="{{ h }}">{{ h }}</option>{% endfor %}</select></div>
+      <div><label class="font-medium">Direction</label><select name="direction" class="w-full p-2 border rounded"><option value="">Default Outflow</option>{% for h in headers %}<option value="{{ h }}">{{ h }}</option>{% endfor %}</select></div>
+      <div><label class="font-medium">Description</label><select name="description" class="w-full p-2 border rounded"><option value="">None</option>{% for h in headers %}<option value="{{ h }}">{{ h }}</option>{% endfor %}</select></div>
+      <div><label class="font-medium">Reference</label><select name="reference" class="w-full p-2 border rounded"><option value="">None</option>{% for h in headers %}<option value="{{ h }}">{{ h }}</option>{% endfor %}</select></div>
+      <div><label class="font-medium">Outflow Nature</label><select name="nature" class="w-full p-2 border rounded"><option value="">None</option>{% for h in headers %}<option value="{{ h }}">{{ h }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="mt-5 flex gap-3">
+      <button name="action" value="validate" class="px-4 py-2 bg-gray-800 text-white rounded">Validate Preview</button>
+      {% if batch.status == 'PREVIEWED' %}<button name="action" value="commit" class="px-4 py-2 bg-green-700 text-white rounded" onclick="return confirm('Commit all valid records to the transaction ledger?');">Commit Valid Records</button>{% endif %}
+    </div>
+  </form>
+
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-5 text-sm">
+    <div class="border rounded p-3">Status<br><b>{{ batch.get_status_display }}</b></div>
+    <div class="border rounded p-3">Rows<br><b>{{ batch.total_rows }}</b></div>
+    <div class="border rounded p-3">Imported<br><b>{{ batch.imported_rows }}</b></div>
+    <div class="border rounded p-3">Invalid<br><b>{{ batch.failed_rows }}</b></div>
+    <div class="border rounded p-3">Duplicates<br><b>{{ batch.duplicate_rows }}</b></div>
+  </div>
+
+  <div class="overflow-x-auto border rounded"><table class="min-w-full text-sm"><thead class="bg-gray-100"><tr><th class="p-2">Row</th><th class="p-2">Status</th><th class="p-2">Error</th><th class="p-2">Source Data</th></tr></thead><tbody>{% for r in records %}<tr class="border-t"><td class="p-2">{{ r.original_row_number }}</td><td class="p-2">{{ r.get_validation_status_display }}</td><td class="p-2">{{ r.error_message }}</td><td class="p-2">{{ r.row_data }}</td></tr>{% endfor %}</tbody></table></div>
+</div>
+{% endblock %}

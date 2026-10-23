@@ -1,0 +1,45 @@
+<tr id="head-row-{{ head.id }}" class="hover:bg-slate-50 transition {% if not head.is_active %}opacity-60 bg-slate-50/50{% endif %}">
+    <td class="w-10 px-3 py-3 text-center align-middle"><input type="checkbox" value="{{ head.id }}" class="abms-row-select rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4"></td>
+    <td class="px-4 py-3 font-mono text-slate-500 text-xs">{{ head.display_order }}</td>
+    <td class="px-4 py-3 font-mono font-medium text-emerald-800 text-xs">{{ head.code|default:"—" }}</td>
+    <td class="px-4 py-3 font-medium text-slate-700 text-xs whitespace-nowrap">
+        {% if head.major_head %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 border border-slate-200">
+                {{ head.major_head.name }}
+            </span>
+        {% else %}
+            <span class="text-slate-400">—</span>
+        {% endif %}
+    </td>
+    <td class="px-4 py-3 font-semibold text-slate-800 text-xs">{{ head.name }}</td>
+    <td class="px-4 py-3">
+        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold {% if head.head_type == 'OUTFLOW' %}bg-rose-50 text-rose-700 border border-rose-200{% elif head.head_type == 'INFLOW' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-purple-50 text-purple-700 border border-purple-200{% endif %}">
+            {{ head.get_head_type_display }}
+        </span>
+    </td>
+    <td class="px-4 py-3 text-slate-500 text-xs">{{ head.description|default:"—"|truncatechars:40 }}</td>
+    <td class="px-4 py-3">
+        {% if head.is_active %}
+        <span class="inline-flex items-center text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+            Active
+        </span>
+        {% else %}
+        <span class="inline-flex items-center text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span>
+            Inactive
+        </span>
+        {% endif %}
+    </td>
+    <td class="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+        <a href="{% url 'masters:account_head_update' head.id %}" class="text-xs text-slate-600 hover:text-emerald-700 font-medium px-2 py-1 bg-slate-100 hover:bg-emerald-50 rounded transition">
+            Edit
+        </a>
+        <button hx-post="{% url 'masters:account_head_toggle_active' head.id %}"
+                hx-target="#head-row-{{ head.id }}"
+                hx-swap="outerHTML"
+                class="text-xs {% if head.is_active %}text-amber-700 hover:bg-amber-50 bg-amber-50/50{% else %}text-emerald-700 hover:bg-emerald-50 bg-emerald-50/50{% endif %} font-medium px-2 py-1 rounded transition border border-slate-200">
+            {% if head.is_active %}Deactivate{% else %}Activate{% endif %}
+        </button>
+    </td>
+</tr>

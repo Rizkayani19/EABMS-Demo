@@ -1,0 +1,22 @@
+{% with name=request.resolver_match.url_name %}
+<nav aria-label="Breadcrumb" class="mb-4 text-xs text-slate-500">
+    <ol class="flex items-center gap-1.5 flex-wrap">
+        <li><a href="{% url 'core:home' %}" class="hover:text-emerald-700">Home</a></li>
+        {% if name == 'home' %}
+        {% elif 'transaction' in name or 'inflow' in name or 'outflow' in name %}
+            <li class="text-slate-300">/</li><li>Transactions</li>
+        {% elif 'budget' in name %}
+            <li class="text-slate-300">/</li><li>Budget</li>
+        {% elif 'reimbursement' in name %}
+            <li class="text-slate-300">/</li><li>Reimbursements</li>
+        {% elif 'report' in request.path %}
+            <li class="text-slate-300">/</li><li>Analytics</li>
+        {% elif 'masters' in request.path or 'account-head' in request.path or 'opening-balance' in request.path or 'financial-year' in request.path %}
+            <li class="text-slate-300">/</li><li>Masters</li>
+        {% elif 'help' in request.path or 'users' in request.path or 'audit-log' in request.path %}
+            <li class="text-slate-300">/</li><li>Governance</li>
+        {% endif %}
+        {% if name != 'home' %}<li class="text-slate-300">/</li><li class="font-medium text-slate-700">{{ name|cut:'_'|title }}</li>{% endif %}
+    </ol>
+</nav>
+{% endwith %}

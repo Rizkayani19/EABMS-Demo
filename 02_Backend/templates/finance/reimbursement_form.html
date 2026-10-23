@@ -1,0 +1,72 @@
+﻿{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{% if form.instance.pk %}Edit Reimbursement{% else %}New Reimbursement{% endif %} — EABMS{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-200">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800 tracking-tight">
+                {% if form.instance.pk %}Edit Reimbursement{% else %}New Reimbursement{% endif %}
+            </h1>
+            <p class="text-xs text-slate-500 mt-1">{{ request.account.name }} — {{ request.fy.name }}</p>
+        </div>
+        <a href="{% url 'core:reimbursement_list' %}" class="text-sm font-semibold text-slate-500 hover:text-slate-800 transition">← Back</a>
+    </div>
+
+    <!-- Messages -->
+    {% for message in messages %}
+    <div class="p-4 rounded-xl text-sm font-medium {% if message.tags == 'success' %}bg-emerald-50 border border-emerald-300 text-emerald-800{% else %}bg-rose-50 border border-rose-200 text-rose-700{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+        <div class="px-6 py-4 border-b border-slate-100">
+            <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Reimbursement Details</h2>
+        </div>
+        <form method="post" enctype="multipart/form-data" class="p-6 space-y-5">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <div class="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-sm">
+                {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {% for field in form %}
+                {% if field.name != 'document' %}
+                <div class="{% if field.name == 'remarks' %}sm:col-span-2{% endif %}">
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5" for="{{ field.id_for_label }}">
+                        {{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}
+                    </label>
+                    <div class="[&>select]:w-full [&>select]:border [&>select]:border-slate-300 [&>select]:rounded-lg [&>select]:px-3 [&>select]:py-2 [&>select]:text-sm [&>select]:focus:ring-2 [&>select]:focus:ring-emerald-500 [&>input]:w-full [&>input]:border [&>input]:border-slate-300 [&>input]:rounded-lg [&>input]:px-3 [&>input]:py-2 [&>input]:text-sm [&>input]:focus:ring-2 [&>input]:focus:ring-emerald-500 [&>textarea]:w-full [&>textarea]:border [&>textarea]:border-slate-300 [&>textarea]:rounded-lg [&>textarea]:px-3 [&>textarea]:py-2 [&>textarea]:text-sm [&>textarea]:focus:ring-2 [&>textarea]:focus:ring-emerald-500">
+                        {{ field }}
+                    </div>
+                    {% if field.errors %}<p class="text-xs text-rose-600 mt-1 font-medium">{{ field.errors.0 }}</p>{% endif %}
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- Document Upload -->
+            <div class="border-t border-slate-100 pt-5">
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+                    Attach Document <span class="text-slate-400 font-normal normal-case">(optional)</span>
+                </label>
+                <input type="file" name="document" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 flex justify-between">
+                <a href="{% url 'core:reimbursement_list' %}" class="px-5 py-2.5 bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold text-sm rounded-lg transition">Discard</a>
+                <button type="submit" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg transition shadow-sm">Save Reimbursement</button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

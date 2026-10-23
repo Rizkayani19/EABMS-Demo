@@ -1,0 +1,297 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ active_fund_name|default:"EABMS" }} — Enterprise Accounts &amp; Business Management System (EABMS){% endblock %}</title>
+
+    <!-- Fund Favicon & Standalone Desktop App Icons -->
+    {% if current_account.code == 'CPF' or active_fund_code == 'CPF' %}
+    <link rel="icon" type="image/x-icon" href="{% static 'icons/cpf.ico' %}">
+    <link rel="shortcut icon" type="image/x-icon" href="{% static 'icons/cpf.ico' %}">
+    <link rel="icon" type="image/png" sizes="256x256" href="{% static 'icons/cpf.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'icons/cpf.png' %}">
+    <meta name="theme-color" content="#064e3b">
+    {% elif current_account.code == 'EWF' or active_fund_code == 'EWF' %}
+    <link rel="icon" type="image/x-icon" href="{% static 'icons/ewf.ico' %}">
+    <link rel="shortcut icon" type="image/x-icon" href="{% static 'icons/ewf.ico' %}">
+    <link rel="icon" type="image/png" sizes="256x256" href="{% static 'icons/ewf.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'icons/ewf.png' %}">
+    <meta name="theme-color" content="#0f172a">
+    {% else %}
+    <link rel="icon" type="image/x-icon" href="{% static 'icons/ngl.ico' %}">
+    <link rel="shortcut icon" type="image/x-icon" href="{% static 'icons/ngl.ico' %}">
+    <link rel="icon" type="image/png" sizes="256x256" href="{% static 'icons/ngl.png' %}">
+    <link rel="apple-touch-icon" href="{% static 'icons/ngl.png' %}">
+    <meta name="theme-color" content="#0f172a">
+    {% endif %}
+    <link rel="manifest" href="{% url 'core:web_manifest' %}">
+
+    <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+    <link rel="stylesheet" href="{% static 'css/tom-select.css' %}">
+    <script src="{% static 'js/htmx.js' %}"></script>
+    <script src="{% static 'js/tom-select.complete.min.js' %}"></script>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <style>
+        #abms-sidebar.sidebar-collapsed{width:4.25rem}.sidebar-collapsed .sidebar-label,.sidebar-collapsed .sidebar-section-label,.sidebar-collapsed .sidebar-group-heading,.sidebar-collapsed .sidebar-group-toggle span:first-child,.sidebar-collapsed .sidebar-footer-label{display:none}.sidebar-collapsed .sidebar-group-toggle{justify-content:center}.sidebar-collapsed .sidebar-link{justify-content:center;padding-left:.5rem;padding-right:.5rem}.sidebar-collapsed .sidebar-icon{margin:0}.sidebar-collapsed #sidebar-collapse{transform:rotate(180deg)}
+        .sidebar-group-content.is-collapsed{display:none}
+        #sidebar-backdrop{display:none}.sidebar-mobile-open #sidebar-backdrop{display:block}
+        @media (max-width:767px){#abms-sidebar{position:fixed;left:0;top:4rem;bottom:0;z-index:50;width:18rem;transform:translateX(-100%);box-shadow:0 20px 40px rgba(15,23,42,.25)}#abms-sidebar.sidebar-mobile-visible{transform:translateX(0)}#sidebar-backdrop{position:fixed;inset:4rem 0 0 0;z-index:40;background:rgba(15,23,42,.45)}#abms-sidebar.sidebar-mobile-visible + #sidebar-backdrop{display:block}}
+        /* Transaction entry dropdown visibility & z-index */
+        #transaction-entry-form .ts-wrapper{position:relative!important;z-index:200!important}
+        #transaction-entry-form .ts-wrapper.focus,#transaction-entry-form .ts-wrapper.dropdown-active{z-index:20000!important}
+        #transaction-entry-form .ts-dropdown{z-index:20001!important;max-height:24rem!important;min-height:7rem!important;overflow-y:auto!important}
+        #transaction-entry-form .ts-dropdown-content{max-height:23rem!important;overflow-y:auto!important}
+        #transaction-entry-form .ts-dropdown .option{padding:.5rem .7rem!important;line-height:1.25rem!important;min-height:2rem!important}
+        #transaction-entry-form > section:focus-within{z-index:20000!important}
+        /* === MAIN PAGE VERTICAL SCROLLBAR (force visible on Windows 10/Chrome/Edge) === */
+        html { height: 100%; }
+        body { height: 100%; overflow: hidden; }
+        #abms-main-content {
+            overflow-y: scroll !important;
+            scrollbar-gutter: stable !important;
+        }
+        /* WebKit-based browsers (Chrome/Edge on Windows) */
+        #abms-main-content::-webkit-scrollbar {
+            width: 14px !important;
+            background: #e2e8f0 !important;
+            display: block !important;
+        }
+        #abms-main-content::-webkit-scrollbar-track {
+            background: #e2e8f0 !important;
+            border-left: 1px solid #cbd5e1 !important;
+        }
+        #abms-main-content::-webkit-scrollbar-thumb {
+            background: #94a3b8 !important;
+            border-radius: 7px !important;
+            border: 3px solid #e2e8f0 !important;
+            min-height: 40px !important;
+        }
+        #abms-main-content::-webkit-scrollbar-thumb:hover {
+            background: #475569 !important;
+        }
+        /* Firefox */
+        #abms-main-content {
+            scrollbar-width: thin !important;
+            scrollbar-color: #94a3b8 #e2e8f0 !important;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full flex flex-col antialiased text-slate-800" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    {% if user.is_authenticated %}
+        {% include 'partials/header.html' %}
+        <div class="flex flex-1 overflow-hidden relative">
+            {% include 'partials/sidebar.html' %}
+            <div id="sidebar-backdrop" aria-hidden="true"></div>
+            <main id="abms-main-content" class="flex-1 overflow-y-scroll p-4 md:p-8 bg-slate-50 min-w-0">
+                <div class="max-w-7xl mx-auto">
+                    {% include 'partials/messages.html' %}
+                    {% include 'partials/breadcrumbs.html' %}
+                    {% block content %}{% endblock %}
+                </div>
+            </main>
+        </div>
+    {% else %}
+        <main class="flex-1 flex items-center justify-center p-4 bg-slate-900 min-h-screen" style="background-color: #0b1120 !important; min-height: 100vh !important;"><div class="w-full max-w-md">{% include 'partials/messages.html' %}{% block auth_content %}{% endblock %}</div></main>
+    {% endif %}
+
+    {% if user.is_authenticated %}
+        <!-- Floating Bulk Action Toolbar -->
+        <div id="abms-bulk-toolbar" class="hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 bg-slate-900/95 backdrop-blur text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-4 transition-all duration-300">
+            <div class="flex items-center gap-2">
+                <span class="inline-flex items-center justify-center bg-emerald-500 text-slate-900 text-xs font-extrabold px-2.5 py-0.5 rounded-full" id="abms-bulk-count">0</span>
+                <span class="text-xs font-semibold text-slate-200">selected</span>
+            </div>
+            <div class="h-4 w-px bg-slate-700"></div>
+            <button type="button" id="abms-bulk-select-all-btn" class="text-xs text-slate-300 hover:text-white underline font-medium cursor-pointer">Select All</button>
+            <button type="button" id="abms-bulk-deselect-btn" class="text-xs text-slate-400 hover:text-slate-200 font-medium cursor-pointer">Deselect All</button>
+            <div class="h-4 w-px bg-slate-700"></div>
+            <button type="button" id="abms-bulk-delete-trigger" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shadow-sm cursor-pointer">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                Delete Selected
+            </button>
+        </div>
+
+        <!-- Universal Bulk Delete Confirmation Modal -->
+        <div id="abms-bulk-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+                <div class="flex items-center gap-3 text-rose-600 mb-3">
+                    <div class="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-5 h-5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">Confirm Bulk Deletion</h3>
+                        <p class="text-xs text-slate-500">This action will be logged in the system audit trail.</p>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-600 my-3" id="abms-bulk-modal-msg">
+                    Are you sure you want to permanently delete the selected record(s)?
+                </p>
+                <form method="post" id="abms-bulk-form" class="mt-5 flex justify-end gap-2">
+                    {% csrf_token %}
+                    <div id="abms-bulk-hidden-inputs"></div>
+                    <button type="button" id="abms-bulk-modal-cancel" class="px-4 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer">Cancel</button>
+                    <button type="submit" class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-sm cursor-pointer">Confirm & Delete</button>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
+    <script>
+        function initSearchableSelects(container){const root=container||document;const targetSelects=(root.tagName==='SELECT')?[root]:root.querySelectorAll('select:not([name="page_size"]):not(.no-search)');targetSelects.forEach(function(el){if(!el||el.name==='page_size'||el.classList.contains('no-search')||el.closest('#transaction-entry-form'))return;if(el.tomselect){return}try{const isCompact=el.classList.contains('text-xs')||el.closest('.filter-panel')||el.closest('form[method="get"]');new TomSelect(el,{create:false,allowEmptyOption:true,maxOptions:1000,placeholder:el.getAttribute('placeholder')||'Search or select...',controlClass:isCompact?'ts-control ts-compact':'ts-control',dropdownClass:isCompact?'ts-dropdown ts-compact':'ts-dropdown',render:{no_results:function(data,escape){return '<div class="no-results p-2 text-xs text-slate-400">No matches found for "'+escape(data.input)+'"</div>'}},onChange:function(){el.dispatchEvent(new Event('change',{bubbles:true}))}})}catch(err){console.debug('TomSelect init skipped:',err)}})}
+        function initSidebar(){const sidebar=document.getElementById('abms-sidebar');if(!sidebar)return;const collapseBtn=document.getElementById('sidebar-collapse');const mobileOpen=document.getElementById('sidebar-mobile-open');const backdrop=document.getElementById('sidebar-backdrop');const collapsed=localStorage.getItem('abms_sidebar_collapsed')==='1';if(collapsed&&window.innerWidth>=768)sidebar.classList.add('sidebar-collapsed');collapseBtn&&collapseBtn.addEventListener('click',function(){sidebar.classList.toggle('sidebar-collapsed');localStorage.setItem('abms_sidebar_collapsed',sidebar.classList.contains('sidebar-collapsed')?'1':'0')});mobileOpen&&mobileOpen.addEventListener('click',function(){sidebar.classList.add('sidebar-mobile-visible')});backdrop&&backdrop.addEventListener('click',function(){sidebar.classList.remove('sidebar-mobile-visible')});document.querySelectorAll('.sidebar-group-toggle').forEach(function(btn){const group=btn.closest('.sidebar-group');const key='abms_group_'+(group&&group.dataset.group||'');const closed=localStorage.getItem(key)==='0';if(closed){btn.setAttribute('aria-expanded','false');group.querySelector('.sidebar-group-content').classList.add('is-collapsed');btn.querySelector('.sidebar-group-chevron').textContent='⌄'}btn.addEventListener('click',function(){const content=group.querySelector('.sidebar-group-content');const open=content.classList.toggle('is-collapsed')===false;btn.setAttribute('aria-expanded',String(open));btn.querySelector('.sidebar-group-chevron').textContent=open?'⌃':'⌄';localStorage.setItem(key,open?'1':'0')})});window.addEventListener('resize',function(){if(window.innerWidth>=768)sidebar.classList.remove('sidebar-mobile-visible')})}
+        function toIsoDate(value){const text=(value||'').trim();if(!text)return '';if(/^\d{4}-\d{2}-\d{2}$/.test(text))return text;const m=text.match(/^(\d{2})-(\d{2})-(\d{4})$/);return m?m[3]+'-'+m[2]+'-'+m[1]:''}
+        function initTransactionDatePickers(container){const root=container||document;root.querySelectorAll('input[name="date_from"],input[name="date_to"],#bulk-editor [data-field="transaction_date"]').forEach(function(el){if(el.dataset.datePickerReady==='1')return;const iso=toIsoDate(el.value);el.type='date';if(iso)el.value=iso;el.title=el.title||'Select a date';el.dataset.datePickerReady='1'});}
+
+        function initBulkSelection(){
+            const toolbar = document.getElementById('abms-bulk-toolbar');
+            const countBadge = document.getElementById('abms-bulk-count');
+            const modal = document.getElementById('abms-bulk-modal');
+            const modalMsg = document.getElementById('abms-bulk-modal-msg');
+            const modalCancel = document.getElementById('abms-bulk-modal-cancel');
+            const bulkForm = document.getElementById('abms-bulk-form');
+            const hiddenInputs = document.getElementById('abms-bulk-hidden-inputs');
+            const deleteTrigger = document.getElementById('abms-bulk-delete-trigger');
+            const selectAllBtn = document.getElementById('abms-bulk-select-all-btn');
+            const deselectBtn = document.getElementById('abms-bulk-deselect-btn');
+
+            function getActiveTable() {
+                const checkboxes = document.querySelectorAll('.abms-row-select');
+                if (checkboxes.length === 0) return null;
+                const first = checkboxes[0];
+                return first.closest('table') || document;
+            }
+
+            function updateToolbar() {
+                const checked = document.querySelectorAll('.abms-row-select:checked');
+                const total = document.querySelectorAll('.abms-row-select');
+                const masterCheckboxes = document.querySelectorAll('.abms-select-all');
+
+                if (countBadge) countBadge.textContent = checked.length;
+                if (toolbar) {
+                    if (checked.length > 0) {
+                        toolbar.classList.remove('hidden');
+                    } else {
+                        toolbar.classList.add('hidden');
+                    }
+                }
+
+                masterCheckboxes.forEach(function(master) {
+                    if (total.length === 0) {
+                        master.checked = false;
+                        master.indeterminate = false;
+                    } else if (checked.length === total.length) {
+                        master.checked = true;
+                        master.indeterminate = false;
+                    } else if (checked.length > 0) {
+                        master.checked = false;
+                        master.indeterminate = true;
+                    } else {
+                        master.checked = false;
+                        master.indeterminate = false;
+                    }
+                });
+            }
+
+            document.querySelectorAll('.abms-select-all').forEach(function(master) {
+                if (master.dataset.bulkInit === '1') return;
+                master.dataset.bulkInit = '1';
+                master.addEventListener('change', function() {
+                    const table = master.closest('table') || document;
+                    const rows = table.querySelectorAll('.abms-row-select');
+                    rows.forEach(function(r) { r.checked = master.checked; });
+                    updateToolbar();
+                });
+            });
+
+            document.querySelectorAll('.abms-row-select').forEach(function(row) {
+                if (row.dataset.bulkInit === '1') return;
+                row.dataset.bulkInit = '1';
+                row.addEventListener('change', function() {
+                    updateToolbar();
+                });
+            });
+
+            if (selectAllBtn && !selectAllBtn.dataset.bound) {
+                selectAllBtn.dataset.bound = '1';
+                selectAllBtn.addEventListener('click', function() {
+                    document.querySelectorAll('.abms-row-select').forEach(function(r) { r.checked = true; });
+                    updateToolbar();
+                });
+            }
+
+            if (deselectBtn && !deselectBtn.dataset.bound) {
+                deselectBtn.dataset.bound = '1';
+                deselectBtn.addEventListener('click', function() {
+                    document.querySelectorAll('.abms-row-select').forEach(function(r) { r.checked = false; });
+                    updateToolbar();
+                });
+            }
+
+            if (deleteTrigger && !deleteTrigger.dataset.bound) {
+                deleteTrigger.dataset.bound = '1';
+                deleteTrigger.addEventListener('click', function() {
+                    const checked = document.querySelectorAll('.abms-row-select:checked');
+                    if (checked.length === 0) return;
+
+                    const table = checked[0].closest('table');
+                    const actionUrl = (table && table.dataset.bulkDeleteUrl) || (bulkForm && bulkForm.dataset.defaultUrl) || '';
+                    if (!actionUrl) {
+                        console.error('No data-bulk-delete-url attribute found on the table element.');
+                        return;
+                    }
+
+                    if (modalMsg) {
+                        modalMsg.textContent = 'Are you sure you want to permanently delete the ' + checked.length + ' selected item(s)? This action will be logged in the audit trail.';
+                    }
+
+                    if (hiddenInputs) {
+                        hiddenInputs.innerHTML = '';
+                        checked.forEach(function(cb) {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = 'selected_ids';
+                            input.value = cb.value;
+                            hiddenInputs.appendChild(input);
+                        });
+                    }
+
+                    if (bulkForm) bulkForm.action = actionUrl;
+                    if (modal) modal.classList.remove('hidden');
+                });
+            }
+
+            if (modalCancel && !modalCancel.dataset.bound) {
+                modalCancel.dataset.bound = '1';
+                modalCancel.addEventListener('click', function() {
+                    if (modal) modal.classList.add('hidden');
+                });
+            }
+
+            updateToolbar();
+        }
+
+        document.addEventListener('DOMContentLoaded',function(){
+            initSearchableSelects(document);
+            initSidebar();
+            initTransactionDatePickers(document);
+            initBulkSelection();
+        });
+        if(window.htmx){
+            document.body.addEventListener('htmx:afterSwap',function(evt){
+                initSearchableSelects(evt.detail.target);
+                initTransactionDatePickers(evt.detail.target);
+                initBulkSelection();
+            });
+            document.body.addEventListener('htmx:afterSettle',function(evt){
+                initSearchableSelects(evt.detail.target);
+                initTransactionDatePickers(evt.detail.target);
+                initBulkSelection();
+            });
+        }
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

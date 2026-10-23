@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6">
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h1 class="text-2xl font-bold">Budget Analysis & Future Budget Planning</h1>
+      <p class="text-sm text-gray-600 mt-1">Historical actuals are the financial SSOT; future figures are controlled proposals.</p>
+    </div>
+    {% if analysis %}
+    <a id="budget-excel-export" class="px-4 py-2 rounded bg-gray-900 text-white text-sm" href="{% url 'core:budget_planning_excel_export' %}{% if target_fy %}?target_fy={{ target_fy.id }}{% endif %}">Export Management Workbook</a>
+    {% endif %}
+  </div>
+
+  {% if analysis %}
+  <section class="mt-6 rounded-lg border bg-white p-5">
+    <h2 class="text-lg font-semibold">Existing Budget Analysis — {{ source_fy.name }}</h2>
+    <div class="grid md:grid-cols-4 gap-4 mt-4">
+      <div><div class="text-xs text-gray-500">Approved Budget</div><div class="text-xl font-semibold">Rs {{ analysis.total_budget|floatformat:2 }}</div></div>
+      <div><div class="text-xs text-gray-500">Actual Outflow</div><div class="text-xl font-semibold">Rs {{ analysis.total_actual|floatformat:2 }}</div></div>
+      <div><div class="text-xs text-gray-500">Variance</div><div class="text-xl font-semibold">Rs {{ analysis.total_variance|floatformat:2 }}</div></div>
+      <div><div class="text-xs text-gray-500">Utilisation</div><div class="text-xl font-semibold">{{ analysis.utilisation_pct|floatformat:2 }}%</div></div>
+    </div>
+    <div class="overflow-x-auto mt-5">
+      <table class="min-w-full text-sm">
+        <thead><tr class="border-b"><th class="text-left p-2">Account Head</th><th class="p-2">Budget</th><th class="p-2">Actual</th><th class="p-2">Variance</th><th class="p-2">Utilisation</th><th class="p-2">Status</th></tr></thead>
+        <tbody>{% for row in analysis.rows %}<tr class="border-b"><td class="p-2">{{ row.account_head }}</td><td class="p-2 text-right">Rs {{ row.budget|floatformat:2 }}</td><td class="p-2 text-right">Rs {{ row.actual|floatformat:2 }}</td><td class="p-2 text-right">Rs {{ row.variance|floatformat:2 }}</td><td class="p-2 text-right">{{ row.utilisation_pct|floatformat:2 }}%</td><td class="p-2 text-center">{{ row.status }}</td></tr>{% endfor %}</tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="mt-6 rounded-lg border bg-white p-5">
+    <h2 class="text-lg font-semibold">Material Variance Flags</h2>
+    {% if variance_flags %}<ul class="mt-3 space-y-2">{% for flag in variance_flags %}<li class="border rounded p-2">{{ flag.account_head }} — {{ flag.flag }} — {{ flag.utilisation_pct|floatformat:2 }}%</li>{% endfor %}</ul>{% else %}<p class="mt-3 text-sm text-gray-600">No material variance flags at the current threshold.</p>{% endif %}
+  </section>
+  {% endif %}
+
+  <section class="mt-6 rounded-lg border bg-white p-5">
+    <h2 class="text-lg font-semibold">Future Budget Planning</h2>
+    <form method="get" class="mt-4 flex flex-wrap gap-3 items-end">
+      <div><label class="block text-xs text-gray-500">Target Financial Year</label><select name="target_fy" class="border rounded px-3 py-2">{% for fy in financial_years %}<option value="{{ fy.id }}" {% if target_fy and target_fy.id == fy.id %}selected{% endif %}>{{ fy.name }}</option>{% endfor %}</select></div>
+      <button class="px-4 py-2 rounded bg-gray-900 text-white">Load Future Budget</button>
+    </form>
+
+    {% if future_summary %}
+    <div class="grid md:grid-cols-5 gap-4 mt-5">
+      <div><div class="text-xs text-gray-500">Previous Budget</div><div class="font-semibold">Rs {{ future_summary.previous_budget_total|floatformat:2 }}</div></div>
+      <div><div class="text-xs text-gray-500">Previous Actual</div><div class="font-semibold">Rs {{ future_summary.previous_actual_total|floatformat:2 }}</div></div>
+      <div><div class="text-xs text-gray-500">System Suggested</div><div class="font-semibold">Rs {{ future_summary.system_suggested_total|floatformat:2 }}</div></div>
+      <div><div class="text-xs text-gray-500">Management Proposed</div><div class="font-semibold">Rs {{ future_summary.user_proposed_total|floatformat:2 }}</div></div>
+      <div><div class="text-xs text-gray-500">Approved</div><div class="font-semibold">Rs {{ future_summary.approved_total|floatformat:2 }}</div></div>
+    </div>
+
+    <div class="mt-5 rounded border p-4 bg-gray-50">
+      <h3 class="font-semibold">Management Decision Path</h3>
+      <div class="mt-3 grid md:grid-cols-4 gap-3 text-sm">
+        <div><span class="text-gray-500">Previous Actual</span><br><strong>Rs {{ future_summary.previous_actual_total|floatformat:2 }}</strong></div>
+        <div><span class="text-gray-500">System Suggested</span><br><strong>Rs {{ future_summary.system_suggested_total|floatformat:2 }}</strong></div>
+        <div><span class="text-gray-500">Management Proposed</span><br><strong>Rs {{ future_summary.user_proposed_total|floatformat:2 }}</strong></div>
+        <div><span class="text-gray-500">Approved</span><br><strong>Rs {{ future_summary.approved_total|floatformat:2 }}</strong></div>
+      </div>
+      <p class="mt-3 text-xs text-gray-600">The system suggestion is evidence-based. Management may adjust the proposal using documented known changes, personnel requirements and one-time expenditure treatment.</p>
+    </div>
+
+    <div class="mt-5 flex flex-wrap gap-3">
+      <a class="underline text-sm" href="{% url 'core:future_budget_detail' future_budget.pk %}">Open Future Budget</a>
+      <a class="underline text-sm" href="{% url 'core:future_budget_excel' future_budget.pk %}">Export Future Budget Excel</a>
+      <a class="underline text-sm" href="{% url 'core:future_budget_pdf' future_budget.pk %}">View Future Budget PDF</a>
+    </div>
+    {% elif target_fy %}
+      <p class="mt-4 text-sm text-gray-600">No future-budget draft exists for this Source/Target FY pair yet. Build it from the Future Budget workflow.</p>
+    {% endif %}
+  </section>
+
+  {% if organisational_analysis %}
+  <section class="mt-6 rounded-lg border bg-white p-5" id="organisational-analysis">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h2 class="text-lg font-semibold">Organisational Future Budget Analysis</h2>
+        <p class="text-sm text-gray-600 mt-1">Future amounts come only from approved/proposed future allocations. Previous actuals come independently from the transaction SSOT.</p>
+      </div>
+      <div class="text-sm text-right"><div>Reconciled lines: <strong>{{ organisational_analysis.reconciled_lines }}</strong></div><div>Unreconciled: <strong>{{ organisational_analysis.unreconciled_lines }}</strong></div></div>
+    </div>
+
+    <div class="mt-5 grid md:grid-cols-2 gap-4">
+      <div class="border rounded p-4 bg-gray-50">
+        <label class="block text-sm font-semibold">Unit Filter</label>
+        <select id="org-unit-filter" multiple size="6" class="mt-2 w-full border rounded px-3 py-2 text-sm">
+          {% for row in organisational_analysis.unit_rows %}<option value="{{ row.unit }}">{{ row.unit }}</option>{% endfor %}
+        </select>
+        <p class="text-xs text-gray-500 mt-1">Ctrl/long-press to select multiple. Leave empty for All.</p>
+      </div>
+      <div class="border rounded p-4 bg-gray-50">
+        <label class="block text-sm font-semibold">Internal Section Filter</label>
+        <select id="org-section-filter" multiple size="6" class="mt-2 w-full border rounded px-3 py-2 text-sm">
+          {% for row in organisational_analysis.section_rows %}<option value="{{ row.internal_section }}">{{ row.internal_section }}</option>{% endfor %}
+        </select>
+        <p class="text-xs text-gray-500 mt-1">Sections are independent of Units; one Unit may be managed by multiple Sections.</p>
+      </div>
+    </div>
+
+    <div class="mt-6">
+      <h3 class="font-semibold">Unit-wise Future vs Previous Actual</h3>
+      <div class="overflow-x-auto mt-2">
+        <table class="min-w-full text-sm" id="unit-analysis-table">
+          <thead><tr class="border-b"><th class="text-left p-2">Unit</th><th class="p-2">Previous Actual</th><th class="p-2">Future Allocated</th><th class="p-2">Difference</th><th class="p-2">Change %</th></tr></thead>
+          <tbody>{% for row in organisational_analysis.unit_rows %}<tr class="border-b org-row" data-unit="{{ row.unit }}"><td class="p-2">{{ row.unit }}</td><td class="p-2 text-right">Rs {{ row.previous_actual|floatformat:2 }}</td><td class="p-2 text-right">Rs {{ row.future_allocated|floatformat:2 }}</td><td class="p-2 text-right">Rs {{ row.difference|floatformat:2 }}</td><td class="p-2 text-right">{% if row.change_pct is not None %}{{ row.change_pct|floatformat:2 }}%{% else %}—{% endif %}</td></tr>{% endfor %}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="mt-6">
+      <h3 class="font-semibold">Internal Section-wise Future vs Previous Actual</h3>
+      <div class="overflow-x-auto mt-2">
+        <table class="min-w-full text-sm" id="section-analysis-table">
+          <thead><tr class="border-b"><th class="text-left p-2">Internal Section</th><th class="p-2">Previous Actual</th><th class="p-2">Future Allocated</th><th class="p-2">Difference</th><th class="p-2">Change %</th></tr></thead>
+          <tbody>{% for row in organisational_analysis.section_rows %}<tr class="border-b org-section-row" data-section="{{ row.internal_section }}"><td class="p-2">{{ row.internal_section }}</td><td class="p-2 text-right">Rs {{ row.previous_actual|floatformat:2 }}</td><td class="p-2 text-right">Rs {{ row.future_allocated|floatformat:2 }}</td><td class="p-2 text-right">Rs {{ row.difference|floatformat:2 }}</td><td class="p-2 text-right">{% if row.change_pct is not None %}{{ row.change_pct|floatformat:2 }}%{% else %}—{% endif %}</td></tr>{% endfor %}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="mt-6">
+      <h3 class="font-semibold">Unit + Internal Section Analysis</h3>
+      <div class="overflow-x-auto mt-2 max-h-96">
+        <table class="min-w-full text-sm" id="matrix-analysis-table">
+          <thead class="sticky top-0 bg-white"><tr class="border-b"><th class="text-left p-2">Unit</th><th class="text-left p-2">Internal Section</th><th class="p-2">Future Allocated</th></tr></thead>
+          <tbody>{% for row in organisational_analysis.matrix_rows %}<tr class="border-b org-matrix-row" data-unit="{{ row.unit }}" data-section="{{ row.internal_section }}"><td class="p-2">{{ row.unit }}</td><td class="p-2">{{ row.internal_section }}</td><td class="p-2 text-right">Rs {{ row.future_allocated|floatformat:2 }}</td></tr>{% endfor %}</tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="mt-6 grid md:grid-cols-2 gap-6">
+      <div>
+        <h3 class="font-semibold">Account Head + Unit</h3>
+        <div class="overflow-x-auto mt-2 max-h-80"><table class="min-w-full text-sm"><thead><tr class="border-b"><th class="text-left p-2">Account Head</th><th class="text-left p-2">Unit</th><th class="p-2">Future</th></tr></thead><tbody>{% for row in organisational_analysis.head_unit_rows %}<tr class="border-b"><td class="p-2">{{ row.account_head }}</td><td class="p-2">{{ row.unit }}</td><td class="p-2 text-right">Rs {{ row.future_allocated|floatformat:2 }}</td></tr>{% endfor %}</tbody></table></div>
+      </div>
+      <div>
+        <h3 class="font-semibold">Account Head + Internal Section</h3>
+        <div class="overflow-x-auto mt-2 max-h-80"><table class="min-w-full text-sm"><thead><tr class="border-b"><th class="text-left p-2">Account Head</th><th class="text-left p-2">Section</th><th class="p-2">Future</th></tr></thead><tbody>{% for row in organisational_analysis.head_section_rows %}<tr class="border-b"><td class="p-2">{{ row.account_head }}</td><td class="p-2">{{ row.internal_section }}</td><td class="p-2 text-right">Rs {{ row.future_allocated|floatformat:2 }}</td></tr>{% endfor %}</tbody></table></div>
+      </div>
+    </div>
+
+    <div class="mt-6">
+      <h3 class="font-semibold">Future Budget Line Reconciliation</h3>
+      <div class="overflow-x-auto mt-2"><table class="min-w-full text-sm"><thead><tr class="border-b"><th class="text-left p-2">Account Head</th><th class="p-2">Target</th><th class="p-2">Allocated</th><th class="p-2">Difference</th><th class="p-2">Status</th></tr></thead><tbody>{% for row in organisational_analysis.line_reconciliation %}<tr class="border-b"><td class="p-2">{{ row.account_head }}</td><td class="p-2 text-right">Rs {{ row.target|floatformat:2 }}</td><td class="p-2 text-right">Rs {{ row.allocated|floatformat:2 }}</td><td class="p-2 text-right">Rs {{ row.difference|floatformat:2 }}</td><td class="p-2 text-center">{% if row.is_reconciled %}RECONCILED{% else %}UNRECONCILED{% endif %}</td></tr>{% endfor %}</tbody></table></div>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if future_budget %}
+  <section class="mt-6 rounded-lg border bg-white p-5">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div><h2 class="text-lg font-semibold">Organisational Monetary Allocation</h2><p class="text-sm text-gray-600">Every Future Budget Line must be allocated exactly to its approved/proposed/system target before organisational allocation is considered reconciled.</p></div>
+      <a class="px-3 py-2 rounded border text-sm" href="{% url 'core:future_budget_detail' future_budget.pk %}">Open Line Management</a>
+    </div>
+    <div class="mt-4 grid md:grid-cols-3 gap-4 text-sm">
+      <div class="border rounded p-3"><strong>Unit allocation</strong><br>Allocate by Unit, including multiple Units where required.</div>
+      <div class="border rounded p-3"><strong>Internal Section</strong><br>Allocate by FIN, HR, EVT, TRV, ADM, POL, Security, Coordination and other configured Sections.</div>
+      <div class="border rounded p-3"><strong>Combined attribution</strong><br>Unit + Internal Section may be recorded together without forcing one-to-one organisational ownership.</div>
+    </div>
+    <p class="mt-4 text-xs text-gray-600">A Unit normally has a responsible Internal Section, but this is not mandatory. A Unit may be managed by multiple Sections, and a legitimate transaction/budget requirement may involve multiple Units and/or multiple Sections.</p>
+  </section>
+  {% endif %}
+</div>
+
+{% if organisational_analysis %}
+<script>
+(function () {
+  const unitFilter = document.getElementById('org-unit-filter');
+  const sectionFilter = document.getElementById('org-section-filter');
+  const exportLink = document.getElementById('budget-excel-export');
+  const selected = (el) => Array.from(el.selectedOptions).map(o => o.value);
+  function matches(value, selectedValues) { return selectedValues.length === 0 || selectedValues.includes(value); }
+  function updateExportLink() {
+    const url = new URL(exportLink.href, window.location.origin);
+    url.searchParams.delete('unit');
+    url.searchParams.delete('section');
+    selected(unitFilter).forEach(v => url.searchParams.append('unit', v));
+    selected(sectionFilter).forEach(v => url.searchParams.append('section', v));
+    exportLink.href = url.toString();
+  }
+  function applyFilters() {
+    const units = selected(unitFilter);
+    const sections = selected(sectionFilter);
+    document.querySelectorAll('.org-row').forEach(row => { row.hidden = !matches(row.dataset.unit, units); });
+    document.querySelectorAll('.org-section-row').forEach(row => { row.hidden = !matches(row.dataset.section, sections); });
+    document.querySelectorAll('.org-matrix-row').forEach(row => {
+      row.hidden = !matches(row.dataset.unit, units) || !matches(row.dataset.section, sections);
+    });
+    updateExportLink();
+  }
+  unitFilter.addEventListener('change', applyFilters);
+  sectionFilter.addEventListener('change', applyFilters);
+  updateExportLink();
+})();
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-6">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold">Future Budget Organisational Allocation</h1>
+    <p class="text-sm text-gray-600 mt-1">{{ line.account_head.name }} — {{ future_budget.target_fy.name }}</p>
+  </div>
+
+  <div class="grid md:grid-cols-4 gap-4 mb-6">
+    <div class="rounded-lg border p-4"><div class="text-xs text-gray-500">Allocation Target</div><div class="text-xl font-semibold">Rs {{ target_amount|floatformat:2 }}</div></div>
+    <div class="rounded-lg border p-4"><div class="text-xs text-gray-500">Allocated</div><div class="text-xl font-semibold">Rs {{ allocated_amount|floatformat:2 }}</div></div>
+    <div class="rounded-lg border p-4"><div class="text-xs text-gray-500">Difference</div><div class="text-xl font-semibold">Rs {{ difference|floatformat:2 }}</div></div>
+    <div class="rounded-lg border p-4"><div class="text-xs text-gray-500">Status</div><div class="text-xl font-semibold">{% if is_reconciled %}RECONCILED{% else %}NOT RECONCILED{% endif %}</div></div>
+  </div>
+
+  <div class="rounded-lg border p-5 bg-white">
+    <p class="text-sm text-gray-600 mb-4">
+      Each row is a real monetary allocation. Unit and Internal Section are independent dimensions and may be used alone or together. The total must equal the parent target before the allocation can be saved.
+    </p>
+    <form method="post">
+      {% csrf_token %}
+      {{ formset.management_form }}
+      {% if formset.non_form_errors %}
+        <div class="mb-4 rounded border p-3 text-sm">{{ formset.non_form_errors }}</div>
+      {% endif %}
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead>
+            <tr class="border-b">
+              <th class="text-left p-2">Unit</th>
+              <th class="text-left p-2">Internal Section</th>
+              <th class="text-left p-2">Allocated Amount</th>
+              <th class="text-left p-2">Justification</th>
+              <th class="text-left p-2">Remarks</th>
+              <th class="p-2">Delete</th>
+            </tr>
+          </thead>
+          <tbody>
+          {% for form in formset %}
+            <tr class="border-b align-top">
+              {% for hidden in form.hidden_fields %}{{ hidden }}{% endfor %}
+              <td class="p-2">{{ form.unit }}{{ form.unit.errors }}</td>
+              <td class="p-2">{{ form.internal_section }}{{ form.internal_section.errors }}</td>
+              <td class="p-2">{{ form.allocated_amount }}{{ form.allocated_amount.errors }}</td>
+              <td class="p-2">{{ form.justification }}</td>
+              <td class="p-2">{{ form.remarks }}</td>
+              <td class="p-2 text-center">{{ form.DELETE }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="mt-5 flex gap-3">
+        <button type="submit" class="px-4 py-2 rounded bg-gray-900 text-white">Save & Reconcile</button>
+        <a href="{% url 'core:future_budget_detail' future_budget.pk %}" class="px-4 py-2 rounded border">Back</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

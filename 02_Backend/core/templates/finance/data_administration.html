@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+
+{% block title %}Transaction Data Administration — {{ active_fund_name|default:"ABMS" }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+    <div>
+      <div class="flex items-center gap-3">
+        <h1 class="text-2xl font-black tracking-tight text-slate-900">Transaction Data Administration</h1>
+        {% include 'partials/fund_badge.html' with size="sm" %}
+      </div>
+      <p class="text-sm font-medium text-slate-500 mt-1">Controlled batch filtering, audit verification, and soft-deletion of transactions.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <a href="{% url 'core:transaction_list' %}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-300 transition">
+        ◂ Back to Ledger
+      </a>
+    </div>
+  </div>
+
+  <!-- Top Action & Filter Console -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- Step 1: Filter Console (5 Cols) -->
+    <div class="lg:col-span-6 bg-white rounded-2xl p-5 border-2 border-slate-200 shadow-sm">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-800 font-black text-xs flex items-center justify-center">1</span>
+          <h2 class="text-sm font-black text-slate-900 uppercase tracking-wide">Filter &amp; Select Transactions</h2>
+        </div>
+        {% if is_filtered %}
+        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">Filters Active</span>
+        {% endif %}
+      </div>
+
+      <form method="get" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">From Date</label>
+            <input type="date" name="date_from" value="{{ query.date_from|default:'' }}"
+                   class="w-full h-10 px-3 border-2 border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:border-indigo-600">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">To Date</label>
+            <input type="date" name="date_to" value="{{ query.date_to|default:'' }}"
+                   class="w-full h-10 px-3 border-2 border-slate-300 rounded-xl text-sm font-bold text-slate-900 focus:outline-none focus:border-indigo-600">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Unit / Organisation</label>
+            <select name="unit" class="w-full h-10 px-3 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 bg-white focus:outline-none focus:border-indigo-600">
+              <option value="">All Units</option>
+              {% for u in units %}
+              <option value="{{ u.pk }}" {% if query.unit == u.pk|stringformat:'s' %}selected{% endif %}>{{ u.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Internal Section</label>
+            <select name="section" class="w-full h-10 px-3 border-2 border-slate-300 rounded-xl text-xs font-bold text-slate-900 bg-white focus:outline-none focus:border-indigo-600">
+              <option value="">All Sections</option>
+              {% for s in sections %}
+              <option value="{{ s.pk }}" {% if query.section == s.pk|stringformat:'s' %}selected{% endif %}>{{ s.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2.5 pt-2">
+          <button type="submit" class="flex-1 h-11 bg-indigo-700 hover:bg-indigo-800 text-white font-black text-sm rounded-xl transition shadow-md flex items-center justify-center gap-2 cursor-pointer">
+            <span>🔍</span> Apply Filters
+          </button>
+          <a href="{% url 'core:data_administration' %}" class="px-4 h-11 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm rounded-xl border border-slate-300 transition flex items-center justify-center cursor-pointer">
+            Clear
+          </a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Step 2: Live Summary & Batch Action Panel (6 Cols) -->
+    <div class="lg:col-span-6 flex flex-col gap-4">
+
+      <!-- Summary Stat Cards -->
+      <div class="grid grid-cols-3 gap-3">
+        <div class="bg-white rounded-xl p-3.5 border-2 border-slate-200 shadow-sm text-center">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Matching Records</div>
+          <div class="text-2xl font-black text-slate-900 mt-1">{{ record_count }}</div>
+        </div>
+        <div class="bg-emerald-50 rounded-xl p-3.5 border-2 border-emerald-200 shadow-sm text-center">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Total Inflows</div>
+          <div class="text-base font-black text-emerald-900 mt-1.5 truncate">{{ inflow_total|rs }}</div>
+        </div>
+        <div class="bg-rose-50 rounded-xl p-3.5 border-2 border-rose-200 shadow-sm text-center">
+          <div class="text-[11px] font-bold uppercase tracking-wider text-rose-700">Total Outflows</div>
+          <div class="text-base font-black text-rose-900 mt-1.5 truncate">{{ outflow_total|rs }}</div>
+        </div>
+      </div>
+
+      <!-- Step 2: Batch Action Panel -->
+      <div class="{% if record_count %}bg-rose-50/80 border-rose-300 shadow-md{% else %}bg-slate-50 border-slate-200{% endif %} rounded-2xl p-5 border-2 transition-all">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-full {% if record_count %}bg-rose-600 text-white{% else %}bg-slate-300 text-slate-700{% endif %} font-black text-xs flex items-center justify-center">2</span>
+            <h2 class="text-sm font-black {% if record_count %}text-rose-950{% else %}text-slate-700{% endif %} uppercase tracking-wide">Execute Batch Soft-Delete</h2>
+          </div>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {% if record_count %}bg-rose-100 text-rose-800 border border-rose-200{% else %}bg-slate-200 text-slate-600{% endif %}">
+            {% if record_count %}{{ record_count }} Active Transaction(s) Ready{% else %}0 Records Selected{% endif %}
+          </span>
+        </div>
+
+        <p class="text-xs {% if record_count %}text-rose-800{% else %}text-slate-500{% endif %} font-medium mb-3">
+          Soft deletion archives matching records from reports and ledger without physical data loss. Audit trail is recorded.
+        </p>
+
+        {% if record_count %}
+        <form method="post" onsubmit="return confirm('WARNING: Are you sure you want to SOFT DELETE all {{ record_count }} transaction(s) matching current filters? This action will be logged in the audit trail.');" class="space-y-3">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="soft_delete">
+          <input type="hidden" name="date_from" value="{{ query.date_from }}">
+          <input type="hidden" name="date_to" value="{{ query.date_to }}">
+          <input type="hidden" name="unit" value="{{ query.unit }}">
+          <input type="hidden" name="section" value="{{ query.section }}">
+
+          <div>
+            <label class="block text-xs font-black text-rose-900 uppercase tracking-wider mb-1">
+              Mandatory Audit Reason <span class="text-rose-600">*</span>
+            </label>
+            <textarea name="reason" required rows="2"
+                      class="w-full px-3 py-2 border-2 border-rose-300 rounded-xl text-xs font-bold text-slate-900 bg-white placeholder-slate-400 focus:outline-none focus:border-rose-600"
+                      placeholder="State reason for batch deletion (e.g. Correction of duplicate data import)..."></textarea>
+          </div>
+
+          <button type="submit"
+                  class="w-full h-11 bg-rose-600 hover:bg-rose-700 text-white font-black text-sm rounded-xl shadow-lg transition transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer">
+            <span>🗑</span> Soft Delete {{ record_count }} Filtered Record(s)
+          </button>
+        </form>
+        {% else %}
+        <div class="p-4 bg-white rounded-xl border border-slate-200 text-center space-y-2">
+          <div class="text-xs font-bold text-slate-600">No transactions currently match the selected criteria.</div>
+          <p class="text-[11px] text-slate-400">Apply a valid date range or clear filters on the left to select active transactions for deletion.</p>
+          <button type="button" disabled class="w-full h-10 bg-slate-200 text-slate-400 font-bold text-xs rounded-xl cursor-not-allowed">
+            Soft Delete (0 Records Available)
+          </button>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Preview Table Section -->
+  <div class="bg-white rounded-2xl border-2 border-slate-200 overflow-hidden shadow-sm">
+    <div class="px-5 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <h3 class="text-sm font-black text-slate-900 uppercase tracking-wide">Transactions Preview</h3>
+        <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-200 text-slate-700">Showing first {{ transactions|length }} of {{ record_count }}</span>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs text-left">
+        <thead class="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider border-b border-slate-200">
+          <tr>
+            <th class="px-4 py-3">Tx Number</th>
+            <th class="px-4 py-3">Date</th>
+            <th class="px-4 py-3">Direction</th>
+            <th class="px-4 py-3">Account Head</th>
+            <th class="px-4 py-3 text-right">Amount</th>
+            <th class="px-4 py-3">Unit / Section</th>
+            <th class="px-4 py-3 text-center">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for tx in transactions %}
+          <tr class="hover:bg-slate-50 transition">
+            <td class="px-4 py-3 font-mono font-bold text-slate-900">{{ tx.transaction_number }}</td>
+            <td class="px-4 py-3 font-bold text-slate-600">{{ tx.transaction_date|dmy }}</td>
+            <td class="px-4 py-3 font-bold">
+              {% if tx.direction == 'INFLOW' %}
+              <span class="px-2 py-0.5 rounded-md font-bold bg-emerald-100 text-emerald-800">INFLOW</span>
+              {% else %}
+              <span class="px-2 py-0.5 rounded-md font-bold bg-rose-100 text-rose-800">OUTFLOW</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-3 font-medium text-slate-800">{{ tx.account_head.name|default:"-" }}</td>
+            <td class="px-4 py-3 text-right font-mono font-bold text-slate-900">{{ tx.amount|rs }}</td>
+            <td class="px-4 py-3 text-slate-600">
+              {% for u in tx.transaction_units.all %}{{ u.name }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}
+            </td>
+            <td class="px-4 py-3 text-center">
+              <span class="px-2 py-0.5 rounded-full font-bold text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200">
+                ACTIVE
+              </span>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="px-4 py-8 text-center text-slate-400 font-bold">
+              No transactions match the selected filters.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,316 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}{{ package.package_name }} ({{ package.package_code }}) — Itinerary & Rates — EABMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-6xl mx-auto pb-12">
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <div class="flex items-center gap-3">
+                <span class="inline-flex items-center px-2.5 py-1 rounded-md bg-emerald-100 text-emerald-800 text-xs font-bold font-mono tracking-wide">
+                    {{ package.package_code }}
+                </span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold {% if package.is_umra %}bg-teal-100 text-teal-800 border border-teal-200{% else %}bg-amber-100 text-amber-800 border border-amber-200{% endif %}">
+                    {{ package.get_package_type_display }}
+                </span>
+                <h1 class="text-2xl font-bold text-slate-800 tracking-tight">{{ package.package_name }}</h1>
+                {% if package.is_active %}
+                <span class="inline-flex items-center text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span> Active
+                </span>
+                {% else %}
+                <span class="inline-flex items-center text-[11px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span> Inactive
+                </span>
+                {% endif %}
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+                Cohort: <strong class="text-slate-700 font-semibold">{{ package.cohort.title }} ({{ package.cohort.code }})</strong>
+                <span class="mx-2 text-slate-300">•</span>
+                Total Duration: <strong class="text-slate-700 font-semibold">{{ package.total_days }} Days</strong>
+            </p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="{% url 'masters:package_copy' package.id %}" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition inline-flex items-center gap-1.5" title="Clone this profile to create a new package">
+                <span>📋</span> Copy / Clone Profile
+            </a>
+            <a href="{% url 'masters:package_update' package.id %}" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow-sm transition inline-flex items-center">
+                <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Edit Package
+            </a>
+            <a href="{% url 'masters:package_list' %}" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium px-3.5 py-2 rounded-lg transition">
+                ← All Packages
+            </a>
+        </div>
+    </div>
+
+    <!-- Conspicuous Type Banner -->
+    {% if package.is_umra %}
+    <div class="p-4 bg-teal-50 border-2 border-teal-300 rounded-2xl flex items-start gap-3.5 shadow-sm">
+        <span class="text-3xl">🕋</span>
+        <div>
+            <div class="text-sm font-bold text-teal-950 uppercase tracking-wide">Benefits Package Profile — Simple 2-Stay Pilgrimage</div>
+            <div class="text-xs text-teal-800 mt-1 leading-relaxed">
+                This package is configured specifically for <strong>Benefits</strong>. It consists solely of two sacred stays: 
+                <strong>1. Medina Munawwarah</strong> ({{ package.medina_days }} days) and <strong>2. Makkah Mukarramah</strong> ({{ package.makkah_p1_days }} days).
+                Holy Mashair rituals (Mina / Arafat / Muzdalifah) and Azizia building stay are <strong class="underline">omitted</strong>.
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="p-4 bg-amber-50 border-2 border-amber-300 rounded-2xl flex items-start gap-3.5 shadow-sm">
+        <span class="text-3xl">🕌</span>
+        <div>
+            <div class="text-sm font-bold text-amber-950 uppercase tracking-wide">Provident Package Profile — Full Comprehensive Pilgrimage Itinerary</div>
+            <div class="text-xs text-amber-800 mt-1 leading-relaxed">
+                This package is configured for <strong>Provident</strong>. It provides complete sequential planning including Medina Munawwarah stay, Makkah hotel stay, Azizia staging building stay, and <strong>5 full days of Holy Mashair rituals</strong> (Mina, Arafat, and Muzdalifah).
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Package Summary Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 {% if package.is_umra %}lg:grid-cols-3{% else %}lg:grid-cols-4{% endif %} gap-4">
+        <!-- Duration & Flight -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+            <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Flight & Route</div>
+            <div class="text-base font-bold text-slate-800 mt-1">{{ package.airline|default:"Standard Carrier" }}</div>
+            <div class="text-xs text-slate-500 mt-0.5">{{ package.get_flight_route_display }}</div>
+            <div class="text-[11px] text-slate-400 mt-2">
+                {{ package.flight_origin }} ➔ {{ package.flight_destination }}
+            </div>
+        </div>
+
+        <!-- Medina Phase -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-emerald-500">
+            <div class="text-[11px] font-bold uppercase tracking-wider text-emerald-600 flex items-center justify-between">
+                <span>Medina Munawwarah</span>
+                <span class="font-mono text-xs">{{ package.medina_days }} Days</span>
+            </div>
+            <div class="text-base font-bold text-slate-800 mt-1 truncate">{{ package.medina_hotel_name|default:"Hotel TBD" }}</div>
+            <div class="text-xs text-slate-500 mt-0.5">{{ package.get_medina_accn_type_display }} • {{ package.get_medina_boarding_display }}</div>
+            <div class="text-[11px] text-emerald-700 mt-2 font-medium">
+                Timing: {{ package.get_medina_order_display }}
+            </div>
+        </div>
+
+        <!-- Makkah Phase 1 & 2 -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-blue-500">
+            <div class="text-[11px] font-bold uppercase tracking-wider text-blue-600 flex items-center justify-between">
+                <span>Makkah Mukarramah</span>
+                <span class="font-mono text-xs">{{ package.makkah_p1_days|add:package.makkah_p2_days }} Days</span>
+            </div>
+            <div class="text-base font-bold text-slate-800 mt-1 truncate">{{ package.makkah_p1_hotel_name|default:"Swissotel / Hotel" }}</div>
+            <div class="text-xs text-slate-500 mt-0.5">Stay: {{ package.makkah_p1_days }}d ({{ package.get_makkah_p1_boarding_display }})</div>
+            {% if not package.is_umra and package.makkah_p2_days > 0 %}
+            <div class="text-[11px] text-blue-700 mt-2">
+                P2 Azizia: {{ package.makkah_p2_building_name }} ({{ package.makkah_p2_days }}d)
+            </div>
+            {% endif %}
+        </div>
+
+        {% if not package.is_umra %}
+        <!-- Mashair (Provident Days) -->
+        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm border-l-4 border-l-amber-500">
+            <div class="text-[11px] font-bold uppercase tracking-wider text-amber-600 flex items-center justify-between">
+                <span>Mashair (Mina / Arafat)</span>
+                <span class="font-mono text-xs">{{ package.mashair_days }} Days</span>
+            </div>
+            <div class="text-base font-bold text-slate-800 mt-1">{{ package.mina_maktab|default:"Maktab TBD" }} • {{ package.mina_zone|default:"Zone TBD" }}</div>
+            <div class="text-xs text-slate-500 mt-0.5">Boarding: {{ package.get_mashair_boarding_display }}</div>
+            <div class="text-[11px] text-amber-700 mt-2">
+                Transfer: {{ package.get_transfer_mode_display }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Approved Room Sharing Rates (Authoritative) -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between">
+            <div>
+                <h2 class="text-base font-bold tracking-tight">Approved Room Sharing Package Rates</h2>
+                <p class="text-xs text-slate-300 mt-0.5">Per-pilgrim package tariff configured for this cohort package</p>
+            </div>
+            <div class="text-right">
+                <span class="inline-flex items-center px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 text-xs font-mono font-semibold border border-emerald-500/30">
+                    Official Tariff
+                </span>
+            </div>
+        </div>
+
+        <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Quad Sharing -->
+            <div class="p-5 rounded-xl border-2 border-emerald-200 bg-emerald-50/50 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-800">Quad Sharing (4 In Room)</span>
+                        <span class="px-2 py-0.5 bg-emerald-200 text-emerald-800 rounded text-[10px] font-bold">Standard</span>
+                    </div>
+                    <div class="text-2xl font-bold font-mono text-emerald-900 mt-3">{{ package.rate_quad_sharing|rs }}</div>
+                    <p class="text-xs text-emerald-700 mt-1">Base package rate per pilgrim with standard quad room sharing.</p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-emerald-200 text-[11px] text-emerald-600 font-medium">
+                    Recommended for Economy &amp; Main Cohort
+                </div>
+            </div>
+
+            <!-- Triple Sharing -->
+            <div class="p-5 rounded-xl border border-slate-200 bg-slate-50 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-700">Triple Sharing (3 In Room)</span>
+                        <span class="px-2 py-0.5 bg-slate-200 text-slate-700 rounded text-[10px] font-bold">Upgrade</span>
+                    </div>
+                    <div class="text-2xl font-bold font-mono text-slate-900 mt-3">{{ package.rate_triple_sharing|rs }}</div>
+                    <p class="text-xs text-slate-600 mt-1">Per-pilgrim rate for 3-person room occupancy.</p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-200 text-[11px] text-slate-500 font-medium">
+                    Available upon family / unit request
+                </div>
+            </div>
+
+            <!-- Double Sharing -->
+            <div class="p-5 rounded-xl border border-slate-200 bg-slate-50 flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-700">Double Sharing (2 In Room)</span>
+                        <span class="px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[10px] font-bold">VIP / Executive</span>
+                    </div>
+                    <div class="text-2xl font-bold font-mono text-slate-900 mt-3">{{ package.rate_double_sharing|rs }}</div>
+                    <p class="text-xs text-slate-600 mt-1">Per-pilgrim rate for executive double room occupancy.</p>
+                </div>
+                <div class="mt-4 pt-3 border-t border-slate-200 text-[11px] text-slate-500 font-medium">
+                    Recommended for couple / senior employee
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sequential Detailed Itinerary -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+        <div>
+            <h2 class="text-base font-bold text-slate-800 tracking-tight">Full Sequential Itinerary &amp; Logistics</h2>
+            <p class="text-xs text-slate-500 mt-0.5">
+                {% if package.is_umra %}
+                Simple Benefits itinerary: Medina Munawwarah stay and Makkah Mukarramah stay
+                {% else %}
+                Detailed breakdown of flight, intercity transit, accommodation, and Mashair rituals
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="relative border-l-2 border-slate-200 ml-4 pl-6 space-y-8">
+            <!-- Phase 1: Outbound Flight -->
+            <div class="relative">
+                <div class="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white shadow"></div>
+                <div class="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+                    <h3 class="text-sm font-bold text-slate-900">1. Outbound Flight Departure</h3>
+                    <span class="text-xs font-mono text-slate-500">Day 1</span>
+                </div>
+                <div class="mt-2 p-3 bg-slate-50 rounded-lg text-xs text-slate-700 space-y-1">
+                    <div><strong>Airline:</strong> {{ package.airline|default:"Standard Carrier" }} ({{ package.get_flight_route_display }})</div>
+                    <div><strong>Flight Route:</strong> {{ package.flight_origin }} ➔ {{ package.flight_destination }}</div>
+                </div>
+            </div>
+
+            <!-- Phase 2: Medina Munawwarah -->
+            <div class="relative">
+                <div class="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white shadow"></div>
+                <div class="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+                    <h3 class="text-sm font-bold text-slate-900">2. Medina Munawwarah Stay ({{ package.medina_days }} Days)</h3>
+                    <span class="text-xs font-mono text-emerald-700 font-semibold">{{ package.get_medina_order_display }}</span>
+                </div>
+                <div class="mt-2 p-3 bg-slate-50 rounded-lg text-xs text-slate-700 space-y-1">
+                    <div><strong>Accommodation:</strong> {{ package.medina_hotel_name|default:"Designated Markazia Hotel" }} ({{ package.get_medina_accn_type_display }})</div>
+                    <div><strong>Boarding:</strong> {{ package.get_medina_boarding_display }}</div>
+                    <div><strong>Ziyarat &amp; Logistics:</strong> Coordinated group transport for Ziyarat-e-Medina Munawwarah.</div>
+                </div>
+            </div>
+
+            <!-- Phase 3: Transfer to Makkah -->
+            <div class="relative">
+                <div class="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow"></div>
+                <div class="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+                    <h3 class="text-sm font-bold text-slate-900">3. Intercity Transfer (Medina ➔ Makkah)</h3>
+                    <span class="text-xs font-mono text-blue-700 font-semibold">{{ package.get_transfer_mode_display }}</span>
+                </div>
+                <div class="mt-2 p-3 bg-slate-50 rounded-lg text-xs text-slate-700">
+                    Travel mode is configured as <strong>{{ package.get_transfer_mode_display }}</strong> with Ihram wearing and Meeqat stop at Dhul Hulaifah.
+                </div>
+            </div>
+
+            <!-- Phase 4: Makkah Hotel -->
+            <div class="relative">
+                <div class="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-blue-500 border-2 border-white shadow"></div>
+                <div class="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+                    <h3 class="text-sm font-bold text-slate-900">4. Makkah Mukarramah Stay ({{ package.makkah_p1_days }} Days)</h3>
+                    <span class="text-xs font-mono text-slate-500">Central / Clock Tower Area</span>
+                </div>
+                <div class="mt-2 p-3 bg-slate-50 rounded-lg text-xs text-slate-700 space-y-1">
+                    <div><strong>Hotel:</strong> {{ package.makkah_p1_hotel_name|default:"Swissotel Al Maqam / Partner Hotel" }}</div>
+                    <div><strong>Boarding:</strong> {{ package.get_makkah_p1_boarding_display }}</div>
+                    <div><strong>Facility:</strong> Direct Haram proximity and 24/7 lift access.</div>
+                </div>
+            </div>
+
+            {% if not package.is_umra %}
+            <!-- Phase 5: Azizia Building Stay (Phase 2) if applicable -->
+            {% if package.makkah_p2_days > 0 %}
+            <div class="relative">
+                <div class="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-indigo-500 border-2 border-white shadow"></div>
+                <div class="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+                    <h3 class="text-sm font-bold text-slate-900">5. Azizia Building Stay ({{ package.makkah_p2_days }} Days)</h3>
+                    <span class="text-xs font-mono text-indigo-700 font-semibold">Pre-Provident Assembly</span>
+                </div>
+                <div class="mt-2 p-3 bg-slate-50 rounded-lg text-xs text-slate-700 space-y-1">
+                    <div><strong>Building:</strong> {{ package.makkah_p2_building_name }}</div>
+                    <div><strong>Boarding:</strong> {{ package.get_makkah_p2_boarding_display }}</div>
+                    <div><strong>Proximity:</strong> Near Jamarat / Mina pedestrian link for convenient Provident staging.</div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Phase 6: Mashair Days (Provident Rituals) -->
+            <div class="relative">
+                <div class="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-amber-500 border-2 border-white shadow"></div>
+                <div class="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+                    <h3 class="text-sm font-bold text-slate-900">6. Holy Mashair Rituals ({{ package.mashair_days }} Days: 8th - 12th / 13th Dhul Hijjah)</h3>
+                    <span class="text-xs font-mono text-amber-700 font-semibold">Mina • Arafat • Muzdalifah</span>
+                </div>
+                <div class="mt-2 p-3 bg-slate-50 rounded-lg text-xs text-slate-700 space-y-1">
+                    <div><strong>Mina Tent Allocation:</strong> {{ package.mina_maktab }} | {{ package.mina_zone }} ({{ package.get_mashair_boarding_display }})</div>
+                    <div><strong>Arafat Arrangements:</strong> {{ package.arafat_details|default:"AC Marquees with Buffet / Box Meals" }}</div>
+                    <div><strong>Muzdalifah Night:</strong> {{ package.muzdalifah_details|default:"Open air night stay under stars with snack boxes" }}</div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Final Phase: Return Flight -->
+            <div class="relative">
+                <div class="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-slate-700 border-2 border-white shadow"></div>
+                <div class="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-1">
+                    <h3 class="text-sm font-bold text-slate-900">{% if package.is_umra %}5{% else %}7{% endif %}. Return Flight &amp; Departure</h3>
+                    <span class="text-xs font-mono text-slate-500">Day {{ package.total_days }}</span>
+                </div>
+                <div class="mt-2 p-3 bg-slate-50 rounded-lg text-xs text-slate-700 space-y-1">
+                    {% if not package.is_umra and package.post_haj_days > 0 %}
+                    <div><strong>Post-Provident Days:</strong> {{ package.post_haj_days }} Days</div>
+                    {% endif %}
+                    <div><strong>Baggage &amp; Zamzam:</strong> Arranged through designated cargo service / airport terminal.</div>
+                </div>
+            </div>
+        </div>
+
+        {% if package.description %}
+        <div class="pt-4 border-t border-slate-200">
+            <h4 class="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">Package Notes &amp; Terms</h4>
+            <div class="p-3 bg-slate-50 rounded-lg text-xs text-slate-600 whitespace-pre-line leading-relaxed">
+                {{ package.description }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,474 @@
+﻿{% extends 'base.html' %}
+{% block title %}Help & User Manual — EABMS{% endblock %}
+{% block content %}
+<div class="space-y-6">
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+        <p class="text-xs font-semibold uppercase tracking-wider text-emerald-600">EABMS User Manual</p>
+        <h1 class="text-2xl font-bold text-slate-900 mt-1">Help & User Manual</h1>
+        <p class="text-sm text-slate-600 mt-2 max-w-4xl">This guide is written for the person who enters, checks and follows up financial work in EABMS. It explains what to do, in what order, and why each step matters. You do not need technical knowledge to use this guide.</p>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+            <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4"><b class="text-emerald-800">Before entering anything</b><br><span class="text-emerald-700">Check Account and Financial Year.</span></div>
+            <div class="bg-amber-50 border border-amber-100 rounded-xl p-4"><b class="text-amber-800">Before saving</b><br><span class="text-amber-700">Check date, amount, head and description.</span></div>
+            <div class="bg-slate-50 border border-slate-200 rounded-xl p-4"><b class="text-slate-800">After saving</b><br><span class="text-slate-600">Confirm the record and its effect on the ledger.</span></div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
+        <a href="#getting-started" class="bg-white border border-slate-200 rounded-xl p-3.5 hover:border-emerald-300 hover:shadow-xs transition"><div class="font-bold text-slate-800">1. Getting Started</div><div class="text-xs text-slate-500 mt-0.5">Login, 3 Funds & navigation</div></a>
+        <a href="#transactions" class="bg-white border border-slate-200 rounded-xl p-3.5 hover:border-emerald-300 hover:shadow-xs transition"><div class="font-bold text-slate-800">2. Transactions</div><div class="text-xs text-slate-500 mt-0.5">Inflow, Outflow & transfers</div></a>
+        <a href="#pass-through" class="bg-white border border-slate-200 rounded-xl p-3.5 hover:border-amber-300 hover:shadow-xs transition"><div class="font-bold text-slate-800">3. Pass-Through & Mn</div><div class="text-xs text-slate-500 mt-0.5">Clean figures & Million display</div></a>
+        <a href="#bulk-grid" class="bg-white border border-slate-200 rounded-xl p-3.5 hover:border-emerald-300 hover:shadow-xs transition"><div class="font-bold text-slate-800">4. Mass / Bulk Grid</div><div class="text-xs text-slate-500 mt-0.5">Quick multi-row entry</div></a>
+        <a href="#budget" class="bg-white border border-slate-200 rounded-xl p-3.5 hover:border-emerald-300 hover:shadow-xs transition"><div class="font-bold text-slate-800">5. Budget & Future</div><div class="text-xs text-slate-500 mt-0.5">Allocations, revisions & planning</div></a>
+        <a href="#reimbursements" class="bg-white border border-slate-200 rounded-xl p-3.5 hover:border-emerald-300 hover:shadow-xs transition"><div class="font-bold text-slate-800">6. Reimbursements</div><div class="text-xs text-slate-500 mt-0.5">Tracking claims & recovery</div></a>
+        <a href="#reports" class="bg-white border border-slate-200 rounded-xl p-3.5 hover:border-emerald-300 hover:shadow-xs transition"><div class="font-bold text-slate-800">7. Reports & Center</div><div class="text-xs text-slate-500 mt-0.5">Screen, PDF & Excel exports</div></a>
+        <a href="#masters-scenarios" class="bg-white border border-slate-200 rounded-xl p-3.5 hover:border-emerald-300 hover:shadow-xs transition"><div class="font-bold text-slate-800">8. Masters & Scenarios</div><div class="text-xs text-slate-500 mt-0.5">Pilgrims, Organisations, UMC, Venues</div></a>
+        <a href="#backups" class="bg-white border border-slate-200 rounded-xl p-3.5 hover:border-amber-300 hover:shadow-xs transition"><div class="font-bold text-slate-800">9. Backups (Auto & 💾)</div><div class="text-xs text-slate-500 mt-0.5">30-min auto & 1-click manual</div></a>
+        <a href="#roles" class="bg-white border border-slate-200 rounded-xl p-3.5 hover:border-emerald-300 hover:shadow-xs transition"><div class="font-bold text-slate-800">10. Roles & Safety</div><div class="text-xs text-slate-500 mt-0.5">Who does what & audit safety</div></a>
+    </div>
+
+    <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-10 text-sm text-slate-700 leading-6">
+        <section id="getting-started">
+            <h2 class="text-xl font-bold text-slate-900">1. Getting Started</h2>
+            <p class="mt-2">EABMS works with one <strong>Account</strong> and one <strong>Financial Year</strong> at a time. These two selections decide which financial records you are looking at and which records you are allowed to enter.</p>
+            <h3 class="font-semibold text-slate-900 mt-5">Step 1 — Login</h3>
+            <p>Enter your EABMS username and password. After login, wait for the dashboard to open.</p>
+            <h3 class="font-semibold text-slate-900 mt-5">Step 2 — Check the Account</h3>
+            <p>At the top of the screen, confirm the Account name and code. For example, <strong>NexGen Holdings Ltd. (NGL)</strong>. If the wrong Account is selected, stop and switch it before entering anything.</p>
+            <p class="mt-2 text-slate-600"><strong>Why?</strong> The same screen may be used for more than one account. Selecting the wrong Account can place a transaction in the wrong fund.</p>
+            <h3 class="font-semibold text-slate-900 mt-5">Step 3 — Check the Financial Year</h3>
+            <p>Confirm the Financial Year, for example <strong>2026-27</strong>. Do not enter a current-year transaction while another year is selected.</p>
+            <p class="mt-2 text-slate-600"><strong>Why?</strong> EABMS keeps financial years separate so that balances and reports remain correct.</p>
+            <h3 class="font-semibold text-slate-900 mt-5">Step 4 — Learn the main navigation</h3>
+            <p>Use the left sidebar to move between Overview, Transactions, Budget, Reimbursements, Reports, Masters and Governance. You may collapse the sidebar when you need more screen space. Help is available from the sidebar and the top-right <strong>?</strong> button.</p>
+        </section>
+
+        <section id="transactions">
+            <h2 class="text-xl font-bold text-slate-900">2. Transactions</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+                <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4"><b>Inflow</b><br>Money received by the Account.</div>
+                <div class="bg-rose-50 border border-rose-100 rounded-xl p-4"><b>Outflow</b><br>Money paid or spent by the Account.</div>
+                <div class="bg-amber-50 border border-amber-100 rounded-xl p-4"><b>Reimbursement</b><br>Money expected back against an Outflow.</div>
+            </div>
+            <h3 class="font-semibold text-slate-900 mt-5">How to record one Inflow</h3>
+            <ol class="list-decimal list-inside space-y-2 mt-2">
+                <li>Confirm Account and Financial Year at the top.</li>
+                <li>Select <strong>Transactions → Record Inflow</strong>.</li>
+                <li>Choose the <strong>Date</strong> using the calendar. The date shown to the user is the normal calendar date; the browser supplies the date safely.</li>
+                <li>Select the correct <strong>Account Head</strong>.</li>
+                <li>Enter the <strong>Amount</strong> as a positive number.</li>
+                <li>Select the correct <strong>Inflow Type</strong>.</li>
+                <li>Enter the <strong>Source</strong>, Reference and Description clearly enough that another person can understand the receipt later.</li>
+                <li>Review every field and select <strong>Save</strong>.</li>
+                <li>Confirm the success message and transaction number.</li>
+            </ol>
+            <p class="mt-3 text-slate-600"><strong>Why do we record the source and description?</strong> Because a figure alone does not explain where money came from. Clear wording makes later checking, reporting and audit work much easier.</p>
+
+            <h3 class="font-semibold text-slate-900 mt-6">How to record one Outflow</h3>
+            <ol class="list-decimal list-inside space-y-2 mt-2">
+                <li>Confirm Account and Financial Year.</li>
+                <li>Select <strong>Transactions → Record Outflow</strong>.</li>
+                <li>Choose the Date from the calendar.</li>
+                <li>Choose the Account Head and, where required, Sub Head and Organisation.</li>
+                <li>Select the correct Outflow Nature.</li>
+                <li>Enter the positive Amount. Never enter a minus sign.</li>
+                <li>Enter the Payee and a clear Purpose/Description.</li>
+                <li>Enter the Reference if a voucher, letter, sanction or other reference exists.</li>
+                <li>Review and Save.</li>
+            </ol>
+            <p class="mt-3 text-slate-600"><strong>Why is the amount entered as positive?</strong> EABMS already knows whether the record is an Inflow or Outflow. The direction is used by the system when calculating balances and reports.</p>
+
+            <h3 class="font-semibold text-slate-900 mt-6">How to find a transaction in All Transactions</h3>
+            <ol class="list-decimal list-inside space-y-2 mt-2">
+                <li>Open <strong>Transactions → All Transactions</strong>.</li>
+                <li>Use the Account, Financial Year and Direction filters when needed.</li>
+                <li>Use <strong>From</strong> and <strong>To</strong> to choose a date range. Both fields now have calendar date pickers.</li>
+                <li>Use Search for transaction number, reference, payee or description.</li>
+                <li>Select <strong>Apply Filters</strong>.</li>
+                <li>Open the transaction number or description to see the full record.</li>
+            </ol>
+            <p class="mt-3 text-slate-600"><strong>Why use the date range?</strong> It is the fastest way to find all transactions entered during a particular period, such as one month or one week.</p>
+
+            <div class="mt-5 rounded-xl border border-indigo-200 bg-indigo-50 p-4"><b class="text-indigo-900">Important</b><br>Historical transactions are kept for reference and are protected from ordinary editing. Cancelled transactions are also protected from normal editing.</div>
+        </section>
+
+        <!-- SECTION 3: PASS-THROUGH & MILLIONS DISPLAY -->
+        <section id="pass-through">
+            <h2 class="text-xl font-bold text-slate-900">3. Pass-Through Transfers &amp; Millions (Mn) Display</h2>
+            <p class="mt-2">EABMS clearly separates <strong>true operational income/expenditure</strong> from <strong>internal pass-through book transfers</strong> so that financial figures are never artificially inflated.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div class="bg-emerald-50/70 border border-emerald-200 rounded-xl p-4">
+                    <b class="text-emerald-900">Operational Inflows / Outflows (Excl. Pass-Through)</b>
+                    <p class="text-xs text-emerald-800 mt-1">This is your true, actual expenditure or receipt. In all dashboards and report summary cards, this is shown as the <strong>primary large bold headline</strong>.</p>
+                </div>
+                <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-4">
+                    <b class="text-amber-900">Pass-Through Transfers (PT)</b>
+                    <p class="text-xs text-amber-800 mt-1">Internal book movements between heads or transit accounts. They do not consume budget or increase operational wealth, and are displayed in dedicated subordinate rows.</p>
+                </div>
+            </div>
+
+            <h3 class="font-semibold text-slate-900 mt-5">Standard Card Sequence Across Reports</h3>
+            <p>Whenever you look at a summary card (such as Total Inflows or Total Outflows):</p>
+            <ol class="list-decimal list-inside space-y-1 mt-2">
+                <li><strong>Top Big Font:</strong> Operational Total excluding Pass-Through (e.g., <code class="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">$ 270.80 Mn</code>).</li>
+                <li><strong>Middle Line:</strong> Pass-Through Transfers (e.g., <code class="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">$ 108.66 Mn</code>).</li>
+                <li><strong>Bottom Bold Separator:</strong> Grand Total including Pass-Through (e.g., <code class="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">$ 379.46 Mn</code>).</li>
+            </ol>
+            <p class="mt-2 text-slate-600"><strong>Why?</strong> If pass-through transfers were mixed into the main headline, leadership would see inflated numbers that give a misleading impression of operational volume.</p>
+
+            <h3 class="font-semibold text-slate-900 mt-5">Standard Display Organisations</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <b>Millions [Mn] for Executive Overviews</b><br>
+                    <span class="text-slate-600">Dashboard cards, top report KPI blocks, and summary headers show amounts in PKR Millions (e.g., <code>$ 12.34 Mn</code>).</span>
+                </div>
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
+                    <b>Exact Rupees [$] for Audit &amp; Ledger</b><br>
+                    <span class="text-slate-600">Detailed transaction tables, voucher breakdown, and CSV downloads retain full rupee precision (e.g., <code>$ 12,345,678.90</code>).</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="bulk-grid">
+            <h2 class="text-xl font-bold text-slate-900">4. Mass / Bulk Grid — How to Use It</h2>
+            <p class="mt-2">The Mass / Bulk Grid is a fast way to work with several ordinary transactions on one screen. Think of it as a controlled spreadsheet inside EABMS. It is useful when you need to correct or enter many rows and do not want to open each transaction separately.</p>
+            <p class="mt-3"><strong>It is not a free-form Excel sheet.</strong> EABMS still checks every row before saving.</p>
+
+            <h3 class="font-semibold text-slate-900 mt-5">When should I use the Bulk Grid?</h3>
+            <ul class="list-disc list-inside space-y-2 mt-2">
+                <li>Use it when you have several ordinary current transactions to enter or correct.</li>
+                <li>Use normal Record Inflow/Outflow when you are entering one transaction or when the transaction needs careful individual review.</li>
+                <li>Do not use it to change historical transactions.</li>
+                <li>Do not use it to change cancelled transactions.</li>
+            </ul>
+
+            <h3 class="font-semibold text-slate-900 mt-5">How to open it</h3>
+            <ol class="list-decimal list-inside space-y-2 mt-2">
+                <li>Open <strong>Transactions → All Transactions</strong>.</li>
+                <li>Select <strong>Mass / Bulk Grid</strong>.</li>
+                <li>The page opens for the Account and Financial Year currently selected in your session.</li>
+                <li>Use the Month, Direction, Account Head or Search filters if there are too many rows.</li>
+            </ol>
+            <p class="mt-3 text-slate-600"><strong>Why are Account and Financial Year fixed?</strong> To prevent you from accidentally editing a row belonging to another Account or another Financial Year.</p>
+
+            <h3 class="font-semibold text-slate-900 mt-5">How an existing row works</h3>
+            <p>Each row is one transaction. The left side shows the transaction number. The editable columns let you change the date, direction, amount, classification, payee/source, reference, description and other ordinary fields.</p>
+            <p class="mt-2">The <strong>Date</strong> cell opens the normal browser calendar. Choose the correct day rather than typing the date manually.</p>
+
+            <h3 class="font-semibold text-slate-900 mt-5">How to add a new row</h3>
+            <ol class="list-decimal list-inside space-y-2 mt-2">
+                <li>Select <strong>+ Add Row</strong>.</li>
+                <li>A new row appears at the bottom of the grid.</li>
+                <li>Choose the date, direction and amount.</li>
+                <li>Choose the correct Account Head and, where needed, Sub Head and Organisation.</li>
+                <li>For an Outflow, choose the Outflow Nature. For an Inflow, choose the Inflow Type.</li>
+                <li>Enter the Payee/Source, Reference and Description.</li>
+                <li>Check the row carefully.</li>
+                <li>Repeat for the other new rows.</li>
+                <li>Select <strong>Save All Changes</strong>.</li>
+            </ol>
+
+            <h3 class="font-semibold text-slate-900 mt-5">What do the row labels mean?</h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mt-3">
+                <div class="bg-slate-50 rounded-xl p-3"><b>Clean</b><br>No change has been made to that row.</div>
+                <div class="bg-amber-50 rounded-xl p-3"><b>Modified</b><br>You changed the row but have not saved it yet.</div>
+                <div class="bg-emerald-50 rounded-xl p-3"><b>New</b><br>This is a new transaction waiting to be saved.</div>
+                <div class="bg-rose-50 rounded-xl p-3"><b>Error</b><br>EABMS found a problem. Correct it before saving.</div>
+            </div>
+
+            <h3 class="font-semibold text-slate-900 mt-5">What happens when I press Save All Changes?</h3>
+            <ol class="list-decimal list-inside space-y-2 mt-2">
+                <li>EABMS checks every changed and new row.</li>
+                <li>EABMS checks the Account and Financial Year.</li>
+                <li>EABMS checks dates, amounts and classifications.</li>
+                <li>EABMS checks the same business rules used by normal transaction entry.</li>
+                <li>If every row is valid, all rows are saved and audited.</li>
+                <li>If a fatal error exists in even one row, EABMS saves <strong>none</strong> of the rows in that batch.</li>
+            </ol>
+            <p class="mt-3 text-slate-600"><strong>Why all-or-nothing?</strong> It prevents half of a clerk's batch from being saved while the other half fails. You can correct the error and submit the complete batch again.</p>
+
+            <div class="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4"><b class="text-amber-900">Simple example</b><br>You need to enter 10 ordinary Outflows for the same Account and Financial Year. Instead of opening 10 separate forms, open Mass / Bulk Grid, add or edit the 10 rows, check them, and press Save All Changes once. EABMS checks all 10 rows before saving them.</div>
+
+            <h3 class="font-semibold text-slate-900 mt-5">Keyboard shortcut</h3>
+            <p>Press <strong>Ctrl + S</strong> in the Bulk Grid to save all changes.</p>
+        </section>
+
+        <section id="budget">
+            <h2 class="text-xl font-bold text-slate-900">5. Budget &amp; Future-Year Planning</h2>
+            <ol class="list-decimal list-inside space-y-2 mt-3">
+                <li>Open <strong>Budget</strong> from the sidebar.</li>
+                <li>Create the Budget Header for the correct Account and Financial Year.</li>
+                <li>Add the required Budget Lines by assigning an approved amount to each Account Head.</li>
+                <li>Check the approved amount and classification carefully.</li>
+                <li>When an approved amount changes during the year, use the controlled <strong>Revision</strong> action rather than overwriting figures.</li>
+                <li>Enter the reference sanction letter and a clear reason for the revision.</li>
+                <li>Review the resulting <strong>Budget vs Actual</strong> figures.</li>
+            </ol>
+            <p class="mt-3"><strong>Budget Balance</strong> = Approved Budget − Actual Expenditure.</p>
+            <p class="mt-2 text-slate-600"><strong>Why keep a reason for revisions?</strong> Every revision is audited so that anyone checking the books later can trace who approved the revision and why.</p>
+
+            <h3 class="font-semibold text-slate-900 mt-5">Future-Year Budget Preparation</h3>
+            <p>Clerks can draft the upcoming year's budget using <strong>Budget → Future Budget</strong>. EABMS analyzes past spending patterns, tags routine vs one-time expenses, and gives an explainable suggested baseline for leadership review.</p>
+        </section>
+
+        <section id="reimbursements">
+            <h2 class="text-xl font-bold text-slate-900">6. Reimbursements</h2>
+            <p class="mt-2">A reimbursement is money that you expect to receive back against an Outflow (for instance, when money is paid on behalf of another department or unit).</p>
+            <h3 class="font-semibold text-slate-900 mt-5">When you expect money back</h3>
+            <ol class="list-decimal list-inside space-y-2 mt-2">
+                <li>Open <strong>Reimbursements → New Reimbursement</strong>.</li>
+                <li>Select the original Outflow transaction.</li>
+                <li>Enter the expected amount and expected recovery date.</li>
+                <li>Enter the source and reference letter.</li>
+                <li>Save the reimbursement record.</li>
+            </ol>
+            <h3 class="font-semibold text-slate-900 mt-5">When the money is actually received</h3>
+            <p>Use the controlled receipt process so the actual Inflow is linked directly to the reimbursement. Do not just alter the expected amount to zero.</p>
+            <p class="mt-2 text-slate-600"><strong>Why?</strong> EABMS needs to clearly report pending claims against recovered claims for executive oversight.</p>
+        </section>
+
+        <section id="reports">
+            <h2 class="text-xl font-bold text-slate-900">7. Reports &amp; Report Center</h2>
+            <ol class="list-decimal list-inside space-y-2 mt-3">
+                <li>Confirm Account and Financial Year at the top first.</li>
+                <li>Open <strong>Reporting → Report Center</strong>.</li>
+                <li>Select from 17+ authoritative report types (Account Summary, Monthly Inflows/Outflows, YoY Comparative, Routine vs Additional, etc.).</li>
+                <li>Apply any needed filters (Organisation, Sub-Head, Date Range).</li>
+                <li>View the figures directly on screen, or export to <strong>PDF</strong> or <strong>Excel</strong> using the export buttons.</li>
+                <li>All exports use the exact same calculation layer as the screen view.</li>
+            </ol>
+        </section>
+
+        <!-- SECTION 8: MASTERS & REAL-WORLD SCENARIOS -->
+        <section id="masters-scenarios">
+            <h2 class="text-xl font-bold text-slate-900">8. Masters &amp; Real-World Scenarios</h2>
+            <p class="mt-2">Masters are the standard lists that appear in dropdown menus (Pilgrims, Cohorts, Organisations, Venues, Account Heads). When entering data, you choose from these lists.</p>
+
+            <!-- SCENARIO 1: PILGRIMS & CPF -->
+            <div class="mt-5 bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                <div class="flex items-center space-x-2">
+                    <span class="text-lg">👤</span>
+                    <h3 class="text-base font-bold text-slate-900">Scenario A: Pilgrim Registration (Corporate Provident Fund — CPF)</h3>
+                </div>
+                <p class="text-sm">You are recording an Inflow (receipt from a pilgrim) or preparing a cohort list, but the pilgrim does not appear in the system dropdown.</p>
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 space-y-1">
+                    <b>What if the Pilgrim does not exist?</b>
+                    <p>Do not enter an unlinked name into transaction descriptions. Always register the pilgrim first. It takes less than 30 seconds:</p>
+                </div>
+                <ol class="list-decimal list-inside space-y-2 text-xs text-slate-700">
+                    <li>Go to <strong>Masters → Pilgrims Registry</strong> in the sidebar.</li>
+                    <li>Click the green <strong>+ New Pilgrim</strong> button.</li>
+                    <li>Fill in the essential pilgrim details:
+                        <ul class="list-disc list-inside pl-4 space-y-1 mt-1 text-slate-600">
+                            <li><strong>Employee No:</strong> Enter the employee number (e.g., <code>EMP-12345</code>).</li>
+                            <li><strong>Name &amp; Designation:</strong> Full name and designation (e.g., <code>Muhammad Rafiq (Supervisor)</code>).</li>
+                            <li><strong>CNIC &amp; Passport:</strong> Enter without dashes or spaces for clean record-keeping.</li>
+                            <li><strong>Division:</strong> Choose <strong>Provident</strong> or <strong>Benefits</strong>.</li>
+                            <li><strong>Cohort (HJC / UMC):</strong> Select their assigned group (e.g., <code>HJC-2027</code> for Provident or <code>UMC-01 (2026-27)</code> for Benefits).</li>
+                            <li><strong>Package:</strong> Choose their package (e.g., Economy, Economy Plus, Executive).</li>
+                            <li><strong>Sharing Type:</strong> Select <em>Double Sharing (2 in room)</em>, <em>Triple Sharing (3 in room)</em>, or <em>Quad Sharing (4 in room)</em>.</li>
+                            <li><strong>Family Members:</strong> Enter the total number of persons (Self + Family). The system automatically multiplies the rate per person to compute the <strong>Total Package Cost</strong>!</li>
+                            <li><strong>Organisation / Formation:</strong> Select their parent unit (if missing, see Scenario C below).</li>
+                        </ul>
+                    </li>
+                    <li>Click <strong>Save</strong>. The pilgrim is immediately registered and ready to be linked to receipts, refund vouchers, and flight manifests.</li>
+                </ol>
+            </div>
+
+            <!-- SCENARIO 2: COHORTS (HJC / UMC) -->
+            <div class="mt-4 bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                <div class="flex items-center space-x-2">
+                    <span class="text-lg">🕋</span>
+                    <h3 class="text-base font-bold text-slate-900">Scenario B: Adding an Corporate Provident (HJC) or Benefits (UMC) Cohort</h3>
+                </div>
+                <p class="text-sm">When headquarters announces a new Provident season or approves an Benefits flight batch, you must register the Cohort code before adding packages or pilgrims.</p>
+                <ol class="list-decimal list-inside space-y-1.5 text-xs text-slate-700">
+                    <li>Navigate to <strong>Masters → Cohorts (HJC/UMC)</strong>.</li>
+                    <li>Click <strong>+ New Cohort</strong>.</li>
+                    <li>Select Type: <strong>Corporate Provident Cohort (HJC)</strong> or <strong>Corporate Benefits Cohort (UMC)</strong>.</li>
+                    <li>Enter Code: Use standard conventions such as <code>HJC-2027</code> for Provident or <code>UMC-01 (2026-27)</code> for Benefits batches.</li>
+                    <li>Enter Title (e.g., <code>Corporate Benefits Cohort 01 (Aug 2026)</code>).</li>
+                    <li>Set the Start Date, End Date, and ensure Status is marked Active.</li>
+                    <li>Click <strong>Save</strong>. You are now ready to add packages to this cohort!</li>
+                </ol>
+            </div>
+
+            <!-- SCENARIO 3: COHORT PACKAGES (HAJ VS UMRA) -->
+            <div class="mt-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl p-5 space-y-3">
+                <div class="flex items-center space-x-2">
+                    <span class="text-lg">✈️</span>
+                    <h3 class="text-base font-bold text-emerald-950">Scenario C: Creating Cohort Packages — Provident Package vs. Benefits Package</h3>
+                </div>
+                <p class="text-sm text-emerald-900">EABMS maintains two distinct package structures. The system automatically tailors the form and itinerary depending on the journey type:</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                    <div class="bg-white border border-emerald-200 rounded-xl p-3.5 space-y-2">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-200">Provident Package (HJC)</span>
+                        <p class="text-xs text-slate-600">A full Provident package covers all stages of the Provident pilgrimage:</p>
+                        <ul class="list-disc list-inside text-xs text-slate-700 space-y-1">
+                            <li><strong>Flight details:</strong> Airline, route, origin &amp; destination.</li>
+                            <li><strong>Medina Stay:</strong> Hotel name, stay days, and boarding type.</li>
+                            <li><strong>Makkah Phase 1 (Hotel):</strong> Primary hotel near Haram.</li>
+                            <li><strong>Makkah Phase 2 (Azizia Building):</strong> Pre/post Provident assembly accommodation.</li>
+                            <li><strong>Holy Mashair:</strong> Mina Maktab (Maktab A/B), Mina Zone, Arafat marquee details, and Muzdalifah night stay.</li>
+                            <li><strong>Post-Provident Days:</strong> Days in Makkah before returning home.</li>
+                            <li><strong>Room Sharing Rates:</strong> Rates in PKR for Double, Triple, and Quad sharing.</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-white border border-emerald-200 rounded-xl p-3.5 space-y-2">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">Benefits Package (UMC)</span>
+                        <p class="text-xs text-slate-600">A simplified, comfortable journey with <strong>strictly two stays</strong>:</p>
+                        <ul class="list-disc list-inside text-xs text-slate-700 space-y-1">
+                            <li><strong>1. Medina Stay:</strong> Hotel name, days, and meal plan.</li>
+                            <li><strong>2. Makkah Stay:</strong> Hotel name, days, and meal plan.</li>
+                            <li><strong>No Mashair Days:</strong> Benefits does not involve Mina, Arafat, or Muzdalifah. All Mashair fields are completely hidden!</li>
+                            <li><strong>No Azizia Phase:</strong> Pilgrims stay directly in their Makkah hotel.</li>
+                            <li><strong>No Post-Provident Days:</strong> Simplified return schedule.</li>
+                            <li><strong>Room Sharing Rates:</strong> Standard Double, Triple, and Quad rates.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h4 class="font-semibold text-xs text-emerald-950 mt-3">How to Add a Package:</h4>
+                <ol class="list-decimal list-inside space-y-1 text-xs text-slate-700">
+                    <li>Go to <strong>Masters → Cohort Packages</strong> and click <strong>+ New Package</strong>.</li>
+                    <li>Choose your <strong>Cohort</strong>. If you choose an UMC cohort, the <strong>Package Type</strong> automatically switches to <strong>Benefits Package</strong>!</li>
+                    <li>Notice that for an Benefits Package, the form automatically hides the Azizia and Mashair sections so you don't have to enter dummy data.</li>
+                    <li>Enter hotel names, number of days for Medina and Makkah, transfer train/bus mode, and room sharing rates.</li>
+                    <li>Click <strong>Save</strong>. The package is now ready and displays a clean, sequential itinerary!</li>
+                </ol>
+            </div>
+
+            <!-- SCENARIO 4: UNITS & ORGANISATIONS -->
+            <div class="mt-4 bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                <div class="flex items-center space-x-2">
+                    <span class="text-lg">⌾</span>
+                    <h3 class="text-base font-bold text-slate-900">Scenario D: What if a Organisation / Formation is Not in the Dropdown?</h3>
+                </div>
+                <p class="text-sm">When recording an Outflow or linking a pilgrim, their unit or formation (e.g., <code>Northern Branch</code> or <code>Regional HQ</code>) is missing from the list.</p>
+                <ol class="list-decimal list-inside space-y-1.5 text-xs text-slate-700">
+                    <li>Go to <strong>Masters → Organisations / Organisations</strong>.</li>
+                    <li>Click <strong>+ New Organisation</strong>.</li>
+                    <li>Enter the Organisation Code (e.g., <code>BR-NORTH</code>) and Full Name (e.g., <code>Northern Branch</code>).</li>
+                    <li>Select City and Status (Active).</li>
+                    <li>Save. Return to your transaction or pilgrim form; the new unit is immediately available.</li>
+                </ol>
+            </div>
+
+            <!-- SCENARIO 5: CEREMONY FUND VENUES & EVENTS -->
+            <div class="mt-4 bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                <div class="flex items-center space-x-2">
+                    <span class="text-lg">🏟</span>
+                    <h3 class="text-base font-bold text-slate-900">Scenario E: Adding Welfare Venues &amp; Events (Welfare Fund — EWF)</h3>
+                </div>
+                <p class="text-sm">Setting up records for a new Pakistan Day or National Day ceremony:</p>
+                <ol class="list-decimal list-inside space-y-1.5 text-xs text-slate-700">
+                    <li>Go to <strong>Masters → Welfare Venues</strong> to add grounds (e.g., Shakarparian Welfare Ground, Islamabad).</li>
+                    <li>Go to <strong>Masters → Welfare Events</strong> to register the specific year event (e.g., <code>Pak Day Welfare 2027</code>).</li>
+                    <li>Now all stage, sound, lighting, accommodation, and transport expenses can be grouped under that exact event.</li>
+                </ol>
+            </div>
+        </section>
+
+        <!-- SECTION 9: DATABASE BACKUPS -->
+        <section id="backups">
+            <h2 class="text-xl font-bold text-slate-900">9. Backups — Automatic &amp; Instant Manual</h2>
+            <p class="mt-2">EABMS protects your records with a dual-layer backup system. You never have to worry about data loss.</p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-4">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-base">⏱</span>
+                        <b class="text-blue-950">Layer 1: Automatic 30-Minute Backups</b>
+                    </div>
+                    <p class="text-xs text-blue-900 mt-2">Whenever EABMS is running, a background service takes an automatic snapshot of the active database <strong>every 30 minutes</strong> without interrupting anyone's work. Up to 1,000 recent snapshots are safely retained.</p>
+                </div>
+                <div class="bg-amber-50/70 border border-amber-200 rounded-xl p-4">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-base">💾</span>
+                        <b class="text-amber-950">Layer 2: Top Bar Manual Backup Button</b>
+                    </div>
+                    <p class="text-xs text-amber-900 mt-2">On the top bar of every page, click the amber <strong>💾 Backup</strong> button. Confirm the prompt, and EABMS immediately writes a fresh snapshot to disk and shows a green success banner.</p>
+                </div>
+            </div>
+
+            <h3 class="font-semibold text-slate-900 mt-5">Dedicated Folders Per Fund</h3>
+            <p>Backups are cleanly separated into their own dedicated folders with date and time stamps:</p>
+            <div class="overflow-x-auto mt-2">
+                <table class="min-w-full text-xs">
+                    <thead>
+                        <tr class="border-b border-slate-200 text-slate-500 font-bold">
+                            <th class="text-left py-1.5">Fund Application</th>
+                            <th class="text-left py-1.5">Dedicated Backup Folder</th>
+                            <th class="text-left py-1.5">Snapshot File Name</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-slate-700">
+                        <tr>
+                            <td class="py-2 font-semibold">Corporate Provident Fund (CPF)</td>
+                            <td class="py-2 font-mono text-emerald-800">02_Backend/backup_EWF/</td>
+                            <td class="py-2 font-mono">backup_EWF_YYYYMMDD_HHMMSS.json</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 font-semibold">Employee Welfare Fund (EWF)</td>
+                            <td class="py-2 font-mono text-rose-800">02_Backend/backup_CPF/</td>
+                            <td class="py-2 font-mono">backup_CPF_YYYYMMDD_HHMMSS.json</td>
+                        </tr>
+                        <tr>
+                            <td class="py-2 font-semibold">NexGen Holdings Ltd. (NGL)</td>
+                            <td class="py-2 font-mono text-slate-800">02_Backend/backup_NGL/</td>
+                            <td class="py-2 font-mono">backup_NGL_YYYYMMDD_HHMMSS.json</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600">
+                <b>Tip:</b> Always click <strong>💾 Backup</strong> before running major bulk imports, revisions, or year-end reconciliations.
+            </div>
+        </section>
+
+        <!-- SECTION 10: USER ROLES & SAFETY -->
+        <section id="roles">
+            <h2 class="text-xl font-bold text-slate-900">10. User Roles &amp; Safety</h2>
+            <div class="overflow-x-auto mt-3"><table class="min-w-full text-sm"><thead><tr class="border-b border-slate-200"><th class="text-left py-2 pr-4">Role</th><th class="text-left py-2">What the person normally does</th></tr></thead><tbody>
+                <tr class="border-b border-slate-100"><td class="py-3 pr-4 font-semibold">Administrator</td><td class="py-3">Maintains users, masters, system controls, backup oversight and administrative settings.</td></tr>
+                <tr class="border-b border-slate-100"><td class="py-3 pr-4 font-semibold">Clerk</td><td class="py-3">Enters and checks routine financial records, works the ledger, handles normal transactions and follows up operational work.</td></tr>
+                <tr><td class="py-3 pr-4 font-semibold">Management</td><td class="py-3">Reviews dashboard, reports and budgets. Management is normally view-only for financial entry screens.</td></tr>
+            </tbody></table></div>
+            <h3 class="font-semibold text-slate-900 mt-5">Basic safety rules for everyone</h3>
+            <ul class="list-disc list-inside space-y-2 mt-2">
+                <li>Always check Account and Financial Year before entering or reviewing figures.</li>
+                <li>Never share your password.</li>
+                <li>Do not edit or delete source records outside the normal EABMS workflow.</li>
+                <li>Keep transaction descriptions clear enough for another clerk to understand them later.</li>
+                <li>Use Help whenever you are unsure rather than guessing.</li>
+                <li>Click <strong>💾 Backup</strong> in the top bar before making large changes.</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2 class="text-xl font-bold text-slate-900">Common Questions &amp; Answers</h2>
+            <div class="space-y-4 mt-4">
+                <div><b>I am on the wrong Account. What should I do?</b><br>Stop and switch the Account before entering anything. Do not try to fix the Account by typing over a transaction later.</div>
+                <div><b>I entered the wrong amount. What should I do?</b><br>Open the transaction and use the normal edit process while the transaction is still editable. If it is locked or historical, ask the Administrator.</div>
+                <div><b>What does "Pass-Through" mean in summary cards?</b><br>It means internal transfers. EABMS displays the clean operational spending as the big headline, and shows pass-through transfers on a separate row so leaders are not misled.</div>
+                <div><b>How do I back up my work before leaving the office?</b><br>Simply click the <strong>💾 Backup</strong> button on the top bar. You will receive an immediate confirmation with the exact filename.</div>
+                <div><b>A Pilgrim or Organisation is missing from my dropdown. What do I do?</b><br>Open <strong>Masters</strong> in the sidebar, add the missing item in Pilgrims or Organisations, and save. It will appear in your transaction dropdown instantly.</div>
+                <div><b>I cannot edit a historical transaction. Is something broken?</b><br>No. Historical records are protected so that past audited figures remain 100% intact.</div>
+                <div><b>Why did none of my Bulk Grid rows save?</b><br>The batch is all-or-nothing. One single error in any row halts the entire save so you never end up with half-saved, scrambled accounts. Correct the highlighted error and save again.</div>
+            </div>
+        </section>
+
+        <section>
+            <h2 class="text-xl font-bold text-slate-900">Standard Formats Quick Reference</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3 text-sm">
+                <div class="bg-slate-50 rounded-lg p-3"><b>Standard Date</b><br>20-08-2026</div>
+                <div class="bg-slate-50 rounded-lg p-3"><b>Detailed Rupee Amount</b><br>$ 1,234,567.89</div>
+                <div class="bg-slate-50 rounded-lg p-3"><b>Executive Millions Amount</b><br>$ 1.23 Mn</div>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

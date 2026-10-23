@@ -1,0 +1,481 @@
+﻿{% extends 'base.html' %}{% load static %} 
+
+
+{% block title %}Dashboard — EABMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header & Account Switcher -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2">
+                <h1 class="text-2xl font-bold text-slate-800">
+                    {% if all_accounts_view %}
+                        Consolidated Management Overview
+                    {% else %}
+                        {{ account.name|default:"Acct" }} Overview
+                    {% endif %}
+                </h1>
+                <span class="px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-800 rounded-full">
+                    Amounts in Millions (Mn)
+                </span>
+            </div>
+            <div class="mt-1 flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">Fin Yr:</span>
+                <span class="abms-fy-badge text-xs font-black px-3 py-0.5 rounded-full"
+                      style="background: #fef3c7 !important; color: #78350f !important; border: 2px solid #d97706 !important;">
+                    📅 {{ fy.code }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    {% if not all_accounts_view %}
+    
+    <!-- Alerts & Warnings Section -->
+    {% if alerts %}
+    <div id="dashboard-alerts-container" class="space-y-2.5">
+        <div class="flex items-center justify-between px-1">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Active Notifications &amp; Budget Warnings</span>
+                <span id="active-alert-count" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">{{ alerts|length }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button type="button" id="btn-restore-alerts" class="hidden px-2.5 py-1 text-[11px] font-semibold text-slate-600 hover:text-slate-800 bg-white border border-slate-200 rounded-lg shadow-xs hover:bg-slate-50 transition cursor-pointer">
+                    ↺ Restore Dismissed (<span id="dismissed-count">0</span>)
+                </button>
+                <button type="button" id="btn-clear-all-alerts" class="inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold text-rose-700 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg shadow-xs transition cursor-pointer" title="Dismiss all active alerts and warnings">
+                    <span>✕ Clear All Warnings</span>
+                </button>
+            </div>
+        </div>
+        <div id="alerts-list" class="space-y-2">
+            {% for alert in alerts %}
+            <div class="alert-item p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-all duration-300 shadow-xs {% if alert.type == 'ALERT' %}bg-red-50 text-red-800 border-red-200{% else %}bg-amber-50 text-amber-800 border-amber-200{% endif %}" data-alert-id="{{ alert.type }}-{{ alert.message|slugify|default:forloop.counter }}">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full {% if alert.type == 'ALERT' %}bg-red-200 text-red-800{% else %}bg-amber-200 text-amber-800{% endif %} text-xs font-bold shrink-0">!</span>
+                    <div class="text-xs">
+                        <span class="font-extrabold uppercase tracking-wide">{{ alert.type }}:</span>
+                        <span class="ml-1 font-medium">{{ alert.message }}</span>
+                    </div>
+                </div>
+                <button type="button" class="btn-dismiss-single text-xs font-bold px-2 py-1 rounded-md {% if alert.type == 'ALERT' %}hover:bg-red-200/70 text-red-700{% else %}hover:bg-amber-200/70 text-amber-700{% endif %} transition shrink-0 cursor-pointer" title="Dismiss this warning">
+                    ✕
+                </button>
+            </div>
+            {% endfor %}
+        </div>
+        <div id="all-cleared-notice" class="hidden p-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 text-xs flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-emerald-600 font-bold text-sm">✓</span>
+                <span>All notifications and budget warnings have been cleared.</span>
+            </div>
+            <button type="button" onclick="document.getElementById('btn-restore-alerts').click()" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold underline cursor-pointer">Restore</button>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Quick Actions Row -->
+    <div class="flex flex-wrap items-center gap-3">
+        <a href="{% url 'core:inflow_create' %}" class="bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-4 py-2 rounded-lg shadow-sm">New Inflow</a>
+        <a href="{% url 'core:outflow_create' %}" class="bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium px-4 py-2 rounded-lg shadow-sm">New Outflow</a>
+        <a href="{% url 'core:internal_transfer_create' %}" class="bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium px-4 py-2 rounded-lg shadow-sm">⇄ Inter-Head Transfer</a>
+        <a href="{% url 'core:transaction_list' %}" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-medium px-4 py-2 rounded-lg shadow-sm">View Ledger</a>
+        <a href="{% url 'core:budget_list' %}" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-medium px-4 py-2 rounded-lg shadow-sm">Budget</a>
+        <a href="{% url 'reports:report_center' %}" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-medium px-4 py-2 rounded-lg shadow-sm">Reports</a>
+        <a href="{% url 'core:future_budget_list' %}" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-medium px-4 py-2 rounded-lg shadow-sm">Future Budget</a>
+        <a href="{% url 'core:reimbursement_list' %}" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-medium px-4 py-2 rounded-lg shadow-sm">Reimbursements</a>
+        <a href="{% url 'core:reconcile_opening_balance' %}" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-medium px-4 py-2 rounded-lg shadow-sm">Reconcile Balances</a>
+    </div>
+
+    <!-- Row 1: Cash & Liquidity Position (Operational) -->
+    <div class="space-y-1">
+        <div class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Cash &amp; Liquidity Overview</div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Opening Balance -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm" title="{{ opening_balance|default:'0.00'|rs }}">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase">Opening Balance</h3>
+                    <span class="text-xs text-slate-400">1-Jul</span>
+                </div>
+                <p class="text-xl font-bold text-slate-700 mt-1">{{ opening_balance|default:"0.00"|rs_mn }}</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">{{ opening_balance|default:"0.00"|rs }}</p>
+            </div>
+
+            <!-- Total Inflows -->
+            <div class="bg-emerald-50/70 p-4 rounded-xl border border-emerald-200 shadow-sm" title="{{ total_inflows|default:'0.00'|rs }}">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold text-emerald-700 uppercase">Total Inflows (Actuals)</h3>
+                    <span class="text-xs font-bold text-emerald-600">↓ Recd</span>
+                </div>
+                <p class="text-xl font-bold text-emerald-800 mt-1">{{ normal_inflows|default:"0.00"|rs_mn }}</p>
+                <div class="text-[10px] text-emerald-600 mt-1 flex justify-between">
+                    <span>Pass-Through: {{ pt_inflows|default:"0.00"|rs_mn }}</span>
+                    <span class="font-semibold">Gross: {{ total_inflows|default:"0.00"|rs_mn }}</span>
+                </div>
+            </div>
+
+            <!-- Total Outflows -->
+            <a href="{% url 'core:transaction_list' %}?direction=OUTFLOW" class="block bg-rose-50/70 p-4 rounded-xl border border-rose-200 shadow-sm hover:shadow-md transition" title="{% if net_outflows %}{{ net_outflows|rs }}{% else %}{{ total_outflows|default:'0.00'|rs }}{% endif %}">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold text-rose-700 uppercase">Total Outflows (Actuals)</h3>
+                    <span class="text-xs font-bold text-rose-600">↑ Paid</span>
+                </div>
+                <p class="text-xl font-bold text-rose-800 mt-1">{% if net_outflows %}{{ net_outflows|rs_mn }}{% else %}{{ total_outflows|default:"0.00"|rs_mn }}{% endif %}</p>
+                <div class="text-[10px] text-rose-600 mt-1 flex justify-between">
+                    <span>Pass-Through: {{ pass_through_total|default:"0.00"|rs_mn }}</span>
+                    <span class="font-semibold">Gross: {{ total_outflows|default:"0.00"|rs_mn }}</span>
+                </div>
+            </a>
+
+            <!-- Accumulated Balance Available -->
+            <div class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-4 rounded-xl border border-indigo-700 shadow-md" title="{{ balance_available|default:'0.00'|rs }}">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold text-indigo-200 uppercase">Accumulated Balance Available</h3>
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                </div>
+                <p class="text-2xl font-black font-mono tracking-tight text-white mt-1">{{ balance_available|default:"0.00"|rs_mn }}</p>
+                <p class="text-[11px] text-indigo-300 mt-0.5">{{ balance_available|default:"0.00"|rs }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 2: Budget Control & Target Intelligence (Inflow Budget | Outflow Budget | Diff | Utilisation) -->
+    <div class="space-y-1">
+        <div class="flex items-center justify-between">
+            <div class="text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-600">
+                Budget Control &amp; Planning Intelligence
+                {% if is_future_budget_active %}
+                <span class="ml-1.5 px-2 py-0.5 bg-amber-100 text-amber-800 text-[10px] rounded-full font-bold">Showing Future Budget Modeling (#{{ active_future_budget.pk }})</span>
+                {% endif %}
+            </div>
+            <a href="{% url 'core:budget_list' %}" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold">View Budget Control &rarr;</a>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Inflow Budget Card -->
+            <div class="bg-emerald-50/50 p-4 rounded-xl border border-emerald-200 shadow-sm" title="{{ approved_inflow_budget|default:'0.00'|rs }}">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold text-emerald-800 uppercase">Inflow Budget</h3>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-700">Target Inflow</span>
+                </div>
+                <p class="text-xl font-bold text-emerald-900 mt-1">{{ approved_inflow_budget|default:"0.00"|rs_mn }}</p>
+                <div class="text-[11px] text-emerald-700 mt-1 flex justify-between">
+                    <span>Recd: {{ inflow_budget_consumed|default:"0.00"|rs_mn }}</span>
+                    <span class="font-semibold">Bal: {{ inflow_budget_balance|default:"0.00"|rs_mn }}</span>
+                </div>
+            </div>
+
+            <!-- Outflow Budget Card -->
+            <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-200 shadow-sm" title="{{ approved_outflow_budget|default:'0.00'|rs }}">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold text-indigo-800 uppercase">Outflow Budget</h3>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-100 text-indigo-700">Authorised Outlay</span>
+                </div>
+                <p class="text-xl font-bold text-indigo-950 mt-1">{{ approved_outflow_budget|default:"0.00"|rs_mn }}</p>
+                <div class="text-[11px] text-indigo-700 mt-1 flex justify-between">
+                    <span>Spent: {{ budget_consumed|default:"0.00"|rs_mn }}</span>
+                    <span class="font-semibold">Bal: {{ balance_of_budget|default:"0.00"|rs_mn }}</span>
+                </div>
+            </div>
+
+            <!-- Budget Diff (Inflow - Outflow) Card -->
+            <div class="p-4 rounded-xl border shadow-sm {% if approved_net_budget >= 0 %}bg-emerald-50/80 border-emerald-300 text-emerald-900{% else %}bg-rose-50/80 border-rose-300 text-rose-900{% endif %}" title="{{ approved_net_budget|rs_signed }}">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xs font-bold uppercase {% if approved_net_budget >= 0 %}text-emerald-800{% else %}text-rose-800{% endif %}">Net Budget Diff</h3>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold {% if approved_net_budget >= 0 %}bg-emerald-200 text-emerald-800{% else %}bg-rose-200 text-rose-800{% endif %}">
+                        {% if approved_net_budget >= 0 %}Surplus Margin{% else %}Deficit Margin{% endif %}
+                    </span>
+                </div>
+                <p class="text-xl font-bold mt-1 font-mono {% if approved_net_budget >= 0 %}text-emerald-800{% else %}text-rose-800{% endif %}">{{ approved_net_budget|rs_mn_signed }}</p>
+                <div class="text-[10px] mt-1 {% if approved_net_budget >= 0 %}text-emerald-700{% else %}text-rose-700{% endif %}">
+                    <span>Full: {{ approved_net_budget|rs_signed }}</span>
+                </div>
+            </div>
+
+            <!-- Outflow Utilisation % Card -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <div class="flex justify-between items-center mb-1">
+                    <h3 class="text-xs font-bold text-slate-600 uppercase">Budget Utilisation %</h3>
+                    <span class="text-sm font-extrabold text-slate-800">{% if budget_utilisation %}{{ budget_utilisation|pct }}{% else %}0.00%{% endif %}</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-2.5 mt-2">
+                    <div class="{% if budget_utilisation and budget_utilisation > 100 %}bg-rose-600{% elif budget_utilisation and budget_utilisation > 80 %}bg-amber-500{% else %}bg-emerald-600{% endif %} h-2.5 rounded-full" style="width: {% if budget_utilisation %}{{ budget_utilisation|floatformat:1 }}%{% else %}0%{% endif %}"></div>
+                </div>
+                <div class="flex items-center justify-between text-[10px] text-slate-400 mt-2">
+                    <span>Consumed: {{ budget_consumed|default:"0.00"|rs_mn }}</span>
+                    <span>Remaining: {{ balance_of_budget|default:"0.00"|rs_mn }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Middle Section: Period Summary & Monthly Trend -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Period Summary -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <h2 class="text-lg font-bold text-slate-800 mb-4">Period Summary</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-4">
+                    <h4 class="text-xs font-bold uppercase text-slate-500 border-b pb-1">This Month</h4>
+                    <div>
+                        <div class="text-xs text-slate-500">Inflows</div>
+                        <div class="font-semibold text-green-700">{{ this_month_inflows|default:"0.00"|rs_mn }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-500">Outflows</div>
+                        <div class="font-semibold text-red-700">{{ this_month_outflows|default:"0.00"|rs_mn }}</div>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <h4 class="text-xs font-bold uppercase text-slate-500 border-b pb-1">Since Start of FY</h4>
+                    <div>
+                        <div class="text-xs text-slate-500">Inflows</div>
+                        <div class="font-semibold text-green-700">{{ since_start_inflows|default:"0.00"|rs_mn }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-500">Outflows</div>
+                        <div class="font-semibold text-red-700">{{ since_start_outflows|default:"0.00"|rs_mn }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Trend -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm overflow-auto max-h-80">
+            <h2 class="text-lg font-bold text-slate-800 mb-4">Monthly Trend</h2>
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-slate-500 uppercase bg-slate-50">
+                    <tr>
+                        <th class="px-4 py-2">Month</th>
+                        <th class="px-4 py-2 text-right">Inflows</th>
+                        <th class="px-4 py-2 text-right">Outflows</th>
+                        <th class="px-4 py-2 text-right">Movement</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in monthly_trend %}
+                    <tr class="border-b">
+                        <td class="px-4 py-2 font-medium">{{ m.month|ym }}</td>
+                        <td class="px-4 py-2 text-right text-green-600">{{ m.inflows|rs_mn }}</td>
+                        <td class="px-4 py-2 text-right text-red-600">{{ m.outflows|rs_mn }}</td>
+                        <td class="px-4 py-2 text-right font-semibold {% if m.balance_movement > 0 %}text-green-700{% elif m.balance_movement < 0 %}text-red-700{% else %}text-slate-500{% endif %}">
+                            {{ m.balance_movement|rs_mn_signed }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Bottom Section: Management & Budget -->
+    {% if is_management %}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Management Indicators -->
+        <div class="bg-slate-800 text-white p-5 rounded-xl shadow-sm">
+            <h2 class="text-lg font-bold mb-4">Mgmt Indicators</h2>
+            <div class="grid grid-cols-2 gap-x-4 gap-y-6">
+                <div>
+                    <div class="text-xs text-slate-400 uppercase">Routine Outflows</div>
+                    <div class="text-lg font-semibold mt-1">{{ routine_outflows|default:"0.00"|rs_mn }}</div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400 uppercase">Addl Outflows</div>
+                    <div class="text-lg font-semibold mt-1">{{ addl_outflows|default:"0.00"|rs_mn }}</div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400 uppercase">Continuing Reqs</div>
+                    <div class="text-lg font-semibold mt-1">{{ cont_outflows|default:"0.00"|rs_mn }}</div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400 uppercase">New Reqs</div>
+                    <div class="text-lg font-semibold mt-1">{{ new_outflows|default:"0.00"|rs_mn }}</div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400 uppercase">Pass-Through</div>
+                    <div class="text-lg font-semibold mt-1">
+                        {{ pt_count }} txns<br>
+                        <span class="text-sm text-slate-300">{{ pt_outflows|default:"0.00"|rs_mn }}</span>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs text-slate-400 uppercase">Pending Reimb.</div>
+                    <div class="text-lg font-semibold mt-1 text-amber-300">
+                        <a href="{% url 'core:reimbursement_list' %}" class="hover:underline">
+                        {{ pending_reimb_count }} pending<br>
+                        <span class="text-sm">{{ pending_reimb_total|default:"0.00"|rs_mn }}</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Budget Top Heads -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm overflow-auto">
+            <h2 class="text-lg font-bold text-slate-800 mb-4">Top Budget Consumption</h2>
+            <table class="w-full text-sm text-left">
+                <thead class="text-xs text-slate-500 uppercase bg-slate-50">
+                    <tr>
+                        <th class="px-2 py-2">Head</th>
+                        <th class="px-2 py-2 text-right">Consumed</th>
+                        <th class="px-2 py-2 text-right">Util %</th>
+                        <th class="px-2 py-2 text-center">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in top_budget_heads %}
+                    <tr class="border-b">
+                        <td class="px-2 py-2 font-medium">{% if h.account_head %}{{ h.account_head }}{% elif h.sub_head %}{{ h.sub_head }}{% else %}-{% endif %}</td>
+                        <td class="px-2 py-2 text-right">{{ h.budget_consumed|rs_mn }}</td>
+                        <td class="px-2 py-2 text-right">{% if h.utilisation_pct %}{{ h.utilisation_pct|pct }}{% else %}-{% endif %}</td>
+                        <td class="px-2 py-2 text-center">
+                            {% if h.approved_budget > 0 and h.budget_consumed > h.approved_budget %}
+                            <span class="px-2 py-1 text-[10px] font-bold bg-red-100 text-red-800 rounded-full">OVER</span>
+                            {% else %}
+                            <span class="px-2 py-1 text-[10px] font-bold bg-green-100 text-green-800 rounded-full">OK</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-2 py-4 text-center text-slate-400">No budget data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- Consolidated View (Admin/Management Only) -->
+    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm overflow-x-auto">
+        <table class="w-full text-sm text-left">
+            <thead class="text-xs text-slate-500 uppercase bg-slate-50">
+                <tr>
+                    <th class="px-4 py-3">Acct</th>
+                    <th class="px-4 py-3 text-right">Budget</th>
+                    <th class="px-4 py-3 text-right">Inflows</th>
+                    <th class="px-4 py-3 text-right">Outflows</th>
+                    <th class="px-4 py-3 text-right">Balance Available</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in consolidated_data %}
+                <tr class="border-b">
+                    <td class="px-4 py-3 font-semibold text-slate-800">{{ row.account }}</td>
+                    <td class="px-4 py-3 text-right">{{ row.approved_budget|rs_mn }}</td>
+                    <td class="px-4 py-3 text-right text-green-600">{{ row.inflows|rs_mn }}</td>
+                    <td class="px-4 py-3 text-right text-red-600">{{ row.outflows|rs_mn }}</td>
+                    <td class="px-4 py-3 text-right font-bold text-blue-700">{{ row.balance_available|rs_mn }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr class="bg-slate-100 font-bold text-slate-900">
+                    <td class="px-4 py-3 uppercase">Grand Total</td>
+                    <td class="px-4 py-3 text-right">{{ grand_totals.approved_budget|rs_mn }}</td>
+                    <td class="px-4 py-3 text-right text-green-700">{{ grand_totals.inflows|rs_mn }}</td>
+                    <td class="px-4 py-3 text-right text-red-700">{{ grand_totals.outflows|rs_mn }}</td>
+                    <td class="px-4 py-3 text-right text-blue-800">{{ grand_totals.balance_available|rs_mn }}</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function(){
+    var storageKey = 'abms_dismissed_alerts_{{ request.account.code }}_{{ request.fy.code }}';
+    var container = document.getElementById('dashboard-alerts-container');
+    if (!container) return;
+
+    var items = container.querySelectorAll('.alert-item');
+    var activeBadge = document.getElementById('active-alert-count');
+    var dismissedCountEl = document.getElementById('dismissed-count');
+    var restoreBtn = document.getElementById('btn-restore-alerts');
+    var clearAllBtn = document.getElementById('btn-clear-all-alerts');
+    var clearedNotice = document.getElementById('all-cleared-notice');
+
+    function getDismissed() {
+        try {
+            return JSON.parse(localStorage.getItem(storageKey) || '[]');
+        } catch(e) { return []; }
+    }
+    function saveDismissed(arr) {
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(arr));
+        } catch(e) {}
+    }
+
+    function refreshUI() {
+        var dismissed = getDismissed();
+        var visibleCount = 0;
+        var dismissedCount = 0;
+
+        items.forEach(function(item) {
+            var id = item.dataset.alertId;
+            if (dismissed.indexOf(id) !== -1) {
+                item.classList.add('hidden');
+                dismissedCount++;
+            } else {
+                item.classList.remove('hidden');
+                visibleCount++;
+            }
+        });
+
+        if (activeBadge) activeBadge.textContent = visibleCount;
+        if (dismissedCountEl) dismissedCountEl.textContent = dismissedCount;
+        if (restoreBtn) restoreBtn.classList.toggle('hidden', dismissedCount === 0);
+        if (clearAllBtn) clearAllBtn.classList.toggle('hidden', visibleCount === 0);
+        if (clearedNotice) clearedNotice.classList.toggle('hidden', visibleCount > 0 || dismissedCount === 0);
+    }
+
+    // Dismiss single alert
+    items.forEach(function(item) {
+        var btn = item.querySelector('.btn-dismiss-single');
+        if (btn) {
+            btn.addEventListener('click', function() {
+                var id = item.dataset.alertId;
+                var dismissed = getDismissed();
+                if (dismissed.indexOf(id) === -1) {
+                    dismissed.push(id);
+                    saveDismissed(dismissed);
+                }
+                refreshUI();
+            });
+        }
+    });
+
+    // Clear All Warnings
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', function() {
+            var dismissed = getDismissed();
+            items.forEach(function(item) {
+                var id = item.dataset.alertId;
+                if (dismissed.indexOf(id) === -1) {
+                    dismissed.push(id);
+                }
+            });
+            saveDismissed(dismissed);
+            refreshUI();
+        });
+    }
+
+    // Restore All Dismissed Warnings
+    if (restoreBtn) {
+        restoreBtn.addEventListener('click', function() {
+            saveDismissed([]);
+            refreshUI();
+        });
+    }
+
+    refreshUI();
+})();
+</script>
+{% endblock %}

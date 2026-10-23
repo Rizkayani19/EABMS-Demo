@@ -1,0 +1,115 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Budget Adder — EABMS{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <div class="flex items-center justify-between pb-4 border-b border-slate-200">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Budget Adder</h1>
+            <p class="text-xs text-slate-500 mt-1">Budget #{{ budget.pk }} — {{ budget.account.name }} — {{ budget.financial_year.name }}</p>
+        </div>
+        <a href="{% url 'core:budget_detail' budget.pk %}" class="text-sm font-semibold text-slate-500 hover:text-slate-800 transition">← Back</a>
+    </div>
+
+    <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs text-blue-800">
+        <strong>Planning rule:</strong> Outflow and Inflow budgets are recorded separately. Account Heads marked <strong>BOTH</strong> can receive either or both directions. The variance preview compares the entered plan with active transactions in the selected Financial Year.
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200">
+        <div class="px-6 py-4 border-b border-slate-100">
+            <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Budget Line Details</h2>
+        </div>
+        <form method="post" class="p-6 space-y-5">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+            <div class="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-sm">
+                {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {% for field in form %}
+                <div id="field-wrap-{{ field.name }}" class="{% if field.name == 'remarks' %}sm:col-span-2{% endif %}">
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5" for="{{ field.id_for_label }}">
+                        {{ field.label }}{% if field.field.required %} <span class="text-rose-500">*</span>{% endif %}
+                    </label>
+                    <div class="[&>select]:w-full [&>select]:border [&>select]:border-slate-300 [&>select]:rounded-lg [&>select]:px-3 [&>select]:py-2 [&>select]:text-sm [&>input]:w-full [&>input]:border [&>input]:border-slate-300 [&>input]:rounded-lg [&>input]:px-3 [&>input]:py-2 [&>input]:text-sm [&>input]:focus:ring-2 [&>input]:focus:ring-emerald-500 [&>textarea]:w-full [&>textarea]:border [&>textarea]:border-slate-300 [&>textarea]:rounded-lg [&>textarea]:px-3 [&>textarea]:py-2 [&>textarea]:text-sm">
+                        {{ field }}
+                    </div>
+                    {% if field.errors %}<p class="text-xs text-rose-600 mt-1 font-medium">{{ field.errors.0 }}</p>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div id="variance-panel" class="hidden bg-slate-50 border border-slate-200 rounded-xl p-4">
+                <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-3">Historical Actual vs Planned Difference</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <div class="bg-white border border-slate-200 rounded-lg p-3">
+                        <div class="text-[10px] uppercase font-bold text-slate-400">Outflow</div>
+                        <div class="mt-1">Actual: <strong id="actual-outflow">$ 0.00</strong></div>
+                        <div>Planned: <strong id="planned-outflow">$ 0.00</strong></div>
+                        <div>Difference: <strong id="diff-outflow">$ 0.00</strong></div>
+                    </div>
+                    <div class="bg-white border border-slate-200 rounded-lg p-3">
+                        <div class="text-[10px] uppercase font-bold text-slate-400">Inflow</div>
+                        <div class="mt-1">Actual: <strong id="actual-inflow">$ 0.00</strong></div>
+                        <div>Planned: <strong id="planned-inflow">$ 0.00</strong></div>
+                        <div>Difference: <strong id="diff-inflow">$ 0.00</strong></div>
+                    </div>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-3">Difference = Planned Budget − Active Actuals for the selected Financial Year.</p>
+            </div>
+
+            <div class="pt-4 border-t border-slate-100 flex justify-between">
+                <a href="{% url 'core:budget_detail' budget.pk %}" class="px-5 py-2.5 bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold text-sm rounded-lg transition">Discard</a>
+                <button type="submit" class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-lg transition shadow-sm">Save Budget Plan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{ head_metrics|json_script:'abms-head-metrics' }}
+{{ account_heads_json|json_script:'abms-head-types' }}
+<script>
+(function () {
+    const metrics = JSON.parse(document.getElementById('abms-head-metrics').textContent || '{}');
+    const headTypes = JSON.parse(document.getElementById('abms-head-types').textContent || '{}');
+    const head = document.getElementById('id_account_head');
+    const outflowWrap = document.getElementById('field-wrap-amount');
+    const inflowWrap = document.getElementById('field-wrap-inflow_amount');
+    const outflow = document.getElementById('id_amount');
+    const inflow = document.getElementById('id_inflow_amount');
+    const panel = document.getElementById('variance-panel');
+
+    function money(v) {
+        return '$ ' + (Number(v) || 0).toLocaleString('en-PK', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+    function update() {
+        const id = head && head.value;
+        const type = headTypes[id];
+        const m = metrics[id] || {outflow: '0.00', inflow: '0.00'};
+        const actualOut = Number(m.outflow) || 0;
+        const actualIn = Number(m.inflow) || 0;
+        const planOut = Number(outflow && outflow.value) || 0;
+        const planIn = Number(inflow && inflow.value) || 0;
+        const showOut = type === 'OUTFLOW' || type === 'BOTH';
+        const showIn = type === 'INFLOW' || type === 'BOTH';
+        if (outflowWrap) outflowWrap.style.display = showOut ? '' : 'none';
+        if (inflowWrap) inflowWrap.style.display = showIn ? '' : 'none';
+        if (outflow) outflow.required = showOut && type !== 'BOTH';
+        if (inflow) inflow.required = showIn && type !== 'BOTH';
+        if (panel) panel.classList.toggle('hidden', !id);
+        document.getElementById('actual-outflow').textContent = money(actualOut);
+        document.getElementById('planned-outflow').textContent = money(planOut);
+        document.getElementById('diff-outflow').textContent = money(planOut - actualOut);
+        document.getElementById('actual-inflow').textContent = money(actualIn);
+        document.getElementById('planned-inflow').textContent = money(planIn);
+        document.getElementById('diff-inflow').textContent = money(planIn - actualIn);
+    }
+    [head, outflow, inflow].forEach(function (el) { if (el) el.addEventListener('input', update); });
+    if (head) head.addEventListener('change', update);
+    update();
+})();
+</script>
+{% endblock %}

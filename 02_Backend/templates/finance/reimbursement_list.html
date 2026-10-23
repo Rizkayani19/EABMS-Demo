@@ -1,0 +1,106 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Reimbursements — EABMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Reimbursements</h1>
+            <p class="text-xs text-slate-500 mt-1">{{ request.account.name }} — {{ request.fy.name }}</p>
+        </div>
+        <a href="{% url 'core:reimbursement_create' %}" class="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-md shadow-sm transition">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            New Reimbursement
+        </a>
+    </div>
+
+    <!-- Messages -->
+    {% for message in messages %}
+    <div class="p-4 rounded-xl text-sm font-medium {% if message.tags == 'success' %}bg-emerald-50 border border-emerald-300 text-emerald-800{% else %}bg-rose-50 border border-rose-200 text-rose-700{% endif %}">
+        {{ message }}
+    </div>
+    {% endfor %}
+
+    <!-- Table -->
+    <div class="bg-white shadow-sm border border-slate-200 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-left text-xs" data-bulk-delete-url="{% url 'core:reimbursement_bulk_delete' %}">
+                <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider">
+                    <tr>
+                        <th class="w-10 px-3 py-3 text-center"><input type="checkbox" class="abms-select-all rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4" title="Select / Deselect All"></th>
+                        <th class="px-4 py-3">Type</th>
+                        <th class="px-4 py-3">Original Outflow</th>
+                        <th class="px-4 py-3 text-right">Expected ($)</th>
+                        <th class="px-4 py-3 text-right">Received ($)</th>
+                        <th class="px-4 py-3 text-right">Pending ($)</th>
+                        <th class="px-4 py-3">Expected Date</th>
+                        <th class="px-4 py-3">Received Date</th>
+                        <th class="px-4 py-3 text-center">Status</th>
+                        <th class="px-4 py-3">Reference</th>
+                        <th class="px-4 py-3 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                    {% for r in reimbursements %}
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="w-10 px-3 py-3 text-center align-top"><input type="checkbox" value="{{ r.pk }}" class="abms-row-select rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4"></td>
+                        <td class="px-4 py-3 font-medium text-slate-700">{{ r.get_reimbursement_type_display }}</td>
+                        <td class="px-4 py-3">
+                            {% if r.original_outflow %}
+                            <a href="{% url 'core:transaction_detail' r.original_outflow.pk %}" class="text-emerald-600 hover:text-emerald-800 font-mono text-[11px]">
+                                {{ r.original_outflow.transaction_number }}
+                            </a>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right font-mono">{{ r.expected_amount|rs }}</td>
+                        <td class="px-4 py-3 text-right font-mono text-emerald-700">{{ r.received_amount|rs }}</td>
+                        <td class="px-4 py-3 text-right font-mono {% if r.pending_amount > 0 %}text-rose-600 font-semibold{% else %}text-slate-500{% endif %}">{{ r.pending_amount|rs }}</td>
+                        <td class="px-4 py-3 text-slate-600">{{ r.expected_date|default:"—"|dmy }}</td>
+                        <td class="px-4 py-3 text-slate-600">{{ r.received_date|default:"—"|dmy }}</td>
+                        <td class="px-4 py-3 text-center">
+                            {% if r.status == 'PENDING' %}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-700">Pending</span>
+                            {% elif r.status == 'RECEIVED' %}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">Received</span>
+                            {% else %}
+                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-500">{{ r.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 font-mono text-[11px] text-slate-500">{{ r.reference|default:"—" }}</td>
+                        <td class="px-4 py-3 text-center">
+                            <a href="{% url 'core:reimbursement_edit' r.pk %}" class="text-slate-400 hover:text-blue-600 transition" title="Edit">
+                                <svg class="w-4 h-4 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" class="px-4 py-12 text-center">
+                            <div class="text-slate-400 text-sm">No reimbursements recorded yet.</div>
+                            <div class="mt-3">
+                                <a href="{% url 'core:reimbursement_create' %}" class="px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-md">Record First Reimbursement</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if reimbursements %}
+                <tfoot class="bg-slate-50 border-t-2 border-slate-200 text-xs font-bold">
+                    <tr>
+                        <td colspan="3" class="px-4 py-3 text-slate-600">{{ reimbursements|length }} record(s)</td>
+                        <td class="px-4 py-3 text-right font-mono text-slate-800">—</td>
+                        <td class="px-4 py-3 text-right font-mono text-emerald-700">—</td>
+                        <td class="px-4 py-3 text-right font-mono text-rose-600">—</td>
+                        <td colspan="5"></td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

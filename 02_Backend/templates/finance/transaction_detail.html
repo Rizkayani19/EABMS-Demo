@@ -1,0 +1,153 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Transaction {{ transaction.transaction_number }} — EABMS{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-5">
+    <!-- Breadcrumb / Header -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-[11px] text-slate-400 mb-2"><a href="{% url 'core:transaction_list' %}" class="hover:text-emerald-700">Ledger</a><span>›</span><span>Transaction Detail</span></div>
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="px-3 py-1 bg-emerald-700 text-white font-mono font-bold rounded-lg shadow-sm text-xl tracking-tight">{{ transaction.transaction_number }}</span>
+                {% if transaction.direction == 'INFLOW' %}<span class="inline-flex items-center gap-1 px-3 py-1 rounded-md bg-emerald-600 text-white text-xs font-bold shadow-xs">↓ Inflow</span>{% else %}<span class="inline-flex items-center gap-1 px-3 py-1 rounded-md bg-rose-600 text-white text-xs font-bold shadow-xs">↑ Outflow</span>{% endif %}
+                {% if transaction.status == 'ACTIVE' %}<span class="px-2.5 py-1 rounded-md bg-emerald-600 text-white text-xs font-bold shadow-xs">Active</span>{% elif transaction.status == 'DRAFT' %}<span class="px-2.5 py-1 rounded-md bg-amber-500 text-white text-xs font-bold shadow-xs">Draft</span>{% elif transaction.status == 'CANCELLED' %}<span class="px-2.5 py-1 rounded-md bg-slate-600 text-white text-xs font-bold shadow-xs">Cancelled</span>{% endif %}
+                {% if transaction.is_historical %}<span class="px-2.5 py-1 rounded-md bg-indigo-600 text-white text-xs font-bold shadow-xs">Historical</span>{% endif %}
+            </div>
+            <p class="text-xs text-slate-500 mt-1">{{ transaction.account.name }} <span class="text-slate-300 mx-1">•</span> {{ transaction.financial_year.name }}</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{% url 'core:transaction_list' %}" class="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-semibold rounded-lg transition">← Ledger</a>
+            {% if transaction.status != 'CANCELLED' %}<a href="{% url 'core:transaction_edit' transaction.pk %}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg transition">Edit</a>{% endif %}
+            {% if transaction.status != 'CANCELLED' %}<button onclick="document.getElementById('cancel-modal').classList.remove('hidden')" class="px-4 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold rounded-lg border border-rose-200 transition">Cancel Transaction</button>{% endif %}
+        </div>
+    </div>
+
+    {% for message in messages %}<div class="p-3 rounded-xl text-sm font-medium {% if message.tags == 'success' %}bg-emerald-50 border border-emerald-200 text-emerald-800{% else %}bg-rose-50 border border-rose-200 text-rose-700{% endif %}">{{ message }}</div>{% endfor %}
+
+    <!-- Hero financial card -->
+    <section class="relative overflow-hidden rounded-2xl border {% if transaction.direction == 'INFLOW' %}border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-white{% else %}border-rose-200 bg-gradient-to-br from-rose-50 via-white to-white{% endif %} shadow-sm">
+        <div class="p-5 md:p-6">
+            <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+                <div>
+                    <div class="abms-detail-label {% if transaction.direction == 'INFLOW' %}text-emerald-600{% else %}text-rose-600{% endif %}">{{ transaction.get_direction_display }} Amount</div>
+                    <div class="mt-1 text-4xl md:text-5xl font-bold tracking-tight font-mono {% if transaction.direction == 'INFLOW' %}text-emerald-700{% else %}text-rose-700{% endif %}">{{ transaction.amount|rs }}</div>
+                    <div class="mt-2 text-xs text-slate-500">Transaction date <span class="font-semibold text-slate-700">{{ transaction.transaction_date|dmy }}</span> <span class="text-slate-300 mx-1">•</span> {{ transaction.transaction_date|mmy }}</div>
+                </div>
+                <div class="grid grid-cols-2 gap-3 min-w-[280px]">
+                    <div class="bg-white/80 backdrop-blur rounded-xl border border-white p-3"><div class="abms-detail-label">Account Head</div><div class="abms-detail-value truncate">{{ transaction.account_head.name|default:"—" }}</div></div>
+                    <div class="bg-white/80 backdrop-blur rounded-xl border border-white p-3"><div class="abms-detail-label">Reference</div><div class="flex items-center gap-2 mt-1"><span id="reference-value" class="text-xs font-mono font-semibold text-slate-700 truncate">{{ transaction.reference|default:"—" }}</span>{% if transaction.reference %}<button type="button" class="abms-copy-btn" data-copy-target="reference-value" title="Copy reference">⧉</button>{% endif %}</div></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Primary details -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <div class="flex items-center gap-2 pb-3 border-b border-slate-100"><div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">▦</div><div><h2 class="text-sm font-bold text-slate-800">Classification</h2><p class="text-[10px] text-slate-400">Financial hierarchy and transaction nature</p></div></div>
+            <div class="grid grid-cols-2 gap-x-5 gap-y-4 mt-4">
+                <div><div class="abms-detail-label">Division (Tier 1)</div><div class="abms-detail-value">{{ transaction.major_head.name|default:"—" }}</div></div>
+                <div><div class="abms-detail-label">Account Head (Tier 2)</div><div class="abms-detail-value">{{ transaction.account_head.name|default:"—" }}</div></div>
+                <div><div class="abms-detail-label">Sub Head (Tier 3)</div><div class="abms-detail-value">{{ transaction.sub_head.name|default:"—" }}</div></div>
+                <div><div class="abms-detail-label">Primary Organisation</div><div class="abms-detail-value">{{ transaction.unit.name|default:"—" }}</div></div>
+                {% if transaction.direction == 'OUTFLOW' %}
+                <div>
+                    <div class="abms-detail-label">Outflow Nature</div>
+                    <div class="mt-1">
+                        {% if 'routine' in transaction.outflow_nature.name|lower %}<span class="inline-block px-2.5 py-0.5 rounded-md bg-emerald-600 text-white text-xs font-bold shadow-xs">Routine</span>
+                        {% elif 'add' in transaction.outflow_nature.name|lower %}<span class="inline-block px-2.5 py-0.5 rounded-md bg-rose-600 text-white text-xs font-bold shadow-xs">Additional</span>
+                        {% elif 'contin' in transaction.outflow_nature.name|lower %}<span class="inline-block px-2.5 py-0.5 rounded-md bg-purple-600 text-white text-xs font-bold shadow-xs">Continuing</span>
+                        {% elif 'reim' in transaction.outflow_nature.name|lower %}<span class="inline-block px-2.5 py-0.5 rounded-md bg-teal-600 text-white text-xs font-bold shadow-xs">Reimbursement</span>
+                        {% elif transaction.outflow_nature %}<span class="inline-block px-2.5 py-0.5 rounded-md bg-slate-700 text-white text-xs font-bold shadow-xs">{{ transaction.outflow_nature.name }}</span>
+                        {% else %}<span class="text-slate-400">—</span>{% endif %}
+                    </div>
+                </div>
+                <div>
+                    <div class="abms-detail-label">Pass-through</div>
+                    <div class="mt-1">
+                        {% if transaction.pass_through %}<span class="inline-block px-2.5 py-0.5 rounded-md bg-amber-500 text-white text-xs font-bold shadow-xs">Pass-through</span>{% else %}<span class="text-slate-500 text-xs font-semibold">No</span>{% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div>
+                    <div class="abms-detail-label">Inflow Type</div>
+                    <div class="mt-1">
+                        {% if transaction.inflow_type %}<span class="inline-block px-2.5 py-0.5 rounded-md bg-emerald-600 text-white text-xs font-bold shadow-xs">{{ transaction.inflow_type.name }}</span>{% else %}<span class="text-slate-400">—</span>{% endif %}
+                    </div>
+                </div>
+                <div>
+                    <div class="abms-detail-label">Pass-through</div>
+                    <div class="mt-1">
+                        {% if transaction.pass_through %}<span class="inline-block px-2.5 py-0.5 rounded-md bg-amber-500 text-white text-xs font-bold shadow-xs">Pass-through</span>{% else %}<span class="text-slate-500 text-xs font-semibold">No</span>{% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Attributed Organisations & Departments -->
+            {% if transaction.transaction_units.all or transaction.transaction_sections.all %}
+            <div class="mt-4 pt-3 border-t border-slate-100 space-y-2.5">
+                {% if transaction.transaction_units.all %}
+                <div>
+                    <div class="abms-detail-label mb-1">Attributed Organisations / Organisations ({{ transaction.transaction_units.count }})</div>
+                    <div class="flex flex-wrap gap-1.5">
+                        {% for u in transaction.transaction_units.all %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200 text-xs font-medium">🏢 {{ u.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                {% if transaction.transaction_sections.all %}
+                <div>
+                    <div class="abms-detail-label mb-1">Attributed Departments ({{ transaction.transaction_sections.count }})</div>
+                    <div class="flex flex-wrap gap-1.5">
+                        {% for s in transaction.transaction_sections.all %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-medium">📑 {{ s.name }}</span>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </section>
+
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <div class="flex items-center gap-2 pb-3 border-b border-slate-100"><div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">ⓘ</div><div><h2 class="text-sm font-bold text-slate-800">Reference & Audit</h2><p class="text-[10px] text-slate-400">Traceable record information</p></div></div>
+            <div class="space-y-4 mt-4">
+                <div class="flex items-center justify-between gap-4"><div><div class="abms-detail-label">Transaction Number</div><div class="mt-1"><span id="tx-number-value" class="inline-block px-2.5 py-0.5 rounded bg-emerald-700 text-white font-mono font-bold text-xs shadow-xs">{{ transaction.transaction_number }}</span></div></div><button type="button" class="abms-copy-btn" data-copy-target="tx-number-value" title="Copy transaction number">⧉</button></div>
+                <div><div class="abms-detail-label">Source / Payee</div><div class="mt-1"><span class="inline-block px-2.5 py-0.5 rounded-md bg-blue-600 text-white font-extrabold text-xs shadow-xs">{{ transaction.payee_or_source|default:"—" }}</span></div></div>
+                <div><div class="abms-detail-label">Document Reference</div><div class="abms-detail-value font-mono text-xs">{{ transaction.document_reference|default:"—" }}</div></div>
+                <div class="grid grid-cols-2 gap-4"><div><div class="abms-detail-label">Created By</div><div class="abms-detail-value">{{ transaction.created_by.get_full_name|default:transaction.created_by.username|default:"System" }}</div></div><div><div class="abms-detail-label">Created</div><div class="abms-detail-value font-mono text-xs">{{ transaction.created_at|dmy }}</div></div></div>
+                {% if transaction.updated_by %}<div class="grid grid-cols-2 gap-4 pt-3 border-t border-slate-100"><div><div class="abms-detail-label">Updated By</div><div class="abms-detail-value">{{ transaction.updated_by.get_full_name|default:transaction.updated_by.username|default:"—" }}</div></div><div><div class="abms-detail-label">Updated</div><div class="abms-detail-value font-mono text-xs">{{ transaction.updated_at|dmy }}</div></div></div>{% endif %}
+            </div>
+        </section>
+    </div>
+
+    <!-- Description -->
+    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+        <div class="flex items-center gap-2 pb-3 border-b border-slate-100"><div class="w-8 h-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center">≡</div><h2 class="text-sm font-bold text-slate-800">Description & Remarks</h2></div>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-5"><div><div class="abms-detail-label">Description / Purpose</div><div class="mt-2 text-sm text-slate-700 leading-6">{{ transaction.description|default:transaction.purpose|default:"—" }}</div></div>{% if transaction.remarks %}<div><div class="abms-detail-label">Remarks</div><div class="mt-2 text-sm text-slate-600 leading-6">{{ transaction.remarks }}</div></div>{% endif %}</div>
+    </section>
+
+    <!-- Documents -->
+    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100"><div><h2 class="text-sm font-bold text-slate-800">Documents</h2><p class="text-[10px] text-slate-400 mt-0.5">Supporting records attached to this transaction</p></div><span class="text-[10px] font-semibold text-slate-400">{{ documents|length }} file{{ documents|length|pluralize }}</span></div>
+        {% if documents %}<div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">{% for link in documents %}<div class="abms-doc-card"><div class="flex items-center justify-between gap-3"><div class="flex items-center gap-3 min-w-0"><div class="w-10 h-10 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-[10px] font-bold text-slate-500 uppercase">{% if '.pdf' in link.document.file_name|lower %}PDF{% elif '.xlsx' in link.document.file_name|lower or '.xls' in link.document.file_name|lower %}XLS{% elif '.jpg' in link.document.file_name|lower or '.jpeg' in link.document.file_name|lower or '.png' in link.document.file_name|lower %}IMG{% else %}FILE{% endif %}</div><div class="min-w-0"><div class="text-sm font-semibold text-slate-700 truncate">{{ link.document.file_name }}</div><div class="text-[10px] text-slate-400">Supporting document</div></div></div><a href="{% url 'core:document_download' link.document.pk %}" class="text-xs font-semibold text-emerald-600 hover:text-emerald-800 whitespace-nowrap">View / Download</a></div></div>{% endfor %}</div>{% else %}<div class="mt-4 py-8 text-center rounded-xl bg-slate-50 border border-dashed border-slate-200"><div class="text-2xl">□</div><div class="text-sm font-semibold text-slate-600 mt-2">No documents attached</div><div class="text-[11px] text-slate-400 mt-1">Supporting files can be linked to the transaction record.</div></div>{% endif %}
+    </section>
+
+    {% if reimbursements %}<section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5"><div class="pb-3 border-b border-slate-100"><h2 class="text-sm font-bold text-slate-800">Linked Reimbursements</h2><p class="text-[10px] text-slate-400 mt-0.5">Reimbursement activity associated with this outflow</p></div><div class="overflow-x-auto mt-4"><table class="min-w-full text-xs"><thead class="text-slate-500 font-semibold uppercase tracking-wider"><tr><th class="py-2 pr-4 text-left">Type</th><th class="py-2 pr-4 text-right">Expected</th><th class="py-2 pr-4 text-right">Received</th><th class="py-2 pr-4 text-right">Pending</th><th class="py-2 pr-4 text-center">Status</th></tr></thead><tbody class="divide-y divide-slate-100">{% for r in reimbursements %}<tr><td class="py-3 pr-4 text-slate-700 font-medium">{{ r.get_reimbursement_type_display }}</td><td class="py-3 pr-4 text-right font-mono">{{ r.expected_amount|rs }}</td><td class="py-3 pr-4 text-right font-mono text-emerald-700">{{ r.received_amount|rs }}</td><td class="py-3 pr-4 text-right font-mono text-rose-700">{{ r.pending_amount|rs }}</td><td class="py-3 pr-4 text-center"><span class="abms-badge bg-slate-100 text-slate-600">{{ r.get_status_display }}</span></td></tr>{% endfor %}</tbody></table></div></section>{% endif %}
+
+    {% if transaction.is_historical %}<div class="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-xs text-indigo-800 flex items-center gap-2"><span class="abms-dot bg-indigo-500"></span><strong>Historical record.</strong> Imported from legacy data; editing is disabled to preserve audit integrity.</div>{% endif %}
+</div>
+
+<div id="cancel-modal" class="hidden fixed inset-0 bg-slate-950/40 z-50 flex items-center justify-center p-4"><div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 space-y-4"><div class="flex items-center gap-3"><div class="w-10 h-10 bg-rose-100 rounded-full flex items-center justify-center text-rose-600">×</div><h3 class="text-lg font-bold text-slate-800">Cancel Transaction?</h3></div><p class="text-sm text-slate-600">This will mark <span class="font-mono font-bold">{{ transaction.transaction_number }}</span> as <strong>Cancelled</strong>. The original record is preserved for audit.</p><form method="post" action="{% url 'core:transaction_cancel' transaction.pk %}"><div class="flex gap-3 justify-end"><button type="button" onclick="document.getElementById('cancel-modal').classList.add('hidden')" class="px-5 py-2 bg-slate-100 text-slate-600 font-semibold text-sm rounded-lg hover:bg-slate-200 transition">Keep</button><button type="submit" class="px-5 py-2 bg-rose-600 text-white font-semibold text-sm rounded-lg hover:bg-rose-700 transition">Yes, Cancel</button></div>{% csrf_token %}</form></div></div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function(){
+ document.querySelectorAll('[data-copy-target]').forEach(function(btn){btn.addEventListener('click',function(){var el=document.getElementById(btn.dataset.copyTarget);if(!el)return;navigator.clipboard.writeText(el.textContent.trim()).then(function(){var old=btn.textContent;btn.textContent='✓';setTimeout(function(){btn.textContent=old;},900);});});});
+})();
+</script>
+{% endblock %}

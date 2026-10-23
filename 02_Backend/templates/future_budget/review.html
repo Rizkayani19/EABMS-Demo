@@ -1,0 +1,735 @@
+﻿{% extends 'base.html' %}
+{% block title %}Future Budget Review — {{ future_budget.account.name }} ({{ future_budget.target_fy.code }}){% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6 pb-16">
+  
+  <!-- Header & Primary Actions -->
+  <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-slate-200">
+    <div>
+      <div class="flex items-center gap-2">
+        <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Future Budget Review &amp; Adjustment</h1>
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold {% if future_budget.status == 'APPROVED' %}bg-emerald-100 text-emerald-800 border border-emerald-200{% elif future_budget.status == 'PROPOSED' %}bg-amber-100 text-amber-800 border border-amber-200{% else %}bg-slate-100 text-slate-800 border border-slate-200{% endif %}">
+          {{ future_budget.get_status_display }}
+        </span>
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold {% if future_budget.budget_allocation_basis == 'SUB_FUND' %}bg-indigo-100 text-indigo-800 border border-indigo-200{% else %}bg-slate-100 text-slate-800 border border-slate-200{% endif %}">
+          {% if future_budget.budget_allocation_basis == 'SUB_FUND' %}⚡ Division Basis{% else %}📋 Account Head Basis{% endif %}
+        </span>
+      </div>
+      <p class="text-xs text-slate-500 mt-1">
+        <strong>{{ future_budget.account.name }}</strong> ({{ future_budget.account.code }}) — Planning Baseline FY: <strong>{{ future_budget.source_fy.code }}</strong> &rarr; Target FY: <strong>{{ future_budget.target_fy.code }}</strong>
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <a href="{% url 'core:future_budget_detail' future_budget.pk %}" class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100 transition">
+        Overview
+      </a>
+      
+      {% if future_budget.status == 'DRAFT' or future_budget.status == 'PROPOSED' %}
+      <form method="post" action="{% url 'core:future_budget_review_build' future_budget.pk %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold shadow-sm transition" title="Recalculate all formulas from historical actuals and management inputs">
+          Recalculate
+        </button>
+      </form>
+      <form method="post" action="{% url 'core:future_budget_copy_suggested' future_budget.pk %}" class="inline" onsubmit="return confirm('Copy System Suggested amounts to all Management Proposed fields? Existing uncustomized rows will be updated.');">
+        {% csrf_token %}
+        <button type="submit" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-sm transition" title="Pre-populate all proposed inputs with calculated suggestions">
+          Pre-fill Suggested &rarr; Proposed
+        </button>
+      </form>
+      {% if future_budget.status == 'DRAFT' %}
+      <form method="post" action="{% url 'core:propose_future_budget' future_budget.pk %}" class="inline" onsubmit="return confirm('Submit this proposed budget for management review?');">
+        {% csrf_token %}
+        <button type="submit" class="px-3 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-semibold shadow-sm transition">
+          Submit for Review
+        </button>
+      </form>
+      {% elif future_budget.status == 'PROPOSED' %}
+      <form method="post" action="{% url 'core:approve_future_budget' future_budget.pk %}" class="inline" onsubmit="return confirm('Approve this proposed budget? Once approved, it will be published to Budget Control.');">
+        {% csrf_token %}
+        <button type="submit" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition">
+          Approve &amp; Publish Budget
+        </button>
+      </form>
+      <form method="post" action="{% url 'core:revert_future_budget_draft' future_budget.pk %}" class="inline" onsubmit="return confirm('Return this budget to Draft status for further edits?');">
+        {% csrf_token %}
+        <button type="submit" class="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold transition" title="Return to Draft status">
+          Revert to Draft
+        </button>
+      </form>
+      {% endif %}
+      {% elif future_budget.status == 'APPROVED' %}
+      <form method="post" action="{% url 'core:revert_future_budget_draft' future_budget.pk %}" class="inline" onsubmit="return confirm('Re-open this approved budget for editing? This will return it to Draft status.');">
+        {% csrf_token %}
+        <button type="submit" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold shadow-sm transition">
+          Re-open for Edits
+        </button>
+      </form>
+      <form method="post" action="{% url 'core:approve_future_budget' future_budget.pk %}" class="inline" onsubmit="return confirm('Re-publish this budget into Budget Control?');">
+        {% csrf_token %}
+        <button type="submit" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm transition">
+          Re-publish to Budget Control
+        </button>
+      </form>
+      {% endif %}
+
+      <div class="h-4 w-px bg-slate-300"></div>
+      <a href="{% url 'core:future_budget_word' future_budget.pk %}" class="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-800 border border-blue-300 text-xs font-semibold transition">
+        Export Word (.docx)
+      </a>
+      <a href="{% url 'core:future_budget_excel' future_budget.pk %}" class="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-semibold transition">
+        Export Excel
+      </a>
+      <a href="{% url 'core:future_budget_pdf' future_budget.pk %}" class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 text-xs font-semibold transition">
+        Export PDF
+      </a>
+    </div>
+  </div>
+
+  <!-- Executive Metric Cards — Inflow, Outflow, Net Position -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+    <!-- Proposed Inflow -->
+    <div class="bg-gradient-to-br from-emerald-50 to-white border border-emerald-300 rounded-xl p-3 shadow-sm">
+      <div class="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Proposed Inflow</div>
+      <div id="abms-summary-inflow-val" class="text-base font-extrabold text-emerald-900 mt-1">{{ summary.inflow_user_proposed_total|rs }}</div>
+      <div class="text-[10px] text-emerald-600 mt-0.5">Target FY Inflow</div>
+    </div>
+    
+    <!-- Proposed Outflow -->
+    <div class="bg-gradient-to-br from-indigo-50 to-white border border-indigo-300 rounded-xl p-3 shadow-sm">
+      <div class="text-[10px] font-bold uppercase tracking-wider text-indigo-700">Proposed Outflow</div>
+      <div id="abms-summary-proposed-val" class="text-base font-extrabold text-indigo-950 mt-1">{{ summary.user_proposed_total|rs }}</div>
+      <div class="text-[10px] text-indigo-600 mt-0.5">Target FY Outflow</div>
+    </div>
+
+    <!-- Net Fiscal Balance -->
+    <div class="bg-gradient-to-br {% if summary.net_proposed_balance >= 0 %}from-teal-50 to-white border-teal-300{% else %}from-rose-50 to-white border-rose-300{% endif %} border rounded-xl p-3 shadow-sm">
+      <div class="flex items-center justify-between">
+        <div class="text-[10px] font-bold uppercase tracking-wider {% if summary.net_proposed_balance >= 0 %}text-teal-700{% else %}text-rose-700{% endif %}">Net Balance</div>
+        <span id="abms-summary-net-badge" class="px-1.5 py-0.2 rounded text-[9px] font-bold {% if summary.net_proposed_balance >= 0 %}bg-teal-100 text-teal-800{% else %}bg-rose-100 text-rose-800{% endif %}">
+          {% if summary.net_proposed_balance >= 0 %}Surplus{% else %}Deficit{% endif %}
+        </span>
+      </div>
+      <div id="abms-summary-net-val" class="text-base font-extrabold {% if summary.net_proposed_balance >= 0 %}text-teal-900{% else %}text-rose-900{% endif %} mt-1">
+        {{ summary.net_proposed_balance|rs_signed }}
+      </div>
+      <div class="text-[10px] text-slate-500 mt-0.5">Inflow &minus; Outflow</div>
+    </div>
+
+    <!-- Prev Inflow Actuals -->
+    <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+      <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Prev Inflow Actual</div>
+      <div class="text-sm font-bold text-emerald-800 mt-1">{{ summary.inflow_previous_actual_total|rs }}</div>
+      <div class="text-[10px] text-slate-400 mt-0.5">Source FY ({{ future_budget.source_fy.code }})</div>
+    </div>
+
+    <!-- Prev Outflow Actuals -->
+    <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+      <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Prev Outflow Actual</div>
+      <div class="text-sm font-bold text-slate-800 mt-1">{{ summary.previous_actual_total|rs }}</div>
+      <div class="text-[10px] text-slate-400 mt-0.5">Source FY ({{ future_budget.source_fy.code }})</div>
+    </div>
+
+    <!-- Prev Net Actual -->
+    <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+      <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Prev Net Actual</div>
+      <div class="text-sm font-bold {% if summary.net_actual_balance >= 0 %}text-emerald-700{% else %}text-rose-700{% endif %} mt-1">
+        {{ summary.net_actual_balance|rs_signed }}
+      </div>
+      <div class="text-[10px] text-slate-400 mt-0.5">Actual In &minus; Out</div>
+    </div>
+  </div>
+
+  <!-- Instruction Banner -->
+  <div class="bg-slate-900 text-slate-200 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-sm flex-shrink-0">
+        i
+      </div>
+      <div>
+        <p class="font-semibold text-white">Dual Inflow &amp; Outflow Budget Planning &amp; Review</p>
+        <p class="text-slate-400 mt-0.5">
+          Review both <strong>Outflows</strong> and <strong>Inflows</strong> in their dedicated tabs below. Edit any management proposal, review live totals, and click <strong>"Save All Proposed Changes"</strong> to record both sides simultaneously.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Multi-Tab Planning & Review Form -->
+  <form method="post" action="{% url 'core:future_budget_save_all_proposals' future_budget.pk %}">
+    {% csrf_token %}
+
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      
+      <!-- Tab Header Bar -->
+      <div class="px-5 py-3 border-b border-slate-200 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex flex-wrap items-center gap-2" role="tablist">
+          <button type="button" class="rev-tab active px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer border border-indigo-300 bg-indigo-600 text-white shadow-xs" data-target="tab-outflows">
+            &uarr; Outflows Planning ({{ outflow_lines|length }})
+          </button>
+          <button type="button" class="rev-tab px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer border border-slate-200 bg-white text-slate-700 hover:bg-emerald-50 hover:border-emerald-300" data-target="tab-inflows">
+            &darr; Inflows Planning ({{ inflow_lines|length }})
+          </button>
+          <button type="button" class="rev-tab px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer border border-slate-200 bg-white text-slate-700 hover:bg-blue-50 hover:border-blue-300" data-target="tab-matrix">
+            &boxplus; Fiscal Balance Matrix
+          </button>
+          <button type="button" class="rev-tab px-4 py-2 text-xs font-bold rounded-xl transition cursor-pointer border border-slate-200 bg-white text-slate-700 hover:bg-slate-100" data-target="tab-inputs">
+            &#9998; Add-ons &amp; Continuing ({{ management_inputs|length }})
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button type="submit" class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition cursor-pointer">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            Save All Proposed Changes
+          </button>
+        </div>
+      </div>
+
+      <!-- ══════════════ TAB 1: OUTFLOWS GRID ══════════════ -->
+      <div id="tab-outflows" class="rev-tab-panel">
+        <div class="overflow-x-auto max-h-[580px] overflow-y-auto" style="scrollbar-gutter: stable;">
+          <table class="min-w-full text-xs text-left divide-y divide-slate-200">
+            <thead class="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider sticky top-0 z-20 shadow-sm">
+              <tr>
+                <th class="px-3 py-3 w-48 sticky left-0 bg-slate-100 z-30 border-r border-slate-200">{% if future_budget.budget_allocation_basis == 'SUB_FUND' %}Division{% else %}Account Head{% endif %}</th>
+                <th class="px-3 py-3 text-right bg-slate-50">Prev Budget</th>
+                <th class="px-3 py-3 text-right bg-slate-50">Prev Actual</th>
+                <th class="px-3 py-3 text-right bg-slate-50 border-r border-slate-200">Hist Addl</th>
+                <th class="px-3 py-3 text-right bg-indigo-50/50">Routine Adj</th>
+                <th class="px-3 py-3 text-right bg-indigo-50/50">Continuing</th>
+                <th class="px-3 py-3 text-right bg-indigo-50/50">Mgmt Addl</th>
+                <th class="px-3 py-3 text-right bg-indigo-50/50">Known Chg</th>
+                <th class="px-3 py-3 text-right bg-indigo-50/50">Personnel</th>
+                <th class="px-3 py-3 text-right bg-indigo-50/50 border-r border-slate-200">One-Time</th>
+                <th class="px-3 py-3 text-right bg-indigo-100 text-indigo-900 font-extrabold border-r border-slate-200">System Suggested</th>
+                <th class="px-3 py-3 text-left bg-indigo-50 text-indigo-950 font-extrabold min-w-[200px]">Proposed Outflow ($) &#9998;</th>
+                <th class="px-3 py-3 text-left bg-indigo-50 text-indigo-950 font-extrabold min-w-[220px]">Proposal Justification</th>
+                <th class="px-3 py-3 text-center bg-slate-100 w-20">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              {% for line in outflow_lines %}
+              <input type="hidden" name="line_ids" value="{{ line.pk }}">
+              <tr class="hover:bg-slate-50/80 transition group align-top">
+                
+                <!-- Account Head / Division Name -->
+                <td class="px-3 py-2.5 font-bold text-slate-800 sticky left-0 bg-white group-hover:bg-slate-50 z-10 border-r border-slate-200 whitespace-nowrap">
+                  <div>
+                    {% if line.account_head %}
+                      {{ line.account_head.name }}
+                    {% elif line.major_head %}
+                      {% if line.major_head.code %}<span class="text-[10px] font-mono text-slate-400">[{{ line.major_head.code }}]</span> {% endif %}{{ line.major_head.name }}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </div>
+                  {% if line.is_routine %}
+                  <span class="inline-block mt-0.5 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">Routine</span>
+                  {% endif %}
+                </td>
+
+                <!-- History -->
+                <td class="px-3 py-2.5 text-right font-mono text-slate-700 bg-slate-50/30 whitespace-nowrap">{{ line.previous_budget|rs }}</td>
+                <td class="px-3 py-2.5 text-right font-mono text-slate-700 bg-slate-50/30 whitespace-nowrap">{{ line.previous_actual|rs }}</td>
+                <td class="px-3 py-2.5 text-right font-mono text-amber-700 bg-slate-50/30 border-r border-slate-200 whitespace-nowrap">{{ line.addl_amount|rs }}</td>
+
+                <!-- Breakdown Components -->
+                <td class="px-3 py-2.5 text-right font-mono text-slate-600 bg-indigo-50/20 whitespace-nowrap">{{ line.routine_amount|rs }}</td>
+                <td class="px-3 py-2.5 text-right font-mono text-indigo-600 bg-indigo-50/20 whitespace-nowrap">{{ line.continuing_amount|rs }}</td>
+                <td class="px-3 py-2.5 text-right font-mono font-semibold text-indigo-700 bg-indigo-50/20 whitespace-nowrap">
+                  $ {{ line.suggestion_breakdown.management_additional_requirement|default:'0.00' }}
+                </td>
+                <td class="px-3 py-2.5 text-right font-mono text-slate-600 bg-indigo-50/20 whitespace-nowrap">{{ line.known_change_amount|rs }}</td>
+                <td class="px-3 py-2.5 text-right font-mono text-slate-600 bg-indigo-50/20 whitespace-nowrap">{{ line.personnel_amount|rs }}</td>
+                <td class="px-3 py-2.5 text-right font-mono text-rose-600 bg-indigo-50/20 border-r border-slate-200 whitespace-nowrap">{{ line.onetime_amount|rs }}</td>
+
+                <!-- Suggested -->
+                <td class="px-3 py-2.5 text-right font-mono font-bold text-indigo-900 bg-indigo-50/60 border-r border-slate-200 whitespace-nowrap">
+                  {{ line.system_suggested|rs }}
+                </td>
+
+                <!-- Management Proposed Outflow Input -->
+                <td class="px-3 py-2 bg-indigo-50/30">
+                  <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 font-mono text-xs">$</span>
+                    <input type="number" step="0.01" min="0" 
+                           name="proposed_{{ line.pk }}" 
+                           value="{% if line.user_proposed != None %}{{ line.user_proposed }}{% else %}{{ line.system_suggested }}{% endif %}"
+                           data-suggested="{{ line.system_suggested }}"
+                           class="w-full pl-8 pr-2.5 py-1 text-right font-mono font-bold text-xs rounded-lg border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
+                           placeholder="0.00">
+                  </div>
+                </td>
+
+                <!-- Justification -->
+                <td class="px-3 py-2 bg-indigo-50/30">
+                  <input type="text" 
+                         name="justification_{{ line.pk }}" 
+                         value="{{ line.justification }}" 
+                         placeholder="Reason for variance..."
+                         class="w-full px-2.5 py-1 text-xs rounded-lg border border-slate-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white">
+                </td>
+
+                <!-- Action: Copy Suggested -->
+                <td class="px-3 py-2 text-center whitespace-nowrap">
+                  <button type="button"
+                          data-copy-suggested="{{ line.pk }}"
+                          data-suggestedval="{{ line.system_suggested }}"
+                          class="text-[10px] px-2 py-0.5 rounded bg-indigo-100 hover:bg-indigo-200 text-indigo-800 font-semibold whitespace-nowrap cursor-pointer"
+                          title="Copy system suggested into proposed">
+                    &uarr; Suggested
+                  </button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="14" class="px-6 py-12 text-center text-slate-400">No outflow planning heads recorded.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+
+            <!-- Outflows Footer -->
+            {% if outflow_lines %}
+            <tfoot class="bg-slate-100 text-slate-800 font-bold border-t-2 border-slate-300 sticky bottom-0 z-20">
+              <tr>
+                <td class="px-3 py-3 sticky left-0 bg-slate-100 border-r border-slate-200">TOTAL OUTFLOWS ({{ outflow_lines|length }})</td>
+                <td class="px-3 py-3 text-right font-mono">{{ summary.previous_budget_total|rs }}</td>
+                <td class="px-3 py-3 text-right font-mono">{{ summary.previous_actual_total|rs }}</td>
+                <td class="px-3 py-3 text-right font-mono text-amber-700 border-r border-slate-200">{{ summary.additional_total|rs }}</td>
+                <td class="px-3 py-3 text-right font-mono">{{ summary.routine_total|rs }}</td>
+                <td class="px-3 py-3 text-right font-mono text-indigo-600">{{ summary.continuing_total|rs }}</td>
+                <td class="px-3 py-3 text-right font-mono text-indigo-700">{{ summary.management_additional_total|rs }}</td>
+                <td class="px-3 py-3 text-right font-mono">{{ summary.known_changes_total|rs }}</td>
+                <td class="px-3 py-3 text-right font-mono">{{ summary.personnel_effect_total|rs }}</td>
+                <td class="px-3 py-3 text-right font-mono text-rose-600 border-r border-slate-200">{{ summary.one_time_total|rs }}</td>
+                <td class="px-3 py-3 text-right font-mono text-indigo-900 border-r border-slate-200 text-sm">{{ summary.system_suggested_total|rs }}</td>
+                <td id="abms-proposed-live-total" class="px-3 py-3 text-right font-mono font-extrabold text-indigo-950 text-sm">{{ summary.user_proposed_total|rs }}</td>
+                <td colspan="2"></td>
+              </tr>
+            </tfoot>
+            {% endif %}
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════════════ TAB 2: INFLOWS GRID ══════════════ -->
+      <div id="tab-inflows" class="rev-tab-panel hidden">
+        <div class="overflow-x-auto max-h-[580px] overflow-y-auto" style="scrollbar-gutter: stable;">
+          <table class="min-w-full text-xs text-left divide-y divide-emerald-200">
+            <thead class="bg-emerald-100/70 text-emerald-900 font-bold uppercase tracking-wider sticky top-0 z-20 shadow-sm">
+              <tr>
+                <th class="px-3 py-3 w-56 sticky left-0 bg-emerald-50 z-30 border-r border-emerald-200">{% if future_budget.budget_allocation_basis == 'SUB_FUND' %}Division{% else %}Account Head{% endif %}</th>
+                <th class="px-3 py-3 text-right bg-emerald-50/40">Prev Budget</th>
+                <th class="px-3 py-3 text-right bg-emerald-50/40">Prev Actual Receipts</th>
+                <th class="px-3 py-3 text-right bg-emerald-50/40 border-r border-emerald-200">Receipt Variance</th>
+                <th class="px-3 py-3 text-right bg-emerald-100 text-emerald-950 font-extrabold border-r border-emerald-200">Suggested Inflow</th>
+                <th class="px-3 py-3 text-left bg-emerald-50 text-emerald-950 font-extrabold min-w-[200px]">Proposed Inflow ($) &#9998;</th>
+                <th class="px-3 py-3 text-left bg-emerald-50 text-emerald-950 font-extrabold min-w-[220px]">Proposal Justification</th>
+                <th class="px-3 py-3 text-center bg-emerald-100/50 w-20">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-emerald-50 bg-white">
+              {% for line in inflow_lines %}
+              <input type="hidden" name="line_ids" value="{{ line.pk }}">
+              <tr class="hover:bg-emerald-50/40 transition group align-top">
+                
+                <!-- Account Head / Division Name -->
+                <td class="px-3 py-2.5 font-bold text-slate-800 sticky left-0 bg-white group-hover:bg-emerald-50/30 z-10 border-r border-emerald-100 whitespace-nowrap">
+                  <div>
+                    {% if line.account_head %}
+                      {{ line.account_head.name }}
+                    {% elif line.major_head %}
+                      {% if line.major_head.code %}<span class="text-[10px] font-mono text-slate-400">[{{ line.major_head.code }}]</span> {% endif %}{{ line.major_head.name }}
+                    {% else %}
+                      —
+                    {% endif %}
+                  </div>
+                  {% if line.account_head and line.account_head.code %}<span class="text-[9px] font-mono text-slate-400">[{{ line.account_head.code }}]</span>{% endif %}
+                  {% if line.account_head and line.account_head.head_type == 'INFLOW' %}<span class="ml-1 text-[9px] font-bold text-white bg-emerald-600 px-1.5 py-0.5 rounded shadow-xs">Inflow Only</span>{% endif %}
+                </td>
+
+                <!-- Baseline & Receipts -->
+                <td class="px-3 py-2.5 text-right font-mono text-slate-600 whitespace-nowrap">{{ line.inflow_prev_budget|rs }}</td>
+                <td class="px-3 py-2.5 text-right font-mono text-emerald-800 font-bold whitespace-nowrap">{{ line.inflow_prev_actual|rs }}</td>
+                <td class="px-3 py-2.5 text-right font-mono border-r border-emerald-100 whitespace-nowrap">
+                  {% if line.inflow_prev_actual >= line.inflow_prev_budget %}
+                  <span class="text-emerald-700 font-semibold">+{{ line.inflow_prev_actual|add:"-line.inflow_prev_budget"|rs_abs }}</span>
+                  {% else %}
+                  <span class="text-rose-600 font-semibold">-{{ line.inflow_prev_actual|add:"-line.inflow_prev_budget"|rs_abs }}</span>
+                  {% endif %}
+                </td>
+
+                <!-- Suggested Inflow -->
+                <td class="px-3 py-2.5 text-right font-mono font-bold text-emerald-900 bg-emerald-50/50 border-r border-emerald-200 whitespace-nowrap">
+                  {{ line.inflow_suggested|rs }}
+                </td>
+
+                <!-- Management Proposed Inflow Input -->
+                <td class="px-3 py-2 bg-emerald-50/30">
+                  <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-emerald-600 font-mono text-xs">$</span>
+                    <input type="number" step="0.01" min="0" 
+                           name="inflow_proposed_{{ line.pk }}" 
+                           value="{% if line.proposed_inflow != None %}{{ line.proposed_inflow }}{% else %}{{ line.inflow_suggested }}{% endif %}"
+                           data-inflow-suggested="{{ line.inflow_suggested }}"
+                           class="w-full pl-8 pr-2.5 py-1 text-right font-mono font-bold text-xs rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-white"
+                           placeholder="0.00">
+                  </div>
+                </td>
+
+                <!-- Justification -->
+                <td class="px-3 py-2 bg-emerald-50/30">
+                  <input type="text" 
+                         name="justification_{{ line.pk }}" 
+                         value="{{ line.justification }}" 
+                         placeholder="Inflow rationale / source..."
+                         class="w-full px-2.5 py-1 text-xs rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 bg-white">
+                </td>
+
+                <!-- Action: Copy Suggested -->
+                <td class="px-3 py-2 text-center whitespace-nowrap">
+                  <button type="button"
+                          data-copy-inflow-suggested="{{ line.pk }}"
+                          data-suggestedval="{{ line.inflow_suggested }}"
+                          class="text-[10px] px-2 py-0.5 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-semibold whitespace-nowrap cursor-pointer"
+                          title="Copy suggested inflow into proposed">
+                    &uarr; Suggested
+                  </button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="8" class="px-6 py-12 text-center text-slate-400">No inflow heads recorded.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+
+            <!-- Inflows Footer -->
+            {% if inflow_lines %}
+            <tfoot class="bg-emerald-50 text-emerald-950 font-bold border-t-2 border-emerald-300 sticky bottom-0 z-20">
+              <tr>
+                <td class="px-3 py-3 sticky left-0 bg-emerald-50 border-r border-emerald-200">TOTAL INFLOWS ({{ inflow_lines|length }})</td>
+                <td class="px-3 py-3 text-right font-mono">{{ summary.inflow_previous_budget_total|rs }}</td>
+                <td class="px-3 py-3 text-right font-mono text-emerald-800">{{ summary.inflow_previous_actual_total|rs }}</td>
+                <td class="px-3 py-3 text-right font-mono border-r border-emerald-200">
+                  {% if summary.inflow_previous_actual_total >= summary.inflow_previous_budget_total %}
+                  <span class="text-emerald-700">+{{ summary.inflow_previous_actual_total|add:"-summary.inflow_previous_budget_total"|rs_abs }}</span>
+                  {% else %}
+                  <span class="text-rose-600">-{{ summary.inflow_previous_actual_total|add:"-summary.inflow_previous_budget_total"|rs_abs }}</span>
+                  {% endif %}
+                </td>
+                <td class="px-3 py-3 text-right font-mono text-emerald-950 border-r border-emerald-200 text-sm">{{ summary.inflow_system_suggested_total|rs }}</td>
+                <td id="abms-inflow-live-total" class="px-3 py-3 text-right font-mono font-extrabold text-emerald-900 text-sm">{{ summary.inflow_user_proposed_total|rs }}</td>
+                <td colspan="2"></td>
+              </tr>
+            </tfoot>
+            {% endif %}
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════════════ TAB 3: FISCAL BALANCE MATRIX ══════════════ -->
+      <div id="tab-matrix" class="rev-tab-panel hidden p-6 space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+          <div>
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Executive Fiscal Comparison &amp; Balance Matrix</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Comprehensive multi-year comparison between Source FY and Target FY across Inflows, Outflows, and Net Balance.</p>
+          </div>
+          <span class="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-700 font-mono">{{ future_budget.source_fy.code }} vs {{ future_budget.target_fy.code }}</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-xs text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider">
+                <th class="p-3 border border-slate-200">Fiscal Dimension</th>
+                <th class="p-3 border border-slate-200 text-right">Source FY Budget</th>
+                <th class="p-3 border border-slate-200 text-right">Source FY Actual</th>
+                <th class="p-3 border border-slate-200 text-right bg-indigo-50/50 text-indigo-900">Target FY Suggested</th>
+                <th class="p-3 border border-slate-200 text-right bg-emerald-50 text-emerald-950">Target FY Proposed</th>
+                <th class="p-3 border border-slate-200 text-right">Shift vs Prev Actual</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white font-mono">
+              <tr class="hover:bg-slate-50">
+                <td class="p-3 border border-slate-200 font-bold font-sans text-emerald-800">Total Inflows</td>
+                <td class="p-3 border border-slate-200 text-right text-slate-600">{{ summary.inflow_previous_budget_total|rs }}</td>
+                <td class="p-3 border border-slate-200 text-right font-bold text-emerald-700">{{ summary.inflow_previous_actual_total|rs }}</td>
+                <td class="p-3 border border-slate-200 text-right bg-indigo-50/20 text-indigo-800">{{ summary.inflow_system_suggested_total|rs }}</td>
+                <td id="matrix-inflow-proposed" class="p-3 border border-slate-200 text-right bg-emerald-50/50 font-extrabold text-emerald-900">{{ summary.inflow_user_proposed_total|rs }}</td>
+                <td class="p-3 border border-slate-200 text-right {% if summary.inflow_diff_from_prev_actual >= 0 %}text-emerald-700{% else %}text-rose-600{% endif %}">
+                  {{ summary.inflow_diff_from_prev_actual|rs_signed }}
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-50">
+                <td class="p-3 border border-slate-200 font-bold font-sans text-rose-800">Total Outflows</td>
+                <td class="p-3 border border-slate-200 text-right text-slate-600">{{ summary.previous_budget_total|rs }}</td>
+                <td class="p-3 border border-slate-200 text-right font-bold text-slate-800">{{ summary.previous_actual_total|rs }}</td>
+                <td class="p-3 border border-slate-200 text-right bg-indigo-50/20 text-indigo-800">{{ summary.system_suggested_total|rs }}</td>
+                <td id="matrix-outflow-proposed" class="p-3 border border-slate-200 text-right bg-indigo-50/30 font-extrabold text-indigo-950">{{ summary.user_proposed_total|rs }}</td>
+                <td class="p-3 border border-slate-200 text-right {% if summary.diff_from_prev_actual <= 0 %}text-emerald-700{% else %}text-amber-700{% endif %}">
+                  {{ summary.diff_from_prev_actual|rs_signed }}
+                </td>
+              </tr>
+              <tr class="bg-slate-50 font-bold">
+                <td class="p-3 border border-slate-200 font-sans text-slate-900">Net Fiscal Position (Surplus / Deficit)</td>
+                <td class="p-3 border border-slate-200 text-right {% if summary.net_budget_balance >= 0 %}text-emerald-700{% else %}text-rose-700{% endif %}">
+                  {{ summary.net_budget_balance|rs_signed }}
+                </td>
+                <td class="p-3 border border-slate-200 text-right {% if summary.net_actual_balance >= 0 %}text-emerald-700{% else %}text-rose-700{% endif %}">
+                  {{ summary.net_actual_balance|rs_signed }}
+                </td>
+                <td class="p-3 border border-slate-200 text-right bg-indigo-100/50 {% if summary.net_suggested_balance >= 0 %}text-emerald-800{% else %}text-rose-800{% endif %}">
+                  {{ summary.net_suggested_balance|rs_signed }}
+                </td>
+                <td id="matrix-net-proposed" class="p-3 border border-slate-200 text-right bg-emerald-100/60 font-extrabold {% if summary.net_proposed_balance >= 0 %}text-emerald-950{% else %}text-rose-950{% endif %}">
+                  {{ summary.net_proposed_balance|rs_signed }}
+                </td>
+                <td class="p-3 border border-slate-200 text-right font-sans text-[11px] text-slate-500">
+                  Live Net
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ══════════════ TAB 4: ADD-ONS & CONTINUING ══════════════ -->
+      <div id="tab-inputs" class="rev-tab-panel hidden p-6 space-y-6">
+        <!-- Add Requirement Form -->
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 space-y-4">
+          <div class="pb-3 border-b border-slate-200">
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Add Additional &amp; Continuing Requirements</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Define target FY requirements or ongoing commitments with organizational attribution.</p>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+            <div>
+              <label class="block font-bold text-slate-600 mb-1">Account Head</label>
+              <select name="account_head" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 bg-white">
+                {% for h in account_heads %}<option value="{{ h.pk }}">{{ h.name }}</option>{% endfor %}
+              </select>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-600 mb-1">Requirement Type</label>
+              <select name="input_type" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 bg-white">
+                <option value="ADDITIONAL">Additional Requirement (Target FY Add-on)</option>
+                <option value="CONTINUING">Continuing Requirement (Ongoing Commitment)</option>
+                <option value="OTHER">Other Operational Input</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-600 mb-1">Requirement Amount ($)</label>
+              <input name="amount" type="number" step="0.01" min="0.01" placeholder="0.00" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 bg-white">
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block font-bold text-slate-600 mb-1">Description / Title</label>
+              <input name="description" placeholder="e.g. Expansion of unit hardware, specialized training cadre..." class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 bg-white">
+            </div>
+            <div>
+              <label class="block font-bold text-slate-600 mb-1">Reference / Sanction Note</label>
+              <input name="reference" placeholder="e.g. Note #45/FIN/2026" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-emerald-500 focus:border-emerald-500 bg-white">
+            </div>
+            <div class="sm:col-span-2 lg:col-span-3 pt-2">
+              <button type="submit" formaction="{% url 'core:future_budget_management_input_create' future_budget.pk %}" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg shadow-sm transition cursor-pointer">
+                + Add Requirement (Active)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Requirements Table -->
+        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-2xs">
+          <div class="px-4 py-3 bg-slate-100 border-b border-slate-200">
+            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Active Recorded Requirements</h3>
+          </div>
+          <table class="min-w-full text-xs text-left divide-y divide-slate-200">
+            <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider">
+              <tr>
+                <th class="px-4 py-2.5">Account Head</th>
+                <th class="px-4 py-2.5">Type</th>
+                <th class="px-4 py-2.5">Description</th>
+                <th class="px-4 py-2.5 text-right">Amount ($)</th>
+                <th class="px-4 py-2.5">Reference</th>
+                <th class="px-4 py-2.5 text-center">Status</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 bg-white">
+              {% for item in management_inputs %}
+              <tr class="hover:bg-slate-50">
+                <td class="px-4 py-2 font-bold text-slate-800">{{ item.account_head.name }}</td>
+                <td class="px-4 py-2">
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold {% if item.input_type == 'ADDITIONAL' %}bg-indigo-100 text-indigo-800{% elif item.input_type == 'CONTINUING' %}bg-purple-100 text-purple-800{% else %}bg-slate-100 text-slate-700{% endif %}">
+                    {{ item.get_input_type_display }}
+                  </span>
+                </td>
+                <td class="px-4 py-2 text-slate-700">{{ item.description }}</td>
+                <td class="px-4 py-2 text-right font-mono font-bold text-slate-800">{{ item.amount|rs }}</td>
+                <td class="px-4 py-2 font-mono text-[11px] text-slate-500">{{ item.reference|default:"—" }}</td>
+                <td class="px-4 py-2 text-center">
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">{{ item.get_status_display }}</span>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="6" class="px-4 py-6 text-center text-slate-400">No additional or continuing requirements recorded.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Save Bar at Bottom of Card -->
+      <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+        <div class="text-xs text-slate-500">
+          Clicking save saves all proposed numbers across Outflows and Inflows.
+        </div>
+        <button type="submit" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          Save All Proposed Changes
+        </button>
+      </div>
+    </div>
+  </form>
+
+</div>
+
+<script>
+(function () {
+  // ─── Tab Switching ────────────────────────────────────────────────
+  var tabs = document.querySelectorAll('.rev-tab');
+  var panels = document.querySelectorAll('.rev-tab-panel');
+
+  tabs.forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      var targetId = tab.dataset.target;
+      tabs.forEach(function (t) {
+        t.classList.remove('active', 'bg-indigo-600', 'text-white', 'border-indigo-300');
+        t.classList.add('bg-white', 'text-slate-700', 'border-slate-200');
+      });
+      panels.forEach(function (p) {
+        p.classList.add('hidden');
+      });
+      tab.classList.add('active', 'bg-indigo-600', 'text-white', 'border-indigo-300');
+      tab.classList.remove('bg-white', 'text-slate-700', 'border-slate-200');
+      var targetPanel = document.getElementById(targetId);
+      if (targetPanel) {
+        targetPanel.classList.remove('hidden');
+      }
+    });
+  });
+
+  // ─── Live Running Totals for Outflows & Inflows ────────────────────────────
+  var OUTFLOW_SELECTOR = 'input[name^="proposed_"]';
+  var INFLOW_SELECTOR = 'input[name^="inflow_proposed_"]';
+
+  function formatRs(val) {
+    var num = parseFloat(val) || 0;
+    return '$ ' + num.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function formatSignedRs(val) {
+    var num = parseFloat(val) || 0;
+    var sign = num >= 0 ? '+' : '';
+    return sign + '$ ' + num.toLocaleString('en-PK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function recalcTotal() {
+    var outInputs = document.querySelectorAll(OUTFLOW_SELECTOR);
+    var inInputs = document.querySelectorAll(INFLOW_SELECTOR);
+    if (outInputs.length === 0 && inInputs.length === 0) {
+      return; // Never overwrite server totals if inputs are not present
+    }
+
+    var totalOut = 0;
+    outInputs.forEach(function (inp) {
+      totalOut += parseFloat(inp.value) || 0;
+    });
+
+    var totalIn = 0;
+    inInputs.forEach(function (inp) {
+      totalIn += parseFloat(inp.value) || 0;
+    });
+
+    var netBalance = totalIn - totalOut;
+
+    // Update Outflows footer & card
+    var liveOutTotal = document.getElementById('abms-proposed-live-total');
+    if (liveOutTotal) liveOutTotal.textContent = formatRs(totalOut);
+    var summaryOutCard = document.getElementById('abms-summary-proposed-val');
+    if (summaryOutCard) summaryOutCard.textContent = formatRs(totalOut);
+    var matrixOut = document.getElementById('matrix-outflow-proposed');
+    if (matrixOut) matrixOut.textContent = formatRs(totalOut);
+
+    // Update Inflows footer & card
+    var liveInTotal = document.getElementById('abms-inflow-live-total');
+    if (liveInTotal) liveInTotal.textContent = formatRs(totalIn);
+    var summaryInCard = document.getElementById('abms-summary-inflow-val');
+    if (summaryInCard) summaryInCard.textContent = formatRs(totalIn);
+    var matrixIn = document.getElementById('matrix-inflow-proposed');
+    if (matrixIn) matrixIn.textContent = formatRs(totalIn);
+
+    // Update Net balance card & matrix
+    var summaryNetCard = document.getElementById('abms-summary-net-val');
+    if (summaryNetCard) summaryNetCard.textContent = formatSignedRs(netBalance);
+    var summaryNetBadge = document.getElementById('abms-summary-net-badge');
+    if (summaryNetBadge) {
+      if (netBalance >= 0) {
+        summaryNetBadge.textContent = 'Surplus';
+        summaryNetBadge.className = 'px-1.5 py-0.2 rounded text-[9px] font-bold bg-teal-100 text-teal-800';
+      } else {
+        summaryNetBadge.textContent = 'Deficit';
+        summaryNetBadge.className = 'px-1.5 py-0.2 rounded text-[9px] font-bold bg-rose-100 text-rose-800';
+      }
+    }
+    var matrixNet = document.getElementById('matrix-net-proposed');
+    if (matrixNet) matrixNet.textContent = formatSignedRs(netBalance);
+  }
+
+  function bindInputs() {
+    document.querySelectorAll(OUTFLOW_SELECTOR).forEach(function (inp) {
+      if (!inp.dataset.livebound) {
+        inp.addEventListener('input', recalcTotal);
+        inp.dataset.livebound = '1';
+      }
+    });
+    document.querySelectorAll(INFLOW_SELECTOR).forEach(function (inp) {
+      if (!inp.dataset.livebound) {
+        inp.addEventListener('input', recalcTotal);
+        inp.dataset.livebound = '1';
+      }
+    });
+    recalcTotal();
+  }
+
+  // Copy Suggested buttons
+  document.querySelectorAll('[data-copy-suggested]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var target = document.querySelector('input[name="proposed_' + btn.dataset.copysuggested + '"]');
+      if (target) {
+        target.value = btn.dataset.suggestedval;
+        target.dispatchEvent(new Event('input', { bubbles: true }));
+        target.focus();
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-copy-inflow-suggested]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var target = document.querySelector('input[name="inflow_proposed_' + btn.dataset.copyinflowsuggested + '"]');
+      if (target) {
+        target.value = btn.dataset.suggestedval;
+        target.dispatchEvent(new Event('input', { bubbles: true }));
+        target.focus();
+      }
+    });
+  });
+
+  bindInputs();
+})();
+</script>
+{% endblock %}

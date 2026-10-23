@@ -1,0 +1,83 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Budget Analysis & Future Planning — EABMS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-6">
+  <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4 border-b border-slate-200 pb-4">
+    <div>
+      <div class="text-[10px] font-bold uppercase tracking-widest text-emerald-700">EABMS Management Analysis</div>
+      <h1 class="text-2xl font-bold text-slate-800">Existing Budget Analysis & Future Budget Planning</h1>
+      <p class="text-xs text-slate-500 mt-1">Budget is compared with actual transactions from the financial Single Source of Truth.</p>
+    </div>
+    {% if source_fy %}
+    <a href="{% url 'core:budget_planning_excel_export' %}?target_fy={{ target_fy.pk|default:'' }}{% for u in units %}&unit={{ u|urlencode }}{% endfor %}{% for s in sections %}&section={{ s|urlencode }}{% endfor %}" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg">Export Excel</a>
+    {% endif %}
+  </div>
+
+  <form method="get" class="bg-white border border-slate-200 rounded-xl shadow-sm p-5 space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <label class="text-xs font-semibold text-slate-600">Source Financial Year
+        <select name="fy" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
+          {% for fy in financial_years %}<option value="{{ fy.pk }}" {% if source_fy and fy.pk == source_fy.pk %}selected{% endif %}>{{ fy.name }}</option>{% endfor %}
+        </select>
+      </label>
+      <label class="text-xs font-semibold text-slate-600">Target Financial Year
+        <select name="target_fy" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
+          <option value="">— Select target FY —</option>
+          {% for fy in financial_years %}<option value="{{ fy.pk }}" {% if target_fy and fy.pk == target_fy.pk %}selected{% endif %}>{{ fy.name }}</option>{% endfor %}
+        </select>
+      </label>
+      <div class="text-xs text-slate-500 self-end">Account remains controlled by the active EABMS account context. Organisation and Department are independent configurable Masters.</div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <label class="text-xs font-semibold text-slate-600">Organisation filter
+        <select name="unit" multiple size="7" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
+          {% for unit in unit_master %}<option value="{{ unit.name }}" {% if unit.name in units %}selected{% endif %}>{{ unit.name }}</option>{% endfor %}
+        </select>
+        <span class="text-[10px] text-slate-400">Select one, several, or none. Ctrl/Shift-click supports multiple selections.</span>
+      </label>
+      <label class="text-xs font-semibold text-slate-600">Department filter
+        <select name="section" multiple size="7" class="mt-1 w-full rounded-lg border-slate-300 text-sm">
+          {% for section in section_master %}<option value="{{ section.name }}" {% if section.name in sections %}selected{% endif %}>{{ section.name }}</option>{% endfor %}
+        </select>
+        <span class="text-[10px] text-slate-400">Select one, several, or none. Sections remain independently configurable from Organisations.</span>
+      </label>
+    </div>
+
+    <div class="flex gap-2"><button class="px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-semibold">Run Analysis</button><a href="{% url 'core:budget_planning_report' %}" class="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg text-sm font-semibold">Clear</a></div>
+  </form>
+
+  {% if analysis %}
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-[10px] uppercase font-bold text-slate-400">Budget</div><div class="text-xl font-bold mt-1">{{ analysis.total_budget|rs }}</div></div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-[10px] uppercase font-bold text-slate-400">Actual Outflow</div><div class="text-xl font-bold mt-1">{{ analysis.total_actual|rs }}</div></div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-[10px] uppercase font-bold text-slate-400">Variance</div><div class="text-xl font-bold mt-1">{{ analysis.total_variance|rs }}</div></div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4"><div class="text-[10px] uppercase font-bold text-slate-400">Utilisation</div><div class="text-xl font-bold mt-1">{{ analysis.utilisation_pct }}%</div></div>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+    <div class="px-5 py-4 border-b"><h2 class="font-bold text-slate-700">Existing FY — Account Head Analysis</h2></div>
+    <div class="overflow-x-auto"><table class="min-w-full text-xs"><thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left">Account Head</th><th class="px-4 py-3 text-right">Budget</th><th class="px-4 py-3 text-right">Actual</th><th class="px-4 py-3 text-right">Variance</th><th class="px-4 py-3 text-right">Utilisation</th><th class="px-4 py-3">Status</th></tr></thead><tbody class="divide-y">{% for r in analysis.rows %}<tr><td class="px-4 py-3 font-semibold">{{ r.account_head }}</td><td class="px-4 py-3 text-right">{{ r.budget|rs }}</td><td class="px-4 py-3 text-right">{{ r.actual|rs }}</td><td class="px-4 py-3 text-right">{{ r.variance|rs }}</td><td class="px-4 py-3 text-right">{{ r.utilisation_pct }}%</td><td class="px-4 py-3">{{ r.status }}</td></tr>{% endfor %}</tbody></table></div>
+  </div>
+
+  {% if existing_organisational_analysis %}
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden"><div class="px-5 py-4 border-b"><h2 class="font-bold">Organisation-wise Budget vs Actual</h2></div><div class="overflow-x-auto"><table class="min-w-full text-xs"><thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left">Organisation</th><th class="px-4 py-3 text-right">Budget</th><th class="px-4 py-3 text-right">Actual</th><th class="px-4 py-3 text-right">Variance</th><th class="px-4 py-3 text-right">Utilisation</th></tr></thead><tbody class="divide-y">{% for r in existing_organisational_analysis.unit_rows %}<tr><td class="px-4 py-3 font-semibold">{{ r.unit }}</td><td class="px-4 py-3 text-right">{{ r.budget|rs }}</td><td class="px-4 py-3 text-right">{{ r.actual|rs }}</td><td class="px-4 py-3 text-right">{{ r.variance|rs }}</td><td class="px-4 py-3 text-right">{{ r.utilisation_pct }}%</td></tr>{% endfor %}</tbody></table></div></div>
+    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden"><div class="px-5 py-4 border-b"><h2 class="font-bold">Department-wise Budget vs Actual</h2></div><div class="overflow-x-auto"><table class="min-w-full text-xs"><thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left">Section</th><th class="px-4 py-3 text-right">Budget</th><th class="px-4 py-3 text-right">Actual</th><th class="px-4 py-3 text-right">Variance</th><th class="px-4 py-3 text-right">Utilisation</th></tr></thead><tbody class="divide-y">{% for r in existing_organisational_analysis.section_rows %}<tr><td class="px-4 py-3 font-semibold">{{ r.department }}</td><td class="px-4 py-3 text-right">{{ r.budget|rs }}</td><td class="px-4 py-3 text-right">{{ r.actual|rs }}</td><td class="px-4 py-3 text-right">{{ r.variance|rs }}</td><td class="px-4 py-3 text-right">{{ r.utilisation_pct }}%</td></tr>{% endfor %}</tbody></table></div></div>
+  </div>
+
+  <div class="bg-white border border-slate-200 rounded-xl overflow-hidden"><div class="px-5 py-4 border-b"><h2 class="font-bold">Organisation × Department Analysis</h2><p class="text-[11px] text-slate-400">Budget attribution is explicit; actuals come from transaction organisational attribution. A Organisation may be managed by multiple Sections, and a transaction may involve multiple organisational dimensions where supported by the data model.</p></div><div class="overflow-x-auto"><table class="min-w-full text-xs"><thead class="bg-slate-50"><tr><th class="px-4 py-3 text-left">Organisation</th><th class="px-4 py-3 text-left">Section</th><th class="px-4 py-3 text-right">Budget</th><th class="px-4 py-3 text-right">Actual</th><th class="px-4 py-3 text-right">Variance</th></tr></thead><tbody class="divide-y">{% for r in existing_organisational_analysis.matrix_rows %}<tr><td class="px-4 py-3">{{ r.unit }}</td><td class="px-4 py-3 font-semibold">{{ r.department }}</td><td class="px-4 py-3 text-right">{{ r.budget|rs }}</td><td class="px-4 py-3 text-right">{{ r.actual|rs }}</td><td class="px-4 py-3 text-right">{{ r.variance|rs }}</td></tr>{% endfor %}</tbody></table></div></div>
+  {% endif %}
+
+  {% if variance_flags %}<div class="bg-amber-50 border border-amber-200 rounded-xl p-5"><h2 class="font-bold text-amber-900">Management Flags</h2><div class="mt-3 space-y-2">{% for f in variance_flags %}<div class="text-xs text-amber-800">{{ f.account_head }} — {{ f.flag }} — Actual {{ f.actual|rs }} / Budget {{ f.budget|rs }}</div>{% endfor %}</div></div>{% endif %}
+  {% endif %}
+
+  {% if target_fy and future_summary %}
+  <div class="bg-white border border-slate-200 rounded-xl p-5"><div class="flex items-center justify-between"><div><h2 class="font-bold">Future Budget — {{ target_fy.name }}</h2><p class="text-xs text-slate-500 mt-1">Existing FY evidence feeds the future planning baseline.</p></div><a href="{% url 'core:future_budget_detail' future_budget.pk %}" class="text-sm font-semibold text-emerald-700">Open Future Budget →</a></div></div>
+  {% elif target_fy %}
+  <div class="bg-blue-50 border border-blue-200 rounded-xl p-5 text-sm text-blue-800">No Future Budget has yet been created for {{ target_fy.name }} from {{ source_fy.name }}. Create/build it from the Future Budget module after reviewing this existing-FY analysis.</div>
+  {% endif %}
+</div>
+{% endblock %}

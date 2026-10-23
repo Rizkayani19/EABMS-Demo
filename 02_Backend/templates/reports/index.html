@@ -1,0 +1,352 @@
+{% extends 'base.html' %}
+{% block title %}Report Center — EABMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-5 border-b border-slate-200">
+        <div>
+            <div class="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-600 mb-1">Financial Intelligence &amp; Analytics</div>
+            <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Report Center</h1>
+            <p class="text-xs text-slate-500 mt-1">Financial reporting, multi-year performance analysis, unit reconciliation, and multi-sheet exports.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+            <div class="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span id="reports-available-count">{{ reports|length }}</span> reports available
+            </div>
+        </div>
+    </div>
+
+    <!-- Master Executive Reports: Side-by-Side Cards -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Card 1: Budget Analysis and Forecast Report (Word .docx) -->
+        <div class="rounded-2xl text-white p-6 shadow-xl border border-blue-900/60 relative overflow-hidden flex flex-col justify-between" style="background: linear-gradient(135deg, #0f172a 0%, #172554 50%, #1e3a8a 100%);">
+            <div class="space-y-3">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase" style="background-color: rgba(59, 130, 246, 0.2); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.4);">
+                        <span>★ Executive Report</span> · <span>Financial Analysis</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-[10px] bg-blue-950/80 text-blue-300 font-extrabold tracking-wide uppercase border border-blue-500/30">CONFIDENTIAL</span>
+                </div>
+                <h2 class="text-xl font-extrabold tracking-tight text-white sm:text-2xl">Budget Analysis and Forecast Report</h2>
+                <p class="text-xs leading-relaxed" style="color: #cbd5e1;">
+                    Comprehensive 20-page executive financial document formatted to professional corporate governance standards. Integrates 
+                    <span class="font-semibold" style="color: #93c5fd;">Executive Summary &amp; Historical Trajectory</span>, 
+                    <span class="font-semibold" style="color: #6ee7b7;">Divisional Inflow Distributions</span>, 
+                    <span class="font-semibold" style="color: #fcd34d;">Pass-Through Reversals &amp; True Outflows</span>, 
+                    <span class="font-semibold" style="color: #c084fc;">Head-Wise Future Projections</span>, and comprehensive 
+                    <span class="font-semibold" style="color: #fda4af;">Financial Health Metrics</span>. Dynamically bound to active Account &amp; Financial Year.
+                </p>
+                <div class="flex flex-wrap items-center gap-3 pt-1 text-[11px]" style="color: #94a3b8;">
+                    <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Word (.docx) Format</span>
+                    <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Live Dynamic Data</span>
+                    <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> 20-Page Executive Report</span>
+                </div>
+            </div>
+            <div class="pt-5 mt-4 border-t border-blue-900/50">
+                <a href="{% url 'reports:budget_word_document' %}" class="w-full inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-xl font-bold text-xs shadow-lg transition transform active:scale-95 border border-blue-400/40 hover:bg-blue-600 text-white" style="background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%);">
+                    <svg class="w-4 h-4 text-blue-200" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm4 18H6V4h7v5h5v11zM8 15.01l1.41 1.41L11 14.83V19h2v-4.17l1.59 1.59L16 15.01 12.01 11 8 15.01z"/>
+                    </svg>
+                    <span>Download Word Report (.docx) [CONFIDENTIAL]</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Card 2: Giant Management Master Worksheet (Excel .xlsx) -->
+        <div class="rounded-2xl text-white p-6 shadow-xl border border-emerald-900/60 relative overflow-hidden flex flex-col justify-between" style="background: linear-gradient(135deg, #0f172a 0%, #064e3b 50%, #047857 100%);">
+            <div class="space-y-3">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase" style="background-color: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.4);">
+                        <span>★ Master Workbook</span> · <span>Multi-Sheet Excel</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950/80 text-emerald-300 font-extrabold tracking-wide uppercase border border-emerald-500/30">Standalone Hub</span>
+                </div>
+                <h2 class="text-xl font-extrabold tracking-tight text-white sm:text-2xl">Giant Management Master Worksheet</h2>
+                <p class="text-xs leading-relaxed" style="color: #cbd5e1;">
+                    Authoritative multi-sheet Excel workbook synthesizing all financial dimensions: 
+                    <span class="font-semibold" style="color: #6ee7b7;">Consolidated Executive Overview</span>, 
+                    <span class="font-semibold" style="color: #7dd3fc;">Actual vs Budget Consumption</span>, 
+                    <span class="font-semibold" style="color: #fcd34d;">Month-wise Inflows &amp; Outflows</span>, 
+                    <span class="font-semibold" style="color: #c084fc;">Organisational Organisations &amp; Sections</span>, plus a comprehensive 
+                    <span class="font-semibold" style="color: #fda4af;">Audit Trail</span> of all active transactions with native Excel tables and freeze panes.
+                </p>
+                <div class="flex flex-wrap items-center gap-3 pt-1 text-[11px]" style="color: #94a3b8;">
+                    <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Native openpyxl Tables</span>
+                    <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span> Multi-FY Compatible</span>
+                    <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Exact + Millions (Mn)</span>
+                </div>
+            </div>
+            <div class="pt-5 mt-4 border-t border-emerald-900/50">
+                <a href="{% url 'reports:management_workbook' %}" class="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-xs shadow-lg transition transform active:scale-95 bg-emerald-500 hover:bg-emerald-400 text-slate-950">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    <span>Download Master Workbook (.xlsx)</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Present Balance Reconciliation Suite (3 Reports Featured Banner) -->
+    <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-5 border border-indigo-500/30 text-white shadow-lg space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-indigo-800/40 pb-3">
+            <div>
+                <div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    ★ Authoritative Balance Reconciliation Suite
+                </div>
+                <h2 class="text-base font-bold text-white mt-1">Present Status vs Start of Year (Live Balances vs 01-Jul)</h2>
+            </div>
+            <span class="text-[11px] text-indigo-300">Live reconciliation reflecting opening allocations, July transactions &amp; net cash positions</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            <!-- 1. Present Division Status -->
+            <div class="bg-white/5 hover:bg-white/10 rounded-xl p-4 border border-white/10 transition flex flex-col justify-between space-y-3 group">
+                <div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-wider">Divisions</span>
+                        <span class="text-[9px] px-2 py-0.5 rounded bg-emerald-900/60 text-emerald-200 border border-emerald-500/30 font-bold">Live Cash</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-white mt-1.5 group-hover:text-emerald-300 transition">Present Division Status vs Start of Year</h3>
+                    <p class="text-[11px] text-slate-300 mt-1 line-clamp-2">Compares live sub-fund cash positions against 01-Jul opening allocations, operational inflows, and July expenditures.</p>
+                </div>
+                <div class="flex items-center justify-between gap-1 pt-2 border-t border-white/10">
+                    <div class="flex items-center gap-1">
+                        <a href="{% url 'reports:view_report' 'present-sub-fund-balance' %}?format=pdf" class="px-2 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-[10px] font-bold border border-rose-500/30">PDF</a>
+                        <a href="{% url 'reports:view_report' 'present-sub-fund-balance' %}?format=excel" class="px-2 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-[10px] font-bold border border-emerald-500/30">XLS</a>
+                    </div>
+                    <a href="{% url 'reports:view_report' 'present-sub-fund-balance' %}" class="px-3 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs transition">
+                        View Report &rarr;
+                    </a>
+                </div>
+            </div>
+
+            <!-- 2. Present Account Head Balance -->
+            <div class="bg-white/5 hover:bg-white/10 rounded-xl p-4 border border-white/10 transition flex flex-col justify-between space-y-3 group">
+                <div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-mono text-indigo-400 font-bold uppercase tracking-wider">Account Heads</span>
+                        <span class="text-[9px] px-2 py-0.5 rounded bg-indigo-900/60 text-indigo-200 border border-indigo-500/30 font-bold">Head-wise</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-white mt-1.5 group-hover:text-indigo-300 transition">Present Account Head Balance vs Start of Year</h3>
+                    <p class="text-[11px] text-slate-300 mt-1 line-clamp-2">Head-wise live balance reconciliation capturing opening positions, active receipts, and payments.</p>
+                </div>
+                <div class="flex items-center justify-between gap-1 pt-2 border-t border-white/10">
+                    <div class="flex items-center gap-1">
+                        <a href="{% url 'reports:view_report' 'present-account-head-balance' %}?format=pdf" class="px-2 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-[10px] font-bold border border-rose-500/30">PDF</a>
+                        <a href="{% url 'reports:view_report' 'present-account-head-balance' %}?format=excel" class="px-2 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-[10px] font-bold border border-emerald-500/30">XLS</a>
+                    </div>
+                    <a href="{% url 'reports:view_report' 'present-account-head-balance' %}" class="px-3 py-1 rounded-lg bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs transition">
+                        View Report &rarr;
+                    </a>
+                </div>
+            </div>
+
+            <!-- 3. Present Sub-Head Balance -->
+            <div class="bg-white/5 hover:bg-white/10 rounded-xl p-4 border border-white/10 transition flex flex-col justify-between space-y-3 group">
+                <div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-mono text-blue-400 font-bold uppercase tracking-wider">Sub-Heads</span>
+                        <span class="text-[9px] px-2 py-0.5 rounded bg-blue-900/60 text-blue-200 border border-blue-500/30 font-bold">Detailed</span>
+                    </div>
+                    <h3 class="text-sm font-bold text-white mt-1.5 group-hover:text-blue-300 transition">Present Sub-Head Balance vs Start of Year</h3>
+                    <p class="text-[11px] text-slate-300 mt-1 line-clamp-2">Granular sub-account head balance tracking with opening balance and net movements.</p>
+                </div>
+                <div class="flex items-center justify-between gap-1 pt-2 border-t border-white/10">
+                    <div class="flex items-center gap-1">
+                        <a href="{% url 'reports:view_report' 'present-sub-account-head-balance' %}?format=pdf" class="px-2 py-1 rounded bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 text-[10px] font-bold border border-rose-500/30">PDF</a>
+                        <a href="{% url 'reports:view_report' 'present-sub-account-head-balance' %}?format=excel" class="px-2 py-1 rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-[10px] font-bold border border-emerald-500/30">XLS</a>
+                    </div>
+                    <a href="{% url 'reports:view_report' 'present-sub-account-head-balance' %}" class="px-3 py-1 rounded-lg bg-blue-500 hover:bg-blue-400 text-white font-bold text-xs transition">
+                        View Report &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Search & Keystroke Filter Bar -->
+    <div class="flex flex-col sm:flex-row items-center gap-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="relative flex-1 w-full">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            </span>
+            <input type="text" id="report-search-input" placeholder="⚡ Type to filter reports instantly (e.g. dynamic, budget, inflows, unit, pilgrim, trend, yoy)..." class="w-full pl-10 pr-10 py-2 text-xs text-slate-800 bg-slate-50 hover:bg-slate-100 focus:bg-white rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition outline-none" autocomplete="off">
+            <button type="button" id="clear-search-btn" class="hidden absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer" title="Clear filter">✕</button>
+        </div>
+        <div class="text-[11px] text-slate-500 font-medium shrink-0 flex items-center gap-2">
+            <span>Showing <strong id="reports-visible-count" class="text-slate-800">{{ reports|length }}</strong> of {{ reports|length }} reports</span>
+        </div>
+    </div>
+
+    <!-- Category Filter Tabs -->
+    <div class="flex flex-wrap gap-2.5 pb-1" role="tablist" aria-label="Report categories">
+        <button type="button" class="report-tab active flex-1 min-w-[140px] rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5 text-left transition shadow-sm cursor-pointer" data-category="all">
+            <div class="text-[9px] font-bold uppercase tracking-wider text-emerald-700">00 · Complete</div>
+            <div class="mt-0.5 text-xs font-bold text-slate-800">All Reports</div>
+        </button>
+        <button type="button" class="report-tab flex-1 min-w-[140px] rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-left hover:border-emerald-200 hover:bg-emerald-50/50 transition shadow-sm cursor-pointer" data-category="executive">
+            <div class="text-[9px] font-bold uppercase tracking-wider text-slate-500">01 · Executive</div>
+            <div class="mt-0.5 text-xs font-bold text-slate-800">Management</div>
+        </button>
+        <button type="button" class="report-tab flex-1 min-w-[140px] rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-left hover:border-emerald-200 hover:bg-emerald-50/50 transition shadow-sm cursor-pointer" data-category="budget">
+            <div class="text-[9px] font-bold uppercase tracking-wider text-slate-500">02 · Control</div>
+            <div class="mt-0.5 text-xs font-bold text-slate-800">Budget &amp; Variance</div>
+        </button>
+        <button type="button" class="report-tab flex-1 min-w-[140px] rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-left hover:border-emerald-200 hover:bg-emerald-50/50 transition shadow-sm cursor-pointer" data-category="periodic">
+            <div class="text-[9px] font-bold uppercase tracking-wider text-slate-500">03 · Periodic</div>
+            <div class="mt-0.5 text-xs font-bold text-slate-800">Monthly &amp; Cashflow</div>
+        </button>
+        <button type="button" class="report-tab flex-1 min-w-[140px] rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-left hover:border-emerald-200 hover:bg-emerald-50/50 transition shadow-sm cursor-pointer" data-category="organisational">
+            <div class="text-[9px] font-bold uppercase tracking-wider text-slate-500">04 · Organisations</div>
+            <div class="mt-0.5 text-xs font-bold text-slate-800">Organisational</div>
+        </button>
+        <button type="button" class="report-tab flex-1 min-w-[140px] rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-left hover:border-emerald-200 hover:bg-emerald-50/50 transition shadow-sm cursor-pointer" data-category="claims">
+            <div class="text-[9px] font-bold uppercase tracking-wider text-slate-500">05 · Claims</div>
+            <div class="mt-0.5 text-xs font-bold text-slate-800">Reimbursements</div>
+        </button>
+    </div>
+
+    <!-- Reports Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" id="report-grid">
+        {% for report in reports %}
+        <article class="report-card bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md hover:border-emerald-300 transition flex flex-col justify-between group" data-category="{{ report.category }}" data-report-index="{{ forloop.counter0 }}">
+            <div>
+                <div class="flex items-start justify-between gap-3">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-xs font-bold">
+                        {{ forloop.counter|stringformat:"02d" }}
+                    </div>
+                    <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                        {% if report.display_in_millions %}
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                            Mn (Millions)
+                        </span>
+                        {% endif %}
+                        {% if report.export_supported %}
+                        <span class="abms-badge bg-slate-100 text-slate-600">
+                            <span class="abms-dot bg-emerald-500"></span>PDF / Excel
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <h2 class="text-sm font-bold text-slate-800 mt-4 leading-5 group-hover:text-emerald-700 transition report-title">
+                    {{ report.title }}
+                </h2>
+                <p class="text-xs text-slate-500 mt-2 min-h-[2.5rem] leading-5 report-desc">
+                    {{ report.description }}
+                </p>
+            </div>
+            <div class="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap">
+                <span class="text-[10px] uppercase tracking-wider font-semibold text-slate-400 capitalize">
+                    {{ report.category }}
+                </span>
+                <div class="flex items-center gap-1.5">
+                    {% if report.export_supported %}
+                    <a href="{% url 'reports:view_report' report.slug %}?format=pdf" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition shadow-2xs" title="1-Click Direct Download PDF">
+                        <span class="text-[11px]">📄</span>
+                        <span>PDF</span>
+                    </a>
+                    <a href="{% url 'reports:view_report' report.slug %}?format=excel" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition shadow-2xs" title="1-Click Direct Download Excel">
+                        <span class="text-[11px]">📊</span>
+                        <span>XLS</span>
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'reports:view_report' report.slug %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 text-white hover:bg-slate-700 text-xs font-semibold transition shadow-sm">
+                        <span>View</span> <span aria-hidden="true">→</span>
+                    </a>
+                </div>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+
+    <!-- Empty State for Search Filter -->
+    <div id="no-reports-found" class="hidden p-8 text-center bg-white rounded-2xl border border-slate-200">
+        <div class="text-2xl mb-2">🔍</div>
+        <div class="text-sm font-bold text-slate-800">No matching reports found</div>
+        <p class="text-xs text-slate-500 mt-1">Try a different search term like "budget", "inflows", "unit", or clear the filter.</p>
+        <button type="button" onclick="document.getElementById('clear-search-btn').click()" class="mt-3 inline-flex items-center px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 font-semibold text-xs border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer">
+            Clear Search
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function(){
+    const tabs = document.querySelectorAll('.report-tab');
+    const cards = document.querySelectorAll('.report-card');
+    const countDisplay = document.getElementById('reports-available-count');
+    const visibleCountDisplay = document.getElementById('reports-visible-count');
+    const searchInput = document.getElementById('report-search-input');
+    const clearBtn = document.getElementById('clear-search-btn');
+    const noReportsFound = document.getElementById('no-reports-found');
+
+    let currentCategory = 'all';
+
+    function filterReports() {
+        const query = searchInput ? searchInput.value.trim().toLowerCase() : '';
+        if (clearBtn) {
+            clearBtn.classList.toggle('hidden', query.length === 0);
+        }
+
+        let visibleCount = 0;
+        cards.forEach(card => {
+            const cardCategory = card.dataset.category;
+            const title = (card.querySelector('.report-title') ? card.querySelector('.report-title').textContent : '').toLowerCase();
+            const desc = (card.querySelector('.report-desc') ? card.querySelector('.report-desc').textContent : '').toLowerCase();
+
+            const matchesCategory = (currentCategory === 'all' || cardCategory === currentCategory);
+            const matchesQuery = (query === '' || title.includes(query) || desc.includes(query) || cardCategory.includes(query));
+
+            if (matchesCategory && matchesQuery) {
+                card.style.display = '';
+                visibleCount++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        if (countDisplay) countDisplay.textContent = visibleCount;
+        if (visibleCountDisplay) visibleCountDisplay.textContent = visibleCount;
+        if (noReportsFound) {
+            noReportsFound.classList.toggle('hidden', visibleCount > 0);
+        }
+    }
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            currentCategory = tab.dataset.category;
+
+            tabs.forEach(item => {
+                const active = (item === tab);
+                item.classList.toggle('border-emerald-200', active);
+                item.classList.toggle('bg-emerald-50', active);
+                item.classList.toggle('border-slate-200', !active);
+                item.classList.toggle('bg-white', !active);
+
+                const catLabel = item.querySelector('div:first-child');
+                if (catLabel) {
+                    catLabel.classList.toggle('text-emerald-700', active);
+                    catLabel.classList.toggle('text-slate-500', !active);
+                }
+            });
+
+            filterReports();
+        });
+    });
+
+    if (searchInput) {
+        searchInput.addEventListener('input', filterReports);
+    }
+    if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            filterReports();
+            searchInput.focus();
+        });
+    }
+})();
+</script>
+{% endblock %}

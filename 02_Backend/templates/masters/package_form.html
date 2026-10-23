@@ -1,0 +1,371 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}{{ title }} — EABMS{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6 pb-12">
+    <div class="flex items-center justify-between pb-4 border-b border-slate-200">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800 tracking-tight">{{ title }}</h1>
+            <p class="text-xs text-slate-500 mt-1">Configure Provident / Benefits Cohort Package with sequential itinerary &amp; room sharing rates.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            {% if item %}
+            <a href="{% url 'masters:package_copy' item.id %}" class="text-xs text-emerald-800 hover:text-emerald-950 bg-emerald-100 hover:bg-emerald-200 border border-emerald-300 px-3.5 py-2 rounded-lg font-semibold transition inline-flex items-center gap-1">
+                <span>📋</span> Copy This Profile
+            </a>
+            {% endif %}
+            <a href="{% url 'masters:package_list' %}" class="text-xs text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3.5 py-2 rounded-lg font-medium transition">
+                ← Back to Packages
+            </a>
+        </div>
+    </div>
+
+    <!-- 1-Click Profile Clone Notification -->
+    {% if is_copy %}
+    <div class="p-4 bg-emerald-50 border-2 border-emerald-300 rounded-xl flex items-start gap-3 shadow-sm">
+        <span class="text-2xl">📋</span>
+        <div>
+            <div class="text-sm font-bold text-emerald-900">Cloning Package Profile</div>
+            <p class="text-xs text-emerald-800 mt-0.5">
+                All settings successfully pre-filled from <strong class="underline">{{ source_package.package_name }}</strong> (<code>{{ source_package.package_code }}</code>).
+                Adjust any desired fields below (e.g. package code, hotels, duration, or tariff rates) and click <strong>Save Package</strong>.
+            </p>
+        </div>
+    </div>
+    {% elif not is_edit and available_packages %}
+    <!-- Quick Clone Helper -->
+    <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+            <div class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <span>💡</span> Want to save time?
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">Copy an existing Benefits or Provident package profile instead of starting from scratch:</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <select id="quick-copy-select" class="px-3 py-1.5 border border-slate-300 rounded-lg text-xs bg-white focus:ring-2 focus:ring-emerald-500">
+                <option value="">-- Select Package to Copy --</option>
+                {% for pkg in available_packages %}
+                <option value="{% url 'masters:package_copy' pkg.id %}">[{{ pkg.get_package_type_display }}] {{ pkg.package_code }} - {{ pkg.package_name }}</option>
+                {% endfor %}
+            </select>
+            <button type="button" onclick="var s = document.getElementById('quick-copy-select'); if(s.value) window.location.href=s.value;" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-semibold whitespace-nowrap transition">
+                Copy Profile
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Dynamic Mode Banner (Benefits vs Provident Conspicuous Notification) -->
+    <div id="banner-umra" class="p-4 bg-teal-50 border-2 border-teal-400 rounded-xl flex items-start gap-3 shadow-sm" style="display:none;">
+        <span class="text-3xl">🕋</span>
+        <div>
+            <div class="text-sm font-bold text-teal-900 uppercase tracking-wide">Benefits Package Mode Active (Simple 2-Stay Itinerary)</div>
+            <p class="text-xs text-teal-800 mt-1 leading-relaxed">
+                For Benefits, the pilgrimage consists solely of two simple stays: <strong>1. Medina Munawwarah</strong> and <strong>2. Makkah Mukarramah</strong>.
+                Holy Mashair rituals (Mina, Arafat, Muzdalifah), Post-Provident days, and Azizia building stay are <strong class="underline">automatically omitted</strong>.
+            </p>
+        </div>
+    </div>
+
+    <div id="banner-haj" class="p-4 bg-amber-50 border-2 border-amber-400 rounded-xl flex items-start gap-3 shadow-sm" style="display:none;">
+        <span class="text-3xl">🕌</span>
+        <div>
+            <div class="text-sm font-bold text-amber-900 uppercase tracking-wide">Provident Package Mode Active (Full Comprehensive Itinerary)</div>
+            <p class="text-xs text-amber-800 mt-1 leading-relaxed">
+                Full sequential Provident pilgrimage covering Medina Munawwarah stay, Makkah hotel stay, Azizia staging building stay, and <strong>5 full days of Holy Mashair rituals</strong> in Mina, Arafat, and Muzdalifah.
+            </p>
+        </div>
+    </div>
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="p-4 bg-rose-50 text-rose-800 border border-rose-200 rounded-xl text-xs">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <!-- Section 1: Basic & Cohort -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider pb-2 border-b border-slate-100 flex items-center">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2"></span> 1. Basic Package Information
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Cohort <span class="text-rose-500">*</span></label>
+                    {{ form.cohort }}
+                    {% if form.cohort.errors %}<p class="text-rose-600 text-xs mt-1">{{ form.cohort.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Package Type <span class="text-rose-500">*</span></label>
+                    {{ form.package_type }}
+                    <p class="text-[10px] text-slate-500 mt-1">
+                        Select <strong>Benefits Package</strong> for simple Medina &amp; Makkah stays without Mashair/Azizia rituals.
+                    </p>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Package Code <span class="text-rose-500">*</span></label>
+                    {{ form.package_code }}
+                    {% if form.package_code.errors %}<p class="text-rose-600 text-xs mt-1">{{ form.package_code.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Package Name <span class="text-rose-500">*</span></label>
+                    {{ form.package_name }}
+                    {% if form.package_name.errors %}<p class="text-rose-600 text-xs mt-1">{{ form.package_name.errors.0 }}</p>{% endif %}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Total Duration (Days) <span class="text-rose-500">*</span></label>
+                    {{ form.total_days }}
+                    {% if form.total_days.errors %}<p class="text-rose-600 text-xs mt-1">{{ form.total_days.errors.0 }}</p>{% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: Flight & Routing -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider pb-2 border-b border-slate-100 flex items-center">
+                <span class="w-2 h-2 rounded-full bg-blue-500 mr-2"></span> 2. Flight &amp; Routing
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Airline</label>
+                    {{ form.airline }}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Flight Route</label>
+                    {{ form.flight_route }}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Flight Origin</label>
+                    {{ form.flight_origin }}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Flight Destination</label>
+                    {{ form.flight_destination }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 3: Medina Stay & Transfer -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider pb-2 border-b border-slate-100 flex items-center">
+                <span class="w-2 h-2 rounded-full bg-emerald-600 mr-2"></span> 3. Medina Stay &amp; Intercity Transit
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Medina Sequence Order</label>
+                    {{ form.medina_order }}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Medina Days</label>
+                    {{ form.medina_days }}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Medina Accommodation Type</label>
+                    {{ form.medina_accn_type }}
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Medina Hotel Name</label>
+                    {{ form.medina_hotel_name }}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Medina Boarding</label>
+                    {{ form.medina_boarding }}
+                </div>
+                <div class="sm:col-span-3">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Medina ➔ Makkah Intercity Transfer Mode</label>
+                    {{ form.transfer_mode }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: Makkah Stay Phases -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider pb-2 border-b border-slate-100 flex items-center">
+                <span class="w-2 h-2 rounded-full bg-indigo-500 mr-2"></span> 4. Makkah Mukarramah Stay
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Makkah Hotel Days</label>
+                    {{ form.makkah_p1_days }}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Accommodation Type</label>
+                    {{ form.makkah_p1_accn_type }}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Boarding</label>
+                    {{ form.makkah_p1_boarding }}
+                </div>
+                <div class="sm:col-span-3">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Makkah Hotel Name</label>
+                    {{ form.makkah_p1_hotel_name }}
+                </div>
+
+                <!-- Phase 2: Azizia / Pre-Provident Assembly Building (Provident Only) -->
+                <div id="section-azizia" class="sm:col-span-3 pt-4 border-t border-slate-100">
+                    <div class="p-3 bg-amber-50/70 border border-amber-200 rounded-lg mb-3">
+                        <span class="text-xs font-bold text-amber-800 uppercase tracking-wider">🕌 Provident Specific: Phase 2 Azizia Assembly Building</span>
+                        <p class="text-[11px] text-amber-700 mt-0.5">Staging building prior to or after Mashair rituals (automatically omitted for Benefits packages).</p>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Azizia Days</label>
+                            {{ form.makkah_p2_days }}
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Azizia Accn Type</label>
+                            {{ form.makkah_p2_accn_type }}
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Azizia Boarding</label>
+                            {{ form.makkah_p2_boarding }}
+                        </div>
+                        <div class="sm:col-span-3">
+                            <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Azizia Building Name</label>
+                            {{ form.makkah_p2_building_name }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 5: Holy Mashair (Provident Days Only) -->
+        <div id="section-mashair" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h2 class="text-sm font-bold text-amber-800 uppercase tracking-wider flex items-center">
+                    <span class="w-2 h-2 rounded-full bg-amber-500 mr-2"></span> 5. Holy Mashair (Provident Rituals: Mina / Arafat / Muzdalifah — Provident Only)
+                </h2>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                    Omitted for Benefits
+                </span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Mashair Total Days</label>
+                    {{ form.mashair_days }}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Mina Maktab</label>
+                    {{ form.mina_maktab }}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Mina Zone</label>
+                    {{ form.mina_zone }}
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Arafat Logistics</label>
+                    {{ form.arafat_details }}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Mashair Boarding</label>
+                    {{ form.mashair_boarding }}
+                </div>
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Muzdalifah Logistics</label>
+                    {{ form.muzdalifah_details }}
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Post-Provident Days</label>
+                    {{ form.post_haj_days }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 6: Room Sharing Approved Rates -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider pb-2 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center">
+                    <span class="w-2 h-2 rounded-full bg-emerald-700 mr-2"></span> 6. Official Room Sharing Tariff (PKR per Pilgrim)
+                </div>
+                <span class="text-xs text-slate-400 font-normal lowercase">rates used for auto-billing</span>
+            </h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="p-4 rounded-xl border border-emerald-200 bg-emerald-50/50">
+                    <label class="block text-xs font-bold text-emerald-800 uppercase tracking-wider mb-1">Quad Sharing Rate (PKR)</label>
+                    {{ form.rate_quad_sharing }}
+                    <p class="text-[10px] text-emerald-600 mt-1">Base rate (4+ pilgrims per room)</p>
+                </div>
+                <div class="p-4 rounded-xl border border-slate-200 bg-slate-50">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Triple Sharing Rate (PKR)</label>
+                    {{ form.rate_triple_sharing }}
+                    <p class="text-[10px] text-slate-500 mt-1">3 pilgrims per room</p>
+                </div>
+                <div class="p-4 rounded-xl border border-slate-200 bg-slate-50">
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Double Sharing Rate (PKR)</label>
+                    {{ form.rate_double_sharing }}
+                    <p class="text-[10px] text-slate-500 mt-1">Couple / 2 pilgrims per room</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 7: Description & Status -->
+        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+            <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider pb-2 border-b border-slate-100 flex items-center">
+                <span class="w-2 h-2 rounded-full bg-slate-600 mr-2"></span> 7. Terms &amp; Status
+            </h2>
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Inclusions / Package Description</label>
+                {{ form.description }}
+            </div>
+            <div class="flex items-center space-x-2 pt-2">
+                {{ form.is_active }}
+                <label for="{{ form.is_active.id_for_label }}" class="text-xs font-semibold text-slate-700">Package is Active &amp; Available for Registration</label>
+            </div>
+        </div>
+
+        <!-- Form Actions -->
+        <div class="flex items-center justify-end space-x-3 pt-4 border-t border-slate-200">
+            <a href="{% url 'masters:package_list' %}" class="px-5 py-2.5 border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50 transition">
+                Cancel
+            </a>
+            <button type="submit" class="px-6 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-semibold shadow-sm transition inline-flex items-center gap-1.5">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Save Package
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var packageTypeSelect = document.getElementById('id_package_type');
+    var cohortSelect = document.getElementById('id_cohort');
+    var aziziaSection = document.getElementById('section-azizia');
+    var mashairSection = document.getElementById('section-mashair');
+    var bannerBenefits = document.getElementById('banner-umra');
+    var bannerProvident = document.getElementById('banner-haj');
+
+    function updateFormVisibility() {
+        var isBenefits = false;
+        if (packageTypeSelect && packageTypeSelect.value === 'UMRA') {
+            isBenefits = true;
+        } else if (cohortSelect) {
+            var selectedText = cohortSelect.options[cohortSelect.selectedIndex]?.text || '';
+            if (selectedText.indexOf('UMC') !== -1 || selectedText.indexOf('Benefits') !== -1) {
+                isBenefits = true;
+                if (packageTypeSelect) packageTypeSelect.value = 'UMRA';
+            }
+        }
+
+        if (isBenefits) {
+            if (aziziaSection) aziziaSection.style.display = 'none';
+            if (mashairSection) mashairSection.style.display = 'none';
+            if (bannerBenefits) bannerBenefits.style.display = 'flex';
+            if (bannerProvident) bannerProvident.style.display = 'none';
+        } else {
+            if (aziziaSection) aziziaSection.style.display = '';
+            if (mashairSection) mashairSection.style.display = '';
+            if (bannerBenefits) bannerBenefits.style.display = 'none';
+            if (bannerProvident) bannerProvident.style.display = 'flex';
+        }
+    }
+
+    if (packageTypeSelect) packageTypeSelect.addEventListener('change', updateFormVisibility);
+    if (cohortSelect) cohortSelect.addEventListener('change', updateFormVisibility);
+    updateFormVisibility();
+});
+</script>
+{% endblock %}

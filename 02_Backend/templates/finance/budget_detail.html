@@ -1,0 +1,44 @@
+﻿{% extends 'base.html' %}
+{% block title %}Budget Detail — EABMS{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <div class="flex items-center gap-2">
+                <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Budget #{{ budget.id }}</h1>
+                <span class="abms-badge bg-slate-100 text-slate-600"><span class="abms-dot bg-slate-400"></span>{{ budget.status }}</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold {% if budget.budget_allocation_basis == 'SUB_FUND' %}bg-indigo-50 text-indigo-700 border border-indigo-200{% else %}bg-slate-100 text-slate-700 border border-slate-200{% endif %}">
+                    {% if budget.budget_allocation_basis == 'SUB_FUND' %}⚡ Division Basis{% else %}📋 Account Head Basis{% endif %}
+                </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">{{ budget.account.name }} — {{ budget.financial_year.name }}</p>
+        </div>
+        <div class="flex items-center gap-2"><a href="{% url 'core:budget_list' %}" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-sm font-semibold rounded-lg transition">← Budgets</a><a href="{% url 'core:budget_edit' budget.pk %}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-semibold rounded-lg transition">Edit</a><a href="{% url 'core:budgetline_create' budget.pk %}" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg transition">+ Add Budget Line</a></div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5"><div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Inflows</div><div class="text-2xl font-bold text-blue-900 mt-1">{{ inflow_total|rs_mn }}</div><div class="text-[11px] text-blue-500 mt-0.5">{{ inflow_total|rs }}</div></div>
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5"><div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Outflows</div><div class="text-2xl font-bold text-slate-900 mt-1">{{ outflow_total|rs_mn }}</div><div class="text-[11px] text-slate-500 mt-0.5">{{ outflow_total|rs }}</div></div>
+        <div class="bg-white rounded-xl border-2 border-emerald-200 shadow-sm p-5 bg-emerald-50/30"><div class="text-[10px] font-bold uppercase tracking-wider text-emerald-600">Difference (Inflows − Outflows)</div><div class="text-2xl font-bold text-emerald-900 mt-1">{{ budget_difference|rs_mn }}</div><div class="text-[11px] text-emerald-600 mt-0.5">{{ budget_difference|rs }}</div></div>
+    </div>
+
+    {% if budget.remarks %}<div class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800"><strong>Remarks:</strong> {{ budget.remarks }}</div>{% endif %}
+
+    <div class="bg-white shadow-sm border border-slate-200 rounded-xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+            <h2 class="text-sm font-bold text-slate-700 uppercase tracking-wider">Budget Lines — Outflows</h2>
+            <span class="text-xs text-slate-500">Allocation: <strong>{% if budget.budget_allocation_basis == 'SUB_FUND' %}Division{% else %}Account Head{% endif %}</strong></span>
+        </div>
+        <div class="overflow-x-auto"><table class="min-w-full divide-y divide-slate-200 text-left text-xs"><thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider"><tr><th class="px-4 py-3">{% if budget.budget_allocation_basis == 'SUB_FUND' %}Division{% else %}Account Head{% endif %}</th><th class="px-4 py-3">Organisation</th><th class="px-4 py-3">Type</th><th class="px-4 py-3 text-right">Amount ($)</th><th class="px-4 py-3">Remarks</th><th class="px-4 py-3 text-center">Actions</th></tr></thead><tbody class="divide-y divide-slate-100 bg-white">
+            {% for line in budget.lines.all %}<tr class="hover:bg-slate-50"><td class="px-4 py-3 font-medium text-slate-800">{{ line.account_head.name|default:line.major_head.name|default:"—" }}</td><td class="px-4 py-3 text-slate-500">{{ line.unit.name|default:"—" }}</td><td class="px-4 py-3 text-slate-500">{{ line.budget_type.name|default:"—" }}</td><td class="px-4 py-3 text-right font-mono font-bold text-slate-800">{{ line.amount|rs }}</td><td class="px-4 py-3 text-slate-400">{{ line.remarks|default:"—" }}</td><td class="px-4 py-3 text-center"><a href="{% url 'core:budgetrevision_create' line.pk %}" class="text-xs text-blue-600 hover:text-blue-800 font-semibold">Revise</a></td></tr>{% empty %}<tr><td colspan="6" class="px-4 py-10 text-center text-slate-400">No outflow budget lines yet.</td></tr>{% endfor %}
+        </tbody><tfoot class="bg-slate-50 border-t-2 border-slate-300"><tr><td colspan="3" class="px-4 py-3 font-bold text-slate-700">Outflow Total</td><td class="px-4 py-3 text-right font-mono font-bold text-slate-900">{{ outflow_total|rs }}</td><td colspan="2"></td></tr></tfoot></table></div>
+    </div>
+
+    <div class="bg-white shadow-sm border border-blue-200 rounded-xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-blue-100 bg-blue-50/40 flex items-center justify-between"><div><h2 class="text-sm font-bold text-blue-900 uppercase tracking-wider">Budget Lines — Inflows</h2><p class="text-[11px] text-blue-600 mt-0.5">Inflow planning for {% if budget.budget_allocation_basis == 'SUB_FUND' %}Divisions{% else %}INFLOW and BOTH Account Heads{% endif %}.</p></div><a href="{% url 'core:budgetline_create' budget.pk %}" class="text-xs font-semibold text-blue-700 hover:text-blue-900">+ Add Budget Line</a></div>
+        <div class="overflow-x-auto"><table class="min-w-full divide-y divide-slate-200 text-left text-xs"><thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider"><tr><th class="px-4 py-3">{% if budget.budget_allocation_basis == 'SUB_FUND' %}Division{% else %}Account Head{% endif %}</th><th class="px-4 py-3">Organisation</th><th class="px-4 py-3">Type</th><th class="px-4 py-3 text-right">Inflow Amount ($)</th><th class="px-4 py-3">Remarks</th></tr></thead><tbody class="divide-y divide-slate-100 bg-white">
+            {% for line in budget.inflow_lines.all %}<tr class="hover:bg-blue-50/30"><td class="px-4 py-3 font-medium text-slate-800">{{ line.account_head.name|default:line.major_head.name|default:"—" }}</td><td class="px-4 py-3 text-slate-500">{{ line.unit.name|default:"—" }}</td><td class="px-4 py-3 text-slate-500">{{ line.budget_type.name }}</td><td class="px-4 py-3 text-right font-mono font-bold text-blue-900">{{ line.amount|rs }}</td><td class="px-4 py-3 text-slate-400">{{ line.remarks|default:"—" }}</td></tr>{% empty %}<tr><td colspan="5" class="px-4 py-10 text-center text-slate-400">No inflow budget lines yet.</td></tr>{% endfor %}
+        </tbody><tfoot class="bg-blue-50 border-t-2 border-blue-200"><tr><td colspan="3" class="px-4 py-3 font-bold text-blue-900">Inflow Total</td><td class="px-4 py-3 text-right font-mono font-bold text-blue-900">{{ inflow_total|rs }}</td><td></td></tr></tfoot></table></div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,164 @@
+<aside id="abms-sidebar" class="abms-sidebar w-64 bg-slate-900 text-slate-300 min-h-[calc(100vh-4rem)] flex flex-col flex-shrink-0 transition-all duration-200 overflow-hidden" aria-label="Primary navigation">
+    <div class="flex items-center justify-between px-3 py-3 border-b border-slate-800">
+        <span class="sidebar-section-label text-[11px] font-bold uppercase tracking-wider text-slate-400">Navigation</span>
+        <button type="button" id="sidebar-collapse" class="hidden md:inline-flex items-center justify-center w-8 h-8 rounded-md text-slate-400 hover:text-white hover:bg-slate-800" aria-label="Collapse sidebar" title="Collapse sidebar">‹</button>
+    </div>
+
+    <!-- Active Fund Indicator in Sidebar -->
+    <div class="px-3 pt-3 pb-1 sidebar-group">
+        {% include 'partials/fund_badge.html' with size="sm" %}
+    </div>
+
+    <div class="flex-1 overflow-y-auto p-3 space-y-4">
+        <!-- FOUNDATION -->
+        <div class="sidebar-group" data-group="foundation">
+            <button type="button" class="sidebar-group-toggle w-full flex items-center justify-between px-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-300" aria-expanded="true">
+                <span>Foundation</span><span class="sidebar-group-chevron">⌃</span>
+            </button>
+            <nav class="sidebar-group-content mt-1 space-y-1">
+                <a href="{% url 'core:home' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition {% if request.resolver_match.url_name == 'home' %}bg-slate-800 text-emerald-400 border-l-4 border-emerald-500{% endif %}" title="Overview">
+                    <span class="sidebar-icon w-6 text-center">⌂</span><span class="sidebar-label">Overview</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- OPERATIONS -->
+        <div class="sidebar-group" data-group="operations">
+            <button type="button" class="sidebar-group-toggle w-full flex items-center justify-between px-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-300" aria-expanded="true">
+                <span>Operations</span><span class="sidebar-group-chevron">⌃</span>
+            </button>
+            <nav class="sidebar-group-content mt-1 space-y-1">
+                <a href="{% url 'core:transaction_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition {% if '/transactions/' in request.path and '/new/' not in request.path and 'bulk-edit' not in request.path %}bg-slate-800 text-emerald-400 border-l-4 border-emerald-500{% endif %}" title="Txn Ledger">
+                    <span class="sidebar-icon w-6 text-center">▤</span><span class="sidebar-label">Txn Ledger</span>
+                </a>
+                <a href="{% url 'core:inflow_create' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition {% if 'transactions/inflow/new' in request.path %}bg-slate-800 text-emerald-400 border-l-4 border-emerald-500{% endif %}" title="New Inflow">
+                    <span class="sidebar-icon w-6 text-center">↓</span><span class="sidebar-label">New Inflow</span>
+                </a>
+                <a href="{% url 'core:outflow_create' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition {% if 'transactions/outflow/new' in request.path %}bg-slate-800 text-emerald-400 border-l-4 border-emerald-500{% endif %}" title="New Outflow">
+                    <span class="sidebar-icon w-6 text-center">↑</span><span class="sidebar-label">New Outflow</span>
+                </a>
+                <a href="{% url 'core:internal_transfer_create' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition {% if 'transactions/transfer' in request.path %}bg-slate-800 text-amber-400 border-l-4 border-amber-500{% endif %}" title="Division Transfers & Reconciliation">
+                    <span class="sidebar-icon w-6 text-center">⇄</span><span class="sidebar-label">Division Transfers</span>
+                </a>
+                <a href="{% url 'core:transaction_bulk_edit' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition {% if 'transactions/bulk-edit' in request.path %}bg-slate-800 text-emerald-400 border-l-4 border-emerald-500{% endif %}" title="Bulk Txn Grid">
+                    <span class="sidebar-icon w-6 text-center">▦</span><span class="sidebar-label">Bulk Txn Grid</span>
+                </a>
+                <a href="{% url 'core:reimbursement_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition {% if '/reimbursements' in request.path %}bg-slate-800 text-emerald-400 border-l-4 border-emerald-500{% endif %}" title="Reimbursements">
+                    <span class="sidebar-icon w-6 text-center">↩</span><span class="sidebar-label">Reimbursements</span>
+                </a>
+                <a href="{% url 'core:import_create' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition {% if '/imports/' in request.path %}bg-slate-800 text-emerald-400 border-l-4 border-emerald-500{% endif %}" title="Txn Import">
+                    <span class="sidebar-icon w-6 text-center">⇩</span><span class="sidebar-label">Txn Import</span>
+                </a>
+                <a href="{% url 'core:document_upload' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition {% if '/documents/' in request.path %}bg-slate-800 text-emerald-400 border-l-4 border-emerald-500{% endif %}" title="Document Upload">
+                    <span class="sidebar-icon w-6 text-center">▧</span><span class="sidebar-label">Document Upload</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- BUDGET CONTROL -->
+        <div class="sidebar-group" data-group="budget">
+            <button type="button" class="sidebar-group-toggle w-full flex items-center justify-between px-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-300" aria-expanded="true">
+                <span>Budget Control</span><span class="sidebar-group-chevron">⌃</span>
+            </button>
+            <nav class="sidebar-group-content mt-1 space-y-1">
+                <a href="{% url 'core:budget_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition {% if request.path == '/budgets/' or '/budgets/' in request.path and 'future-budgets' not in request.path %}bg-slate-800 text-emerald-400 border-l-4 border-emerald-500{% endif %}" title="Budgets">
+                    <span class="sidebar-icon w-6 text-center">▥</span><span class="sidebar-label">Budgets</span>
+                </a>
+                <a href="{% url 'core:budget_create' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition {% if '/budgets/new/' in request.path %}bg-slate-800 text-emerald-400 border-l-4 border-emerald-500{% endif %}" title="New Budget">
+                    <span class="sidebar-icon w-6 text-center">+</span><span class="sidebar-label">New Budget</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- PLANNING -->
+        <div class="sidebar-group" data-group="planning">
+            <button type="button" class="sidebar-group-toggle w-full flex items-center justify-between px-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-300" aria-expanded="true">
+                <span>Planning &amp; Analysis</span><span class="sidebar-group-chevron">⌃</span>
+            </button>
+            <nav class="sidebar-group-content mt-1 space-y-1">
+                <a href="{% url 'core:future_budget_planning' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition {% if 'future-budget/planning' in request.path %}bg-slate-800 text-emerald-400 border-l-4 border-emerald-500{% endif %}" title="Budget Analysis / Planning">
+                    <span class="sidebar-icon w-6 text-center">⌁</span><span class="sidebar-label">Budget Analysis / Planning</span>
+                </a>
+                <a href="{% url 'core:future_budget_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition {% if '/future-budgets/' in request.path and '/new/' not in request.path %}bg-slate-800 text-emerald-400 border-l-4 border-emerald-500{% endif %}" title="Future Budgets">
+                    <span class="sidebar-icon w-6 text-center">↗</span><span class="sidebar-label">Future Budgets</span>
+                </a>
+                <a href="{% url 'core:future_budget_create' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition {% if '/future-budgets/new/' in request.path %}bg-slate-800 text-emerald-400 border-l-4 border-emerald-500{% endif %}" title="New Planning Budget">
+                    <span class="sidebar-icon w-6 text-center">+</span><span class="sidebar-label">New Planning Budget</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- REPORTING -->
+        <div class="sidebar-group" data-group="reporting">
+            <button type="button" class="sidebar-group-toggle w-full flex items-center justify-between px-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-300" aria-expanded="true">
+                <span>Reporting</span><span class="sidebar-group-chevron">⌃</span>
+            </button>
+            <nav class="sidebar-group-content mt-1 space-y-1">
+                <a href="{% url 'reports:report_center' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition {% if '/reports/' in request.path %}bg-slate-800 text-emerald-400 border-l-4 border-emerald-500{% endif %}" title="Report Center">
+                    <span class="sidebar-icon w-6 text-center">▤</span><span class="sidebar-label">Report Center</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- MASTERS -->
+        <div class="sidebar-group" data-group="masters">
+            <button type="button" class="sidebar-group-toggle w-full flex items-center justify-between px-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-300" aria-expanded="true">
+                <span>Masters</span><span class="sidebar-group-chevron">⌃</span>
+            </button>
+            <nav class="sidebar-group-content mt-1 space-y-1">
+                <a href="{% url 'masters:fy_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Fin Yrs"><span class="sidebar-icon w-6 text-center">▣</span><span class="sidebar-label">Fin Yrs</span></a>
+                <a href="{% url 'masters:major_head_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Divisions (Tier 1)"><span class="sidebar-icon w-6 text-center">▥</span><span class="sidebar-label">Divisions</span></a>
+                <a href="{% url 'masters:account_head_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Acct Heads (Tier 2)"><span class="sidebar-icon w-6 text-center">▦</span><span class="sidebar-label">Acct Heads</span></a>
+                <a href="{% url 'masters:sub_head_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Sub Heads (Tier 3)"><span class="sidebar-icon w-6 text-center">↳</span><span class="sidebar-label">Sub Heads</span></a>
+                <a href="{% url 'masters:inflow_type_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Inflow Types"><span class="sidebar-icon w-6 text-center">↓</span><span class="sidebar-label">Inflow Types</span></a>
+                <a href="{% url 'masters:outflow_nature_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Outflow Natures"><span class="sidebar-icon w-6 text-center">↑</span><span class="sidebar-label">Outflow Natures</span></a>
+                <a href="{% url 'masters:budget_type_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Budget Types"><span class="sidebar-icon w-6 text-center">▥</span><span class="sidebar-label">Budget Types</span></a>
+                <a href="{% url 'masters:opening_balance_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Opening Balances"><span class="sidebar-icon w-6 text-center">¤</span><span class="sidebar-label">Opening Balances</span></a>
+                {% with fc=current_account.code|default:active_fund_code %}
+                {% if fc == 'EWF' %}
+                <a href="{% url 'masters:cohort_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Travel Cohorts"><span class="sidebar-icon w-6 text-center">✈</span><span class="sidebar-label">Travel Cohorts</span></a>
+                <a href="{% url 'masters:package_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Travel Packages"><span class="sidebar-icon w-6 text-center">▣</span><span class="sidebar-label">Travel Packages</span></a>
+                <a href="{% url 'masters:pilgrim_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Travellers"><span class="sidebar-icon w-6 text-center">☺</span><span class="sidebar-label">Travellers</span></a>
+                <a href="{% url 'masters:tour_operator_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Tour Operators"><span class="sidebar-icon w-6 text-center">⌂</span><span class="sidebar-label">Tour Operators</span></a>
+                {% elif fc == 'CPF' %}
+                <a href="{% url 'masters:ceremony_venue_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Ceremony Venues"><span class="sidebar-icon w-6 text-center">⌖</span><span class="sidebar-label">Ceremony Venues</span></a>
+                <a href="{% url 'masters:ceremony_event_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Ceremony Events"><span class="sidebar-icon w-6 text-center">★</span><span class="sidebar-label">Ceremony Events</span></a>
+                {% endif %}
+                {% endwith %}
+
+                <a href="{% url 'masters:city_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Cities"><span class="sidebar-icon w-6 text-center">🏛</span><span class="sidebar-label">Cities</span></a>
+                <a href="{% url 'masters:unit_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Organisations"><span class="sidebar-icon w-6 text-center">⌾</span><span class="sidebar-label">Organisations</span></a>
+                <a href="{% url 'masters:internal_section_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Departments"><span class="sidebar-icon w-6 text-center">§</span><span class="sidebar-label">Departments</span></a>
+                <a href="{% url 'masters:reimbursement_type_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Reimbursement Types"><span class="sidebar-icon w-6 text-center">↩</span><span class="sidebar-label">Reimbursement Types</span></a>
+                <a href="{% url 'masters:personnel_classification_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Personnel Classifications"><span class="sidebar-icon w-6 text-center">♙</span><span class="sidebar-label">Personnel Classifications</span></a>
+
+                <a href="{% url 'masters:document_type_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Document Types"><span class="sidebar-icon w-6 text-center">▧</span><span class="sidebar-label">Document Types</span></a>
+            </nav>
+        </div>
+
+        <!-- GOVERNANCE -->
+        <div class="sidebar-group" data-group="governance">
+            <button type="button" class="sidebar-group-toggle w-full flex items-center justify-between px-2 text-[11px] font-bold uppercase tracking-wider text-slate-500 hover:text-slate-300" aria-expanded="true">
+                <span>Governance</span><span class="sidebar-group-chevron">⌃</span>
+            </button>
+            <nav class="sidebar-group-content mt-1 space-y-1">
+                <a href="{% url 'accounts:help' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Help & User Manual"><span class="sidebar-icon w-6 text-center">?</span><span class="sidebar-label">Help &amp; User Manual</span></a>
+                <a href="{% url 'accounts:audit_log' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="Audit Trail"><span class="sidebar-icon w-6 text-center">▤</span><span class="sidebar-label">Audit Trail</span></a>
+                {% if user_role == 'ADMINISTRATOR' or user_role == 'MANAGEMENT' or user.is_superuser %}
+                <a href="{% url 'core:data_administration' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition {% if 'data-administration' in request.path %}bg-slate-800 text-emerald-400 border-l-4 border-emerald-500{% endif %}" title="Data Administration">
+                    <span class="sidebar-icon w-6 text-center">⚙</span><span class="sidebar-label">Data Administration</span>
+                </a>
+                {% endif %}
+                {% if user_role == 'ADMINISTRATOR' %}
+                <a href="{% url 'accounts:user_list' %}" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white transition" title="User Management"><span class="sidebar-icon w-6 text-center">♙</span><span class="sidebar-label">User Management</span></a>
+                {% if user.is_staff %}<a href="/admin/" target="_blank" class="sidebar-link flex items-center px-3 py-2 text-sm font-medium rounded-md hover:bg-slate-800 hover:text-white text-slate-400 transition" title="Django Admin"><span class="sidebar-icon w-6 text-center">⚙</span><span class="sidebar-label">Django Admin</span></a>{% endif %}
+                {% endif %}
+            </nav>
+        </div>
+    </div>
+
+    <div class="px-3 py-3 border-t border-slate-800 text-[11px] text-slate-500">
+        <div class="sidebar-footer-label font-medium text-slate-400">EABMS V1.0</div>
+        <div class="sidebar-footer-label">Offline / Standalone</div>
+    </div>
+</aside>

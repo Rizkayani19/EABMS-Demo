@@ -1,0 +1,921 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}{{ title }} — EABMS{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Hide breadcrumbs on transaction entry to pull form higher onto one screen */
+#abms-main-content nav[aria-label="Breadcrumb"],
+#abms-main-content .breadcrumb-container,
+main nav {
+  display: none !important;
+}
+
+/* Form Container & Section Cards */
+.entry-section-card {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.85rem;
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+  overflow: visible !important;
+  position: relative;
+}
+.entry-card-header {
+  padding: 0.55rem 0.95rem;
+  min-height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.entry-card-body {
+  padding: 0.85rem;
+  overflow: visible !important;
+  position: relative;
+}
+
+/* Custom Scrollbars for lists and chips */
+.abms-checkbox-list::-webkit-scrollbar,
+.chips-tray-scroll::-webkit-scrollbar,
+.ts-dropdown-content::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.abms-checkbox-list::-webkit-scrollbar-track,
+.chips-tray-scroll::-webkit-scrollbar-track,
+.ts-dropdown-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+.abms-checkbox-list::-webkit-scrollbar-thumb,
+.chips-tray-scroll::-webkit-scrollbar-thumb,
+.ts-dropdown-content::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+.abms-checkbox-list::-webkit-scrollbar-thumb:hover,
+.chips-tray-scroll::-webkit-scrollbar-thumb:hover,
+.ts-dropdown-content::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Standard Inputs & Selects */
+#transaction-entry-form input:not([type=file]):not([type=checkbox]):not([type=radio]),
+#transaction-entry-form select {
+  width: 100%;
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+  padding: 0.35rem 0.75rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  line-height: 1.25rem !important;
+  border-radius: 0.5rem !important;
+  border: 1.5px solid #cbd5e1 !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04) !important;
+}
+#transaction-entry-form input:focus,
+#transaction-entry-form select:focus,
+#transaction-entry-form textarea:focus {
+  outline: none !important;
+  border-color: #4f46e5 !important;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15) !important;
+}
+
+/* Description Textarea */
+#transaction-entry-form textarea {
+  width: 100%;
+  min-height: 64px !important;
+  height: 64px !important;
+  padding: 0.45rem 0.75rem !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+  line-height: 1.25rem !important;
+  border-radius: 0.5rem !important;
+  border: 1.5px solid #cbd5e1 !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  resize: vertical !important;
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04) !important;
+}
+
+/* SUPER-SIZE 2X AMOUNT FIELD */
+.amount-input-inflow {
+  height: 58px !important;
+  min-height: 58px !important;
+  max-height: 58px !important;
+  font-size: 1.95rem !important;
+  font-weight: 900 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  background: #f0fdf4 !important;
+  border: 2.5px solid #10b981 !important;
+  color: #064e3b !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  border-radius: 0.65rem !important;
+  letter-spacing: -0.02em !important;
+}
+.amount-input-inflow:focus {
+  border-color: #059669 !important;
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.25) !important;
+}
+.amount-input-outflow {
+  height: 58px !important;
+  min-height: 58px !important;
+  max-height: 58px !important;
+  font-size: 1.95rem !important;
+  font-weight: 900 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  background: #fff1f2 !important;
+  border: 2.5px solid #f43f5e !important;
+  color: #881337 !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  border-radius: 0.65rem !important;
+  letter-spacing: -0.02em !important;
+}
+.amount-input-outflow:focus {
+  border-color: #e11d48 !important;
+  box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.25) !important;
+}
+
+/* TomSelect Integration - Single Clean Scrollbar & Reliable Selection */
+#transaction-entry-form .ts-wrapper {
+  position: relative !important;
+  width: 100%;
+}
+#transaction-entry-form .ts-control {
+  min-height: 38px !important;
+  height: 38px !important;
+  padding: 0.35rem 0.75rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  border-radius: 0.5rem !important;
+  border: 1.5px solid #cbd5e1 !important;
+  background: #ffffff !important;
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04) !important;
+  display: flex !important;
+  align-items: center !important;
+}
+#transaction-entry-form .ts-control input {
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+}
+#transaction-entry-form .ts-dropdown {
+  position: absolute !important;
+  z-index: 99999 !important;
+  overflow: hidden !important;
+  max-height: none !important;
+  font-size: 0.85rem !important;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.2) !important;
+  border-radius: 0.65rem !important;
+  border: 1.5px solid #94a3b8 !important;
+  background: #ffffff !important;
+  margin-top: 2px !important;
+  padding: 0.25rem !important;
+}
+#transaction-entry-form .ts-dropdown-content {
+  overflow-y: auto !important;
+  max-height: 14rem !important;
+  padding: 0.15rem !important;
+}
+#transaction-entry-form .ts-dropdown .option {
+  padding: 0.45rem 0.65rem !important;
+  border-radius: 0.35rem !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  color: #1e293b !important;
+  cursor: pointer !important;
+}
+#transaction-entry-form .ts-dropdown .option.active,
+#transaction-entry-form .ts-dropdown .option:hover {
+  background-color: #eff6ff !important;
+  color: #1d4ed8 !important;
+}
+#transaction-entry-form .ts-dropdown .option.selected {
+  background-color: #d1fae5 !important;
+  color: #065f46 !important;
+}
+
+/* Multi-select check row styling */
+.abms-cb-row {
+  user-select: none;
+  transition: background-color 0.1s ease;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.abms-cb-row:hover {
+  background-color: #f1f5f9;
+}
+.abms-cb-row.is-selected {
+  background-color: #ecfdf5 !important;
+  border-left: 3px solid #10b981 !important;
+}
+.abms-cb-row.is-selected .choice-text {
+  font-weight: 700 !important;
+  color: #065f46 !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-3 pb-20 max-w-7xl mx-auto -mt-2">
+
+  <!-- ============================================== -->
+  <!-- HIGH-CONTRAST COMPACT TOP BAR                  -->
+  <!-- ============================================== -->
+  <header class="bg-white rounded-xl border-2 border-slate-300 shadow-xs px-4 py-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+    <div class="flex items-center gap-2.5 flex-wrap">
+      {% if 'inflow' in title|lower %}
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-700 text-white font-black text-xs uppercase tracking-wider shadow-xs">
+          <span>↓</span> <span>NEW INFLOW</span>
+        </span>
+      {% else %}
+        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-700 text-white font-black text-xs uppercase tracking-wider shadow-xs">
+          <span>↑</span> <span>NEW OUTFLOW</span>
+        </span>
+      {% endif %}
+
+      <span class="text-sm font-black text-slate-900 tracking-tight">{{ title }}</span>
+      {% include 'partials/fund_badge.html' %}
+      <span class="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-black bg-amber-100 text-amber-950 border border-amber-300">FY {{ request.fy.code|default:request.fy.name }}</span>
+    </div>
+
+    <!-- Right Controls: Budget Warning & Back to Ledger -->
+    <div class="flex items-center gap-2.5 shrink-0">
+      {% if budget_warning %}
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-rose-100 border border-rose-400 text-xs text-rose-950 font-black shadow-2xs">
+          <span>⚠️ Budget Alert:</span>
+          <span class="font-bold text-rose-800">Appr {{ budget_approved|rs }} · Cons {{ budget_consumed|rs }} · Bal {{ budget_balance|rs }}</span>
+        </div>
+      {% endif %}
+      <a href="{% url 'core:transaction_list' %}" class="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs rounded-lg border border-slate-300 shadow-2xs transition">
+        <span>← Ledger</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- ============================================== -->
+  <!-- FORM VALIDATION NOTICES                        -->
+  <!-- ============================================== -->
+  {% if form.errors %}
+    <div class="p-3 rounded-xl bg-rose-50 border-2 border-rose-400 text-rose-950 text-xs shadow-sm">
+      <div class="font-black flex items-center gap-1.5 text-rose-950 text-xs mb-1">
+        <span>⚠️</span> <span>Please correct the errors before saving:</span>
+      </div>
+      <ul class="list-disc pl-5 space-y-0.5 font-bold">
+        {% for error in form.non_field_errors %}
+          <li class="text-rose-800">{{ error }}</li>
+        {% endfor %}
+        {% for field in form %}
+          {% for error in field.errors %}
+            <li><strong class="text-rose-950">{{ field.label }}:</strong> {{ error }}</li>
+          {% endfor %}
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <!-- ============================================== -->
+  <!-- MAIN 3-CARD BALANCED RESPONSIVE GRID           -->
+  <!-- ============================================== -->
+  <form method="post" enctype="multipart/form-data" id="transaction-entry-form" novalidate>
+    {% csrf_token %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-3.5 items-start">
+
+      <!-- ============================================== -->
+      <!-- CARD 01 · BASIC INFORMATION & FINANCIALS       -->
+      <!-- ============================================== -->
+      <section class="entry-section-card border-slate-300">
+        <!-- High Contrast Solid Header without Emoji -->
+        <div class="entry-card-header bg-slate-900 text-white rounded-t-xl">
+          <h2 class="text-xs font-black uppercase tracking-wider text-white">01 · Basic Information</h2>
+          <span class="text-[10px] font-black uppercase tracking-wider bg-white/20 text-white px-2 py-0.5 rounded">Financials</span>
+        </div>
+
+        <div class="entry-card-body space-y-3">
+
+          <!-- Row 1: Date & SUPER-SIZED 2X AMOUNT -->
+          <div class="grid grid-cols-12 gap-2.5 items-end">
+            <!-- Date (col-span-5) -->
+            <div class="col-span-5">
+              <div class="flex items-center justify-between mb-1">
+                <label for="{{ form.transaction_date.id_for_label }}" class="text-xs font-black text-blue-950 uppercase tracking-wide">{{ form.transaction_date.label }}</label>
+                <div class="flex items-center gap-1">
+                  <button type="button" onclick="window.abmsSetQuickDate(0)" class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300 transition cursor-pointer" title="Set to Today">Today</button>
+                  <button type="button" onclick="window.abmsSetQuickDate(-1)" class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 transition cursor-pointer" title="Set to Yesterday">Y'day</button>
+                </div>
+              </div>
+              {{ form.transaction_date }}
+              <div class="text-[11px] font-bold text-emerald-700 mt-1 truncate">
+                ✓ FY {{ request.fy.code|default:request.fy.name }}
+              </div>
+              {% for e in form.transaction_date.errors %}<div class="text-xs font-bold text-rose-600 mt-0.5">{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Amount (col-span-7) - 2X BIGGER & PROMINENT -->
+            <div class="col-span-7">
+              <div class="flex items-center justify-between mb-1">
+                <label for="{{ form.amount.id_for_label }}" class="text-xs font-black text-blue-950 uppercase tracking-wide">Amount (PKR)</label>
+                <span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-rose-100 text-rose-700 border border-rose-300">Req</span>
+              </div>
+              <div>
+                <input type="number" name="amount" id="{{ form.amount.id_for_label }}" step="0.01" min="0.01" required value="{{ form.amount.value|default:'' }}" placeholder="0.00" class="{% if 'inflow' in title|lower %}amount-input-inflow{% else %}amount-input-outflow{% endif %} w-full">
+              </div>
+              <div class="text-[11px] font-bold text-emerald-700 mt-1 truncate">
+                ✓ Exact transaction amount
+              </div>
+              {% for e in form.amount.errors %}<div class="text-xs font-bold text-rose-600 mt-0.5">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+
+          <!-- Row 2: Description / Purpose (MOVED UP) -->
+          {% if form.description %}
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label for="{{ form.description.id_for_label }}" class="text-xs font-black text-blue-950 uppercase tracking-wide">Description &amp; Narrative</label>
+                <span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-rose-100 text-rose-700 border border-rose-300">Mandatory</span>
+              </div>
+              {{ form.description }}
+              <div class="text-[11px] font-bold text-emerald-700 mt-1 flex items-center gap-1">
+                <span>✓</span> Mandatory audit narrative
+              </div>
+              {% for e in form.description.errors %}<div class="text-xs font-bold text-rose-600 mt-0.5">{{ e }}</div>{% endfor %}
+            </div>
+          {% endif %}
+          {% if form.purpose %}
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label for="{{ form.purpose.id_for_label }}" class="text-xs font-black text-blue-950 uppercase tracking-wide">Purpose &amp; Justification</label>
+                <span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-rose-100 text-rose-700 border border-rose-300">Mandatory</span>
+              </div>
+              {{ form.purpose }}
+              <div class="text-[11px] font-bold text-emerald-700 mt-1 flex items-center gap-1">
+                <span>✓</span> Mandatory purpose for expenditure
+              </div>
+              {% for e in form.purpose.errors %}<div class="text-xs font-bold text-rose-600 mt-0.5">{{ e }}</div>{% endfor %}
+            </div>
+          {% endif %}
+
+          <!-- Row 3: Source / Payee & Reference / Cheque (2-COLUMN GRID TO UTILIZE EMPTY SPACE) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <!-- Source / Payee -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label for="{{ form.payee_or_source.id_for_label }}" class="text-xs font-black text-blue-950 uppercase tracking-wide">
+                  {% if 'inflow' in title|lower %}Source / Remitter{% else %}Payee / Beneficiary{% endif %}
+                </label>
+                <span class="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-slate-100 text-slate-600 border border-slate-300">Optional</span>
+              </div>
+              {{ form.payee_or_source }}
+              <div class="text-[11px] font-bold text-emerald-700 mt-0.5 truncate">
+                ✓ Party / vendor
+              </div>
+              {% for e in form.payee_or_source.errors %}<div class="text-xs font-bold text-rose-600 mt-0.5">{{ e }}</div>{% endfor %}
+            </div>
+
+            <!-- Reference / Cheque No. -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label for="{{ form.reference.id_for_label }}" class="text-xs font-black text-blue-950 uppercase tracking-wide">Reference / Cheque</label>
+                <span class="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-slate-100 text-slate-600 border border-slate-300">Optional</span>
+              </div>
+              {{ form.reference }}
+              <div class="text-[11px] font-bold text-emerald-700 mt-0.5 truncate">
+                ✓ Cheque / ref no.
+              </div>
+              {% for e in form.reference.errors %}<div class="text-xs font-bold text-rose-600 mt-0.5">{{ e }}</div>{% endfor %}
+            </div>
+          </div>
+
+          <!-- Row 4: FUND OPERATIONS (MOVED BELOW BASIC INFO - WIDER FULL-WIDTH SPACE UTILIZATION) -->
+          {% if form.cohort or form.package or form.pilgrim or form.tour_operator or form.ceremony_event or form.ceremony_venue %}
+            <div class="p-3 bg-gradient-to-br from-indigo-50/90 via-slate-50 to-indigo-50/60 rounded-xl border-2 border-indigo-200 shadow-xs space-y-2 mt-2">
+              <div class="flex items-center justify-between border-b border-indigo-100 pb-1">
+                <div class="text-xs font-black uppercase tracking-wider text-indigo-950 flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-indigo-600"></span>
+                  <span>Fund Operations &amp; Attribution</span>
+                </div>
+                <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">Operational Masters</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {% if form.cohort %}<div><label class="text-[11px] font-black text-indigo-950 block mb-0.5">{{ form.cohort.label }}</label>{{ form.cohort }}</div>{% endif %}
+                {% if form.package %}<div><label class="text-[11px] font-black text-indigo-950 block mb-0.5">{{ form.package.label }}</label>{{ form.package }}</div>{% endif %}
+                {% if form.pilgrim %}<div><label class="text-[11px] font-black text-indigo-950 block mb-0.5">{{ form.pilgrim.label }}</label>{{ form.pilgrim }}</div>{% endif %}
+                {% if form.tour_operator %}<div><label class="text-[11px] font-black text-indigo-950 block mb-0.5">{{ form.tour_operator.label }}</label>{{ form.tour_operator }}</div>{% endif %}
+                {% if form.ceremony_event %}<div><label class="text-[11px] font-black text-indigo-950 block mb-0.5">{{ form.ceremony_event.label }}</label>{{ form.ceremony_event }}</div>{% endif %}
+                {% if form.ceremony_venue %}<div><label class="text-[11px] font-black text-indigo-950 block mb-0.5">{{ form.ceremony_venue.label }}</label>{{ form.ceremony_venue }}</div>{% endif %}
+              </div>
+            </div>
+          {% endif %}
+
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- CARD 02 · HEAD & CLASSIFICATION                -->
+      <!-- ============================================== -->
+      <section class="entry-section-card {% if 'inflow' in title|lower %}border-emerald-300{% else %}border-rose-300{% endif %}">
+        <!-- High Contrast Solid Header without Emoji -->
+        <div class="entry-card-header {% if 'inflow' in title|lower %}bg-emerald-850 bg-emerald-900{% else %}bg-rose-850 bg-rose-900{% endif %} text-white rounded-t-xl">
+          <h2 class="text-xs font-black uppercase tracking-wider text-white">02 · Head &amp; Classification</h2>
+          <span class="text-[10px] font-black uppercase tracking-wider bg-white/20 text-white px-2 py-0.5 rounded">Chart of Accounts</span>
+        </div>
+
+        <div class="entry-card-body space-y-3">
+
+          <!-- Tier 1: Division (Required) -->
+          {% if form.major_head %}
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label for="{{ form.major_head.id_for_label }}" class="text-xs font-black text-blue-950 uppercase tracking-wide">01 · Division (Tier 1)</label>
+              <span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-rose-100 text-rose-700 border border-rose-300">Req</span>
+            </div>
+            {{ form.major_head }}
+            <div class="text-[11px] font-bold text-emerald-700 mt-1">
+              ✓ First tier fund division (NGL, Canteen, Handbook, Bank Guarantee)
+            </div>
+            {% for e in form.major_head.errors %}<div class="text-xs font-bold text-rose-600 mt-0.5">{{ e }}</div>{% endfor %}
+          </div>
+          {% endif %}
+
+          <!-- Tier 2: Account Head (Required) -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label for="{{ form.account_head.id_for_label }}" class="text-xs font-black text-blue-950 uppercase tracking-wide">02 · Account Head (Tier 2)</label>
+              <span class="px-1.5 py-0.2 rounded text-[9px] font-black uppercase bg-rose-100 text-rose-700 border border-rose-300">Req</span>
+            </div>
+            {{ form.account_head }}
+            <div class="text-[11px] font-bold text-emerald-700 mt-1">
+              ✓ Primary operational head classification
+            </div>
+            {% for e in form.account_head.errors %}<div class="text-xs font-bold text-rose-600 mt-0.5">{{ e }}</div>{% endfor %}
+          </div>
+
+          <!-- Tier 3: Sub Head (Optional) -->
+          {% if form.sub_head %}
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label for="{{ form.sub_head.id_for_label }}" class="text-xs font-black text-blue-950 uppercase tracking-wide">03 · Sub Head (Tier 3)</label>
+                <span class="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-slate-100 text-slate-600 border border-slate-300">Optional</span>
+              </div>
+              {{ form.sub_head }}
+              <div class="text-[11px] font-bold text-emerald-700 mt-1">
+                ✓ Detailed granular breakdown (optional)
+              </div>
+              {% for e in form.sub_head.errors %}<div class="text-xs font-bold text-rose-600 mt-0.5">{{ e }}</div>{% endfor %}
+            </div>
+          {% endif %}
+
+          <!-- Inflow Type OR Outflow Nature -->
+          {% if form.inflow_type %}
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label for="{{ form.inflow_type.id_for_label }}" class="text-xs font-black text-blue-950 uppercase tracking-wide">{{ form.inflow_type.label }}</label>
+                <span class="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-slate-100 text-slate-600 border border-slate-300">Optional</span>
+              </div>
+              {{ form.inflow_type }}
+              {% for e in form.inflow_type.errors %}<div class="text-xs font-bold text-rose-600 mt-0.5">{{ e }}</div>{% endfor %}
+            </div>
+          {% endif %}
+          {% if form.outflow_nature %}
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label for="{{ form.outflow_nature.id_for_label }}" class="text-xs font-black text-blue-950 uppercase tracking-wide">{{ form.outflow_nature.label }}</label>
+                <span class="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-slate-100 text-slate-600 border border-slate-300">Optional</span>
+              </div>
+              {{ form.outflow_nature }}
+              {% for e in form.outflow_nature.errors %}<div class="text-xs font-bold text-rose-600 mt-0.5">{{ e }}</div>{% endfor %}
+            </div>
+          {% endif %}
+
+          <!-- Pass-through Vibrant Card Toggle -->
+          {% if form.pass_through %}
+            <div id="pass-through-card" class="p-2.5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 flex flex-col gap-1.5 shadow-2xs">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="text-base text-amber-600">↔</span>
+                  <div>
+                    <label for="{{ form.pass_through.id_for_label }}" class="text-xs font-black text-amber-950 block cursor-pointer">Pass-through Transaction</label>
+                    <p class="text-[10px] font-bold text-amber-800">Transit or internal transfer (neutral net effect)</p>
+                  </div>
+                </div>
+                <div class="flex items-center">
+                  {{ form.pass_through }}
+                </div>
+              </div>
+              <div id="pass-through-auto-notice" class="hidden text-[11px] font-black text-emerald-900 bg-emerald-100 border border-emerald-400 p-1.5 rounded-lg flex items-center gap-1.5">
+                <span>✓</span>
+                <span>Auto-selected: Transit / Pass-through head detected</span>
+              </div>
+            </div>
+            {% for e in form.pass_through.errors %}<div class="text-xs font-bold text-rose-600 mt-0.5">{{ e }}</div>{% endfor %}
+          {% endif %}
+
+        </div>
+      </section>
+
+      <!-- ============================================== -->
+      <!-- CARD 03 · ATTRIBUTION & DETAILS                -->
+      <!-- ============================================== -->
+      <section class="entry-section-card border-slate-300">
+        <!-- High Contrast Solid Header without Emoji -->
+        <div class="entry-card-header bg-indigo-950 text-white rounded-t-xl">
+          <h2 class="text-xs font-black uppercase tracking-wider text-white">03 · Attribution &amp; Details</h2>
+          <span class="text-[10px] font-black uppercase tracking-wider bg-white/20 text-white px-2 py-0.5 rounded">Organisations &amp; Docs</span>
+        </div>
+
+        <div class="entry-card-body space-y-3">
+
+          <!-- 2-COL MULTI-SELECT CONTAINERS (SIDE-BY-SIDE) -->
+          <div class="grid grid-cols-2 gap-2">
+
+            <!-- 1. UNITS MULTI-SELECT -->
+            <div class="flex flex-col bg-slate-50 p-2 rounded-xl border border-slate-300">
+              <div class="flex items-center justify-between mb-1">
+                <div class="flex items-center gap-1">
+                  <span class="text-xs font-black text-blue-950 uppercase tracking-wide">Organisations</span>
+                  <span id="units-selected-count" class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-slate-200 text-slate-700">0</span>
+                </div>
+                <div class="flex items-center gap-1 text-[11px]">
+                  <button type="button" onclick="abmsSelectAll('units-checkbox-list', true)" class="font-black text-indigo-700 hover:underline cursor-pointer">All</button>
+                  <span class="text-slate-300">|</span>
+                  <button type="button" onclick="abmsSelectAll('units-checkbox-list', false)" class="font-bold text-slate-500 hover:underline cursor-pointer">Clear</button>
+                </div>
+              </div>
+
+              <!-- Quick Search Filter -->
+              <div class="relative mb-1">
+                <input type="text" placeholder="🔍 Filter..." oninput="abmsFilterList(this, 'units-checkbox-list')" class="w-full bg-white border border-slate-300 rounded px-2 py-0.5 text-xs focus:outline-none focus:border-indigo-500">
+              </div>
+
+              <!-- Active Tag Chips Tray -->
+              <div id="units-chips-tray" class="chips-tray-scroll flex flex-wrap gap-1 p-1 bg-white rounded border border-slate-200 min-h-[26px] max-h-[46px] overflow-y-auto mb-1">
+                <span class="text-[10px] text-slate-400 italic px-0.5">None</span>
+              </div>
+
+              <!-- Scrollable Option Rows List -->
+              <div id="units-checkbox-list" class="abms-checkbox-list border border-slate-300 rounded bg-white divide-y divide-slate-100 max-h-36 overflow-y-auto">
+                {% for choice in form.transaction_units %}
+                  <div class="abms-cb-row flex items-center justify-between px-2 py-1.5 cursor-pointer transition hover:bg-slate-50 select-none {% if choice.data.selected %}is-selected{% endif %}" data-label="{{ choice.choice_label|lower }}" onclick="abmsToggleRow(this, event)">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                      <input type="checkbox" name="transaction_units" value="{{ choice.data.value }}" id="{{ choice.data.attrs.id }}" class="abms-cb rounded text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5 shrink-0 cursor-pointer" {% if choice.data.selected %}checked{% endif %} onclick="event.stopPropagation(); abmsOnCheckboxChange(this);">
+                      <span class="choice-text truncate font-bold text-slate-700 text-xs">{{ choice.choice_label }}</span>
+                    </div>
+                    <span class="choice-badge {% if not choice.data.selected %}hidden{% endif %} text-[8px] font-black uppercase px-1 py-0.2 rounded bg-emerald-100 text-emerald-800 shrink-0">✓</span>
+                  </div>
+                {% empty %}
+                  <div class="text-[10px] text-slate-400 p-2 text-center">No units</div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- 2. INTERNAL SECTIONS MULTI-SELECT -->
+            <div class="flex flex-col bg-slate-50 p-2 rounded-xl border border-slate-300">
+              <div class="flex items-center justify-between mb-1">
+                <div class="flex items-center gap-1">
+                  <span class="text-xs font-black text-blue-950 uppercase tracking-wide">Sections</span>
+                  <span id="sections-selected-count" class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-slate-200 text-slate-700">0</span>
+                </div>
+                <div class="flex items-center gap-1 text-[11px]">
+                  <button type="button" onclick="abmsSelectAll('sections-checkbox-list', true)" class="font-black text-indigo-700 hover:underline cursor-pointer">All</button>
+                  <span class="text-slate-300">|</span>
+                  <button type="button" onclick="abmsSelectAll('sections-checkbox-list', false)" class="font-bold text-slate-500 hover:underline cursor-pointer">Clear</button>
+                </div>
+              </div>
+
+              <!-- Quick Search Filter -->
+              <div class="relative mb-1">
+                <input type="text" placeholder="🔍 Filter..." oninput="abmsFilterList(this, 'sections-checkbox-list')" class="w-full bg-white border border-slate-300 rounded px-2 py-0.5 text-xs focus:outline-none focus:border-indigo-500">
+              </div>
+
+              <!-- Active Tag Chips Tray -->
+              <div id="sections-chips-tray" class="chips-tray-scroll flex flex-wrap gap-1 p-1 bg-white rounded border border-slate-200 min-h-[26px] max-h-[46px] overflow-y-auto mb-1">
+                <span class="text-[10px] text-slate-400 italic px-0.5">None</span>
+              </div>
+
+              <!-- Scrollable Option Rows List -->
+              <div id="sections-checkbox-list" class="abms-checkbox-list border border-slate-300 rounded bg-white divide-y divide-slate-100 max-h-36 overflow-y-auto">
+                {% for choice in form.transaction_sections %}
+                  <div class="abms-cb-row flex items-center justify-between px-2 py-1.5 cursor-pointer transition hover:bg-slate-50 select-none {% if choice.data.selected %}is-selected{% endif %}" data-label="{{ choice.choice_label|lower }}" onclick="abmsToggleRow(this, event)">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                      <input type="checkbox" name="transaction_sections" value="{{ choice.data.value }}" id="{{ choice.data.attrs.id }}" class="abms-cb rounded text-emerald-600 focus:ring-emerald-500 w-3.5 h-3.5 shrink-0 cursor-pointer" {% if choice.data.selected %}checked{% endif %} onclick="event.stopPropagation(); abmsOnCheckboxChange(this);">
+                      <span class="choice-text truncate font-bold text-slate-700 text-xs">{{ choice.choice_label }}</span>
+                    </div>
+                    <span class="choice-badge {% if not choice.data.selected %}hidden{% endif %} text-[8px] font-black uppercase px-1 py-0.2 rounded bg-emerald-100 text-emerald-800 shrink-0">✓</span>
+                  </div>
+                {% empty %}
+                  <div class="text-[10px] text-slate-400 p-2 text-center">No sections</div>
+                {% endfor %}
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Remarks (Optional) -->
+          {% if form.remarks %}
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label for="{{ form.remarks.id_for_label }}" class="text-xs font-black text-blue-950 uppercase tracking-wide">{{ form.remarks.label }}</label>
+                <span class="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-slate-100 text-slate-600 border border-slate-300">Optional</span>
+              </div>
+              <input type="text" name="remarks" id="{{ form.remarks.id_for_label }}" value="{{ form.remarks.value|default:'' }}" class="form-control w-full p-2 border rounded" placeholder="Internal remarks / notes">
+              {% for e in form.remarks.errors %}<div class="text-xs font-bold text-rose-600 mt-0.5">{{ e }}</div>{% endfor %}
+            </div>
+          {% endif %}
+
+          <!-- Document Attachment (Optional) -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-xs font-black text-blue-950 uppercase tracking-wide">Attach Document</label>
+              <span class="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-slate-100 text-slate-600 border border-slate-300">Optional</span>
+            </div>
+            <input type="file" name="document" class="block w-full text-xs text-slate-600 file:mr-2 file:py-1 file:px-2.5 file:rounded-lg file:border-0 file:text-xs file:font-black file:bg-indigo-100 file:text-indigo-900 hover:file:bg-indigo-200 cursor-pointer border border-slate-300 rounded-lg p-1 bg-slate-50">
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+    <!-- ============================================== -->
+    <!-- DOCKED ACTION TOOLBAR AT BOTTOM                -->
+    <!-- ============================================== -->
+    <div class="sticky bottom-0 z-30 mt-3 bg-white/95 backdrop-blur-md border-2 border-slate-300 rounded-xl shadow-lg p-2.5 px-4 flex flex-col sm:flex-row items-center justify-between gap-2.5">
+      <div class="flex items-center gap-2.5 w-full sm:w-auto justify-between sm:justify-start">
+        <a href="{% url 'core:transaction_list' %}" class="px-5 py-2 bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white font-black text-xs rounded-lg shadow-md border-0 transition flex items-center gap-1.5 cursor-pointer">
+          <span>✕</span> <span>Discard &amp; Return</span>
+        </a>
+        <span class="text-xs font-bold text-slate-500 hidden md:inline">Unsaved entries will be cancelled</span>
+      </div>
+
+      <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+        <button type="submit" name="_addanother" value="1" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-black text-xs rounded-lg shadow-md border-0 transition flex items-center gap-1.5 cursor-pointer">
+          <span>+</span> <span>Save &amp; Add Another</span>
+        </button>
+
+        {% if 'inflow' in title|lower %}
+          <button type="submit" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black text-xs rounded-lg shadow-lg border-0 transition flex items-center gap-2 cursor-pointer">
+            <span>✓</span> <span>Save Inflow Transaction</span>
+          </button>
+        {% else %}
+          <button type="submit" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-black text-xs rounded-lg shadow-lg border-0 transition flex items-center gap-2 cursor-pointer">
+            <span>✓</span> <span>Save Outflow Transaction</span>
+          </button>
+        {% endif %}
+      </div>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+/* === CLIENT-SIDE MULTI-SELECT HANDLERS === */
+
+function abmsFilterList(input, listId) {
+  var term = (input.value || '').trim().toLowerCase();
+  var container = document.getElementById(listId);
+  if (!container) return;
+  var rows = container.querySelectorAll('.abms-cb-row');
+  rows.forEach(function(row) {
+    var label = row.getAttribute('data-label') || '';
+    if (!term || label.indexOf(term) !== -1) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+}
+
+function abmsToggleRow(rowEl, event) {
+  if (event.target && (event.target.tagName === 'INPUT' || event.target.tagName === 'BUTTON')) {
+    return;
+  }
+  var cb = rowEl.querySelector('input[type=checkbox]');
+  if (!cb) return;
+  cb.checked = !cb.checked;
+  abmsOnCheckboxChange(cb);
+}
+
+function abmsOnCheckboxChange(cb) {
+  var container = cb.closest('.abms-checkbox-list');
+  if (!container) return;
+  var listId = container.id;
+  if (listId === 'units-checkbox-list') {
+    abmsSyncList('units-checkbox-list', 'units-selected-count', 'units-chips-tray');
+  } else if (listId === 'sections-checkbox-list') {
+    abmsSyncList('sections-checkbox-list', 'sections-selected-count', 'sections-chips-tray');
+  }
+}
+
+function abmsSelectAll(listId, check) {
+  var container = document.getElementById(listId);
+  if (!container) return;
+  var rows = container.querySelectorAll('.abms-cb-row');
+  rows.forEach(function(row) {
+    if (row.style.display !== 'none') {
+      var cb = row.querySelector('input[type=checkbox]');
+      if (cb) cb.checked = check;
+    }
+  });
+  if (listId === 'units-checkbox-list') {
+    abmsSyncList('units-checkbox-list', 'units-selected-count', 'units-chips-tray');
+  } else if (listId === 'sections-checkbox-list') {
+    abmsSyncList('sections-checkbox-list', 'sections-selected-count', 'sections-chips-tray');
+  }
+}
+
+function abmsSyncList(listId, countId, chipsId) {
+  var container = document.getElementById(listId);
+  var countEl = document.getElementById(countId);
+  var chipsEl = document.getElementById(chipsId);
+  if (!container) return;
+
+  var checkedBoxes = container.querySelectorAll('input[type=checkbox]:checked');
+  var total = checkedBoxes.length;
+
+  if (countEl) {
+    countEl.textContent = String(total);
+    if (total > 0) {
+      countEl.className = 'px-1.5 py-0.2 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-900 border border-emerald-300';
+    } else {
+      countEl.className = 'px-1.5 py-0.2 rounded-full text-[9px] font-black bg-slate-200 text-slate-700';
+    }
+  }
+
+  var allRows = container.querySelectorAll('.abms-cb-row');
+  allRows.forEach(function(row) {
+    var cb = row.querySelector('input[type=checkbox]');
+    var badge = row.querySelector('.choice-badge');
+    if (cb && cb.checked) {
+      row.classList.add('is-selected');
+      if (badge) badge.classList.remove('hidden');
+    } else {
+      row.classList.remove('is-selected');
+      if (badge) badge.classList.add('hidden');
+    }
+  });
+
+  if (chipsEl) {
+    chipsEl.innerHTML = '';
+    if (total === 0) {
+      chipsEl.innerHTML = '<span class="text-[10px] text-slate-400 italic px-0.5">None</span>';
+    } else {
+      checkedBoxes.forEach(function(cb) {
+        var row = cb.closest('.abms-cb-row');
+        var labelText = (row && row.querySelector('.choice-text')) ? row.querySelector('.choice-text').textContent.trim() : cb.value;
+        var chip = document.createElement('span');
+        chip.className = 'inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-900 border border-emerald-300 text-[10px] font-black shadow-2xs';
+        chip.innerHTML = '<span class="truncate max-w-[90px]">' + labelText + '</span><button type="button" class="text-emerald-700 hover:text-emerald-950 font-black cursor-pointer" title="Remove">&times;</button>';
+        chip.querySelector('button').addEventListener('click', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          cb.checked = false;
+          abmsOnCheckboxChange(cb);
+        });
+        chipsEl.appendChild(chip);
+      });
+    }
+  }
+}
+
+/* === TOMSELECT & PASS-THROUGH LOGIC === */
+(function() {
+  function checkPassThrough(selectEl) {
+    var ptCb = document.querySelector('input[name="pass_through"]');
+    var notice = document.getElementById('pass-through-auto-notice');
+    if (!ptCb) return;
+
+    var text = '';
+    if (selectEl.selectedIndex >= 0 && selectEl.options[selectEl.selectedIndex]) {
+      text = selectEl.options[selectEl.selectedIndex].text.toLowerCase();
+    }
+
+    var isPt = text.includes('pass through') || text.includes('b.b.f') || text.includes('transit') || text.includes('transfer-through');
+    if (isPt) {
+      ptCb.checked = true;
+      ptCb.setAttribute('data-auto-checked', 'true');
+      if (notice) notice.classList.remove('hidden');
+    } else {
+      if (ptCb.getAttribute('data-auto-checked') === 'true') {
+        ptCb.checked = false;
+        ptCb.removeAttribute('data-auto-checked');
+      }
+      if (notice) notice.classList.add('hidden');
+    }
+  }
+
+  function initTomSelects() {
+    if (typeof TomSelect === 'undefined') return;
+    var form = document.getElementById('transaction-entry-form');
+    if (!form) return;
+
+    form.querySelectorAll('select:not([multiple])').forEach(function(el) {
+      // If already initialized, DO NOT destroy or recreate
+      if (el.tomselect) return;
+
+      try {
+        var ts = new TomSelect(el, {
+          create: false,
+          allowEmptyOption: true,
+          maxOptions: 1000,
+          closeAfterSelect: true,
+          hideSelected: true,
+          selectOnTab: true,
+          openOnFocus: true,
+          placeholder: el.getAttribute('placeholder') || 'Search or select...',
+          dropdownParent: 'body',
+          onChange: function(value) {
+            // Trigger native change so HTMX receives it properly
+            el.value = value;
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+            if (el.id === 'id_account_head') {
+              checkPassThrough(el);
+            }
+          }
+        });
+      } catch(e) {
+        console.debug('TomSelect init skipped for', el, e);
+      }
+    });
+  }
+
+  function setup() {
+    abmsSyncList('units-checkbox-list', 'units-selected-count', 'units-chips-tray');
+    abmsSyncList('sections-checkbox-list', 'sections-selected-count', 'sections-chips-tray');
+
+    var headSelect = document.getElementById('id_account_head');
+    if (headSelect) {
+      headSelect.addEventListener('change', function() { checkPassThrough(headSelect); });
+      headSelect.addEventListener('htmx:afterSwap', function() {
+        if (headSelect.tomselect) {
+          headSelect.tomselect.clearOptions();
+          headSelect.tomselect.sync();
+        }
+      });
+      checkPassThrough(headSelect);
+    }
+
+    initTomSelects();
+
+    // When HTMX updates sub-head options, sync TomSelect on sub_head
+    var subSelect = document.getElementById('id_sub_head');
+    if (subSelect) {
+      subSelect.addEventListener('htmx:afterSwap', function() {
+        if (subSelect.tomselect) {
+          subSelect.tomselect.clearOptions();
+          subSelect.tomselect.sync();
+        }
+      });
+    }
+
+    // Quick Date setter
+    window.abmsSetQuickDate = function(offsetDays) {
+      var d = new Date();
+      if (offsetDays !== 0) d.setDate(d.getDate() + offsetDays);
+      var day = String(d.getDate()).padStart(2, '0');
+      var month = String(d.getMonth() + 1).padStart(2, '0');
+      var year = d.getFullYear();
+      var dateInput = document.getElementById('id_transaction_date') || document.querySelector('input[name="transaction_date"]');
+      if (dateInput) {
+        if (dateInput.type === 'date') {
+          dateInput.value = year + '-' + month + '-' + day;
+        } else {
+          dateInput.value = day + '-' + month + '-' + year;
+        }
+        dateInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    };
+
+    // Auto-fill today's date if empty on new transaction form
+    var dateInput = document.getElementById('id_transaction_date') || document.querySelector('input[name="transaction_date"]');
+    if (dateInput && !dateInput.value) {
+      window.abmsSetQuickDate(0);
+    }
+
+    // Shortcut Ctrl+S
+    document.addEventListener('keydown', function(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        var f = document.getElementById('transaction-entry-form');
+        if (f) f.submit();
+      }
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setup);
+  } else {
+    setup();
+  }
+})();
+</script>
+{% endblock %}

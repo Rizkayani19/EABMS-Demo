@@ -1,0 +1,92 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}EABMS — Accounts & Budget{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800">Enterprise Accounts &amp; Business Management System (EABMS)</h1>
+            <p class="text-sm text-slate-500 mt-1">
+                {% if account %}Account: <span class="font-semibold">{{ account.name }}</span>{% endif %}
+                {% if fy %} · Financial Year: <span class="font-semibold">{{ fy.code }}</span>{% endif %}
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'core:budget_list' %}" class="px-4 py-2 rounded-lg bg-slate-800 text-white text-sm font-medium hover:bg-slate-700">Budgets</a>
+            <a href="{% url 'core:future_budget_planning' %}" class="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500">Future Budget Planning</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <div class="text-xs font-bold uppercase text-slate-500">Current Budget</div>
+            {% if current_budget %}
+            <div class="text-xl font-bold text-slate-800 mt-2">$ {{ current_budget.total_amount|floatformat:2 }}</div>
+            <div class="text-sm text-slate-500 mt-1">{{ current_budget.get_status_display }}</div>
+            {% else %}
+            <div class="text-lg font-semibold text-slate-400 mt-2">No budget</div>
+            {% endif %}
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <div class="text-xs font-bold uppercase text-slate-500">Future Budgets</div>
+            <div class="text-xl font-bold text-slate-800 mt-2">{{ future_budgets|length }}</div>
+            <div class="text-sm text-slate-500 mt-1">Planning / approved records</div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <div class="text-xs font-bold uppercase text-slate-500">Recent Budgets</div>
+            <div class="text-xl font-bold text-slate-800 mt-2">{{ budgets|length }}</div>
+            <div class="text-sm text-slate-500 mt-1">Available for analysis</div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-200">
+                <h2 class="font-bold text-slate-800">Recent Budgets</h2>
+            </div>
+            <div class="divide-y divide-slate-100">
+                {% for budget in budgets %}
+                <a href="{% url 'core:budget_detail' budget.pk %}" class="block px-5 py-4 hover:bg-slate-50">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <div class="font-medium text-slate-800">{{ budget.financial_year.code }}</div>
+                            <div class="text-xs text-slate-500">{{ budget.reference|default:'Budget' }}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="font-semibold text-slate-800">$ {{ budget.total_amount|floatformat:2 }}</div>
+                            <div class="text-xs text-slate-500">{{ budget.get_status_display }}</div>
+                        </div>
+                    </div>
+                </a>
+                {% empty %}
+                <div class="px-5 py-6 text-sm text-slate-500">No budgets available.</div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-slate-200">
+                <h2 class="font-bold text-slate-800">Future Budget Records</h2>
+            </div>
+            <div class="divide-y divide-slate-100">
+                {% for future in future_budgets %}
+                <div class="px-5 py-4">
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <div class="font-medium text-slate-800">{{ future.source_fy.code }} → {{ future.target_fy.code }}</div>
+                            <div class="text-xs text-slate-500">{{ future.reference|default:'Future Budget' }}</div>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">{{ future.get_status_display }}</span>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="px-5 py-6 text-sm text-slate-500">No future budget records.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

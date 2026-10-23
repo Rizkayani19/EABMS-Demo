@@ -1,0 +1,46 @@
+﻿{% extends 'base.html' %}
+{% load humanize %}
+{% block title %}{{ report_title }} — EABMS{% endblock %}
+{% block content %}
+<div class="space-y-4">
+  <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 border-b border-slate-200 pb-3">
+    <div>
+      <h1 class="text-2xl font-black text-slate-800 tracking-tight">{{ report_title }}</h1>
+      <p class="text-xs text-slate-500 mt-1 font-bold">{{ account.name }} <span class="text-slate-300 mx-1">•</span> Fin Yr {{ fy.code }}</p>
+    </div>
+    <form method="get" class="flex items-end gap-2">
+      <div><label class="abms-filter-label">As at</label><input type="date" name="as_of" value="{{ as_of|date:'Y-m-d' }}" class="abms-filter-control"></div>
+      <button class="px-4 py-2 bg-slate-800 text-white text-xs font-semibold rounded-lg">Apply</button>
+    </form>
+  </div>
+
+  <div class="flex flex-wrap gap-2">
+    <a href="{% url 'core:present_balance_division' %}" class="px-3 py-2 rounded-lg text-xs font-bold {% if report.level == 'Division' %}bg-slate-900 text-white{% else %}bg-slate-100 text-slate-700{% endif %}">Division</a>
+    <a href="{% url 'core:present_balance_account_head' %}" class="px-3 py-2 rounded-lg text-xs font-bold {% if report.level == 'Account Head' %}bg-slate-900 text-white{% else %}bg-slate-100 text-slate-700{% endif %}">Account Head</a>
+    <a href="{% url 'core:present_balance_sub_account_head' %}" class="px-3 py-2 rounded-lg text-xs font-bold {% if report.level == 'Sub Account Head' %}bg-slate-900 text-white{% else %}bg-slate-100 text-slate-700{% endif %}">Sub Account Head</a>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3">
+    <div class="abms-stat-card bg-white shadow border"><div class="abms-stat-label">Opening Balance</div><div class="abms-stat-value">{{ report.totals.opening_balance|rs }}</div></div>
+    <div class="abms-stat-card bg-white shadow border"><div class="abms-stat-label">Total Inflows</div><div class="abms-stat-value">{{ report.totals.total_inflows|rs }}</div></div>
+    <div class="abms-stat-card bg-white shadow border"><div class="abms-stat-label">Total Outflows</div><div class="abms-stat-value">{{ report.totals.total_outflows|rs }}</div></div>
+    <div class="abms-stat-card bg-white shadow border"><div class="abms-stat-label">Difference from Start of Yr</div><div class="abms-stat-value">{{ report.totals.difference|rs }}</div></div>
+    <div class="abms-stat-card bg-white shadow border"><div class="abms-stat-label">Present Balance</div><div class="abms-stat-value">{{ report.totals.present_balance|rs }}</div></div>
+  </div>
+
+  {% if report.level != 'Division' %}<div class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-900"><b>Opening Balance:</b> The system has one fund-level opening balance. It is shown as <b>Unallocated Opening Balance</b> until an approved opening-balance breakdown exists for this reporting level. This prevents artificial allocation of the opening balance.</div>{% endif %}
+
+  <div class="bg-white shadow-sm border border-slate-200 rounded-2xl overflow-hidden">
+    <div class="px-4 py-3 border-b border-slate-100"><div class="text-sm font-bold text-slate-800">{{ report.level }} Balance Position</div><div class="text-[11px] text-slate-400">Opening + inflows − outflows = present balance. Difference = inflows − outflows.</div></div>
+    <div class="overflow-x-auto">
+      <table class="min-w-[950px] w-full text-left text-xs">
+        <thead class="bg-slate-900 text-white uppercase tracking-wider"><tr><th class="px-3 py-3">{{ report.level }}</th><th class="px-3 py-3 text-right">Opening Balance</th><th class="px-3 py-3 text-right">Total Inflows</th><th class="px-3 py-3 text-right">Total Outflows</th><th class="px-3 py-3 text-right">Difference</th><th class="px-3 py-3 text-right">Present Balance</th></tr></thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for row in report.rows %}<tr class="hover:bg-slate-50 {% if row.name == 'Unallocated Opening Balance' %}bg-amber-50{% endif %}"><td class="px-3 py-2.5 font-bold text-slate-800">{{ row.name }}{% if row.code %}<span class="ml-2 text-[10px] font-mono text-slate-400">{{ row.code }}</span>{% endif %}</td><td class="px-3 py-2.5 text-right">{{ row.opening_balance|rs }}</td><td class="px-3 py-2.5 text-right text-emerald-700">{{ row.total_inflows|rs }}</td><td class="px-3 py-2.5 text-right text-rose-700">{{ row.total_outflows|rs }}</td><td class="px-3 py-2.5 text-right font-bold">{{ row.difference|rs }}</td><td class="px-3 py-2.5 text-right font-black">{{ row.present_balance|rs }}</td></tr>{% empty %}<tr><td colspan="6" class="px-3 py-8 text-center text-slate-400">No active records found for this Account / Fin Yr.</td></tr>{% endfor %}
+          <tr class="bg-slate-100 font-black border-t-2 border-slate-300"><td class="px-3 py-3">TOTAL</td><td class="px-3 py-3 text-right">{{ report.totals.opening_balance|rs }}</td><td class="px-3 py-3 text-right">{{ report.totals.total_inflows|rs }}</td><td class="px-3 py-3 text-right">{{ report.totals.total_outflows|rs }}</td><td class="px-3 py-3 text-right">{{ report.totals.difference|rs }}</td><td class="px-3 py-3 text-right">{{ report.totals.present_balance|rs }}</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

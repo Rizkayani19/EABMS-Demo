@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-5xl mx-auto">
+    <div class="mb-8">
+        <h1 class="text-2xl md:text-3xl text-slate-800 font-bold">Personnel Planning</h1>
+    </div>
+    <div class="bg-white shadow-lg rounded-sm border border-slate-200 mb-8 p-5">
+        <table class="w-full text-sm text-left">
+            <thead class="font-semibold text-slate-500 bg-slate-50 border-b">
+                <tr>
+                    <th class="py-3 px-2">Category</th>
+                    <th class="py-3 px-2 text-right">Current Cost</th>
+                    <th class="py-3 px-2 text-right">Rev %</th>
+                    <th class="py-3 px-2 text-right">Rev Amt</th>
+                    <th class="py-3 px-2 text-right">New Personnel</th>
+                    <th class="py-3 px-2 text-right">Transferred</th>
+                    <th class="py-3 px-2 text-right font-bold">Projected Cost</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                {% for pl in lines %}
+                <tr>
+                    <td class="py-3 px-2">{{ pl.category_label }}</td>
+                    <td class="py-3 px-2 text-right">{{ pl.current_annual_cost|rs }}</td>
+                    <td class="py-3 px-2 text-right">{{ pl.revision_pct|pct }}</td>
+                    <td class="py-3 px-2 text-right">{{ pl.revision_amount|rs }}</td>
+                    <td class="py-3 px-2 text-right">{{ pl.new_personnel_cost|rs }}</td>
+                    <td class="py-3 px-2 text-right">{{ pl.transferred_personnel_cost|rs }}</td>
+                    <td class="py-3 px-2 text-right font-bold">{{ pl.projected_cost|rs }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <form method="post" class="mt-6">
+            {% csrf_token %}
+            <button type="submit" class="btn bg-indigo-500 text-white">Acknowledge</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

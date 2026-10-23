@@ -1,0 +1,147 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}{{ model_name }} Master — EABMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800 tracking-tight">{{ model_name }} Master</h1>
+            <p class="text-xs text-slate-500 mt-1">Configurable database-driven dynamic master management.</p>
+        </div>
+        <a href="{% url 'masters:'|add:url_namespace|add:'_create' %}" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition flex items-center self-start sm:self-auto">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            New {{ model_name }}
+        </a>
+    </div>
+
+    <!-- Search / Filter -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <form method="get" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Search</label>
+                <input type="text" name="q" value="{{ q }}" placeholder="Search name or code..."
+                       class="w-full px-3 py-2 border border-slate-300 rounded-md text-xs focus:ring-2 focus:ring-emerald-500">
+            </div>
+
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Status</label>
+                <select name="status" class="w-full px-3 py-2 border border-slate-300 rounded-md text-xs bg-white focus:ring-2 focus:ring-emerald-500">
+                    {% if has_status_field %}
+                    <option value="all" {% if status == 'all' %}selected{% endif %}>All Lifecycles</option>
+                    <option value="OPEN" {% if status == 'OPEN' %}selected{% endif %}>Open</option>
+                    <option value="CLOSED" {% if status == 'CLOSED' %}selected{% endif %}>Closed</option>
+                    <option value="ARCHIVED" {% if status == 'ARCHIVED' %}selected{% endif %}>Archived</option>
+                    {% else %}
+                    <option value="all" {% if status == 'all' %}selected{% endif %}>All Records</option>
+                    <option value="active" {% if status == 'active' %}selected{% endif %}>Active Only</option>
+                    <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive Only</option>
+                    {% endif %}
+                </select>
+            </div>
+
+            <div class="flex items-end space-x-2">
+                <button type="submit" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-md text-xs font-semibold">
+                    Filter
+                </button>
+                <a href="{% url 'masters:'|add:url_namespace|add:'_list' %}" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-medium">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table -->
+    <div class="bg-white shadow-sm border border-slate-200 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-left text-xs" data-bulk-delete-url="{% url 'masters:'|add:url_namespace|add:'_bulk_delete' %}">
+                <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider">
+                    <tr>
+                        <th class="w-10 px-3 py-3 text-center"><input type="checkbox" class="abms-select-all rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4" title="Select / Deselect All"></th>
+                        <th class="px-4 py-3 w-12">#</th>
+                        <th class="px-4 py-3 w-32">Code</th>
+                        <th class="px-4 py-3">Name / Title</th>
+                        <th class="px-4 py-3">Details / Hierarchy</th>
+                        <th class="px-4 py-3 w-28">Status</th>
+                        <th class="px-4 py-3 w-36 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                    {% for item in items %}
+                    <tr class="hover:bg-slate-50 transition {% if item.is_active is False %}opacity-60 bg-slate-50/50{% endif %}">
+                        <td class="w-10 px-3 py-3 text-center align-middle"><input type="checkbox" value="{{ item.id }}" class="abms-row-select rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4"></td>
+                        <td class="px-4 py-3 font-mono text-slate-500">{{ item.display_order|default:forloop.counter }}</td>
+                        <td class="px-4 py-3 font-mono font-medium text-emerald-800">
+                            {% if item.code %}{{ item.code }}{% elif item.package_code %}{{ item.package_code }}{% elif item.employee_no %}{{ item.employee_no }}{% elif item.installation_code %}{{ item.installation_code }}{% else %}—{% endif %}
+                        </td>
+                        <td class="px-4 py-3 font-semibold text-slate-800">
+                            {% if item.name %}{{ item.name }}{% elif item.package_name %}{{ item.package_name }}{% elif item.name_and_designation %}{{ item.name_and_designation }}{% elif item.title %}{{ item.title }}{% elif item.installation_name %}{{ item.installation_name }}{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-slate-500 text-xs">
+                            {% if item.cohort %}
+                                Cohort: <span class="font-medium text-slate-700">{{ item.cohort.code }}</span>
+                                {% if item.total_days %} | {{ item.total_days }} Days{% endif %}
+                                {% if item.rate_quad_sharing %} | Quad: {{ item.rate_quad_sharing|rs }}{% endif %}
+                            {% elif item.package %}
+                                Package: <span class="font-medium text-slate-700">{{ item.package.package_name }}</span>
+                                {% if item.sharing_type %} ({{ item.get_sharing_type_display }}){% endif %}
+                            {% elif item.venue %}
+                                Venue: {{ item.venue.name }} ({{ item.event_year }})
+                            {% elif item.description %}
+                                {{ item.description|truncatechars:45 }}
+                            {% elif item.start_date and item.end_date %}
+                                {{ item.start_date|dmy }} to {{ item.end_date|dmy }}
+                            {% elif item.account_head %}
+                                Account Head: {{ item.account_head.name }}
+                            {% elif item.major_head %}
+                                Division: {{ item.major_head.name }}
+                            {% elif item.installation %}
+                                Installation: {{ item.installation.installation_code }}
+                            {% else %}
+                                ÔÇö
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if item.status %}
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold {% if item.status == 'OPEN' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif item.status == 'CLOSED' %}bg-amber-50 text-amber-700 border border-amber-200{% else %}bg-slate-100 text-slate-600 border border-slate-200{% endif %}">
+                                    {{ item.get_status_display }}
+                                </span>
+                            {% elif item.is_active %}
+                                <span class="inline-flex items-center text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+                                    Active
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-slate-400 mr-1.5"></span>
+                                    Inactive
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+                            {% if url_namespace == 'package' %}
+                            <a href="{% url 'masters:package_detail' item.id %}" class="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded transition">
+                                Itinerary &amp; Rates
+                            </a>
+                            {% endif %}
+                            <a href="{% url 'masters:'|add:url_namespace|add:'_update' item.id %}" class="text-xs text-slate-600 hover:text-emerald-700 font-medium px-2 py-1 bg-slate-100 hover:bg-emerald-50 rounded transition">
+                                Edit
+                            </a>
+                            <a href="{% url 'masters:'|add:url_namespace|add:'_toggle' item.id %}" class="text-xs text-amber-700 hover:bg-amber-50 font-medium px-2 py-1 rounded transition border border-slate-200">
+                                {% if item.status %}Next State{% elif item.is_active %}Deactivate{% else %}Activate{% endif %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-4 py-8 text-center text-slate-400">
+                            No records found for {{ model_name }}.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ABMS Report Center</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{font-family:Arial,sans-serif;margin:0;background:#f4f6f5;color:#1f2933}.wrap{max-width:1400px;margin:24px auto;padding:0 20px}.card{background:white;border:1px solid #d8dfdc;border-radius:10px;padding:18px;margin-bottom:18px;box-shadow:0 1px 3px #00000010}h1{margin:0 0 4px}h2{font-size:18px;margin-top:0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}.field label{display:block;font-weight:bold;font-size:13px;margin-bottom:5px}.field select,.field input{width:100%;box-sizing:border-box;padding:8px;border:1px solid #bcc7c2;border-radius:6px}.checks{max-height:150px;overflow:auto;border:1px solid #d8dfdc;padding:8px;border-radius:6px}.checks label{display:block;font-weight:normal;padding:3px}.actions{display:flex;gap:10px;margin-top:15px}.btn{padding:9px 14px;border:0;border-radius:6px;cursor:pointer;background:#166534;color:#fff}.btn.secondary{background:#475569}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.metric{padding:14px;border:1px solid #d8dfdc;border-radius:8px}.metric b{display:block;font-size:20px;margin-top:5px}table{width:100%;border-collapse:collapse}th,td{padding:7px;border-bottom:1px solid #e5e7eb;text-align:left}th{background:#eef2f0}.muted{color:#64748b;font-size:13px}@media(max-width:800px){.metrics{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="card"><h1>ABMS Report Center</h1><div class="muted">All figures are calculated from the transaction Single Source of Truth. The same filters are carried into Excel export.</div></div>
+<div class="card">
+<h2>Report Parameters</h2>
+<form id="filters">
+<div class="grid">
+<div class="field"><label>Account</label><select name="account"><option value="">Current / All</option>{% for x in accounts %}<option value="{{x.id}}">{{x.name}}</option>{% endfor %}</select></div>
+<div class="field"><label>Financial Year</label><select name="financial_year"><option value="">Current / All</option>{% for x in financial_years %}<option value="{{x.id}}">{{x.name}}</option>{% endfor %}</select></div>
+<div class="field"><label>From Date</label><input type="date" name="date_from"></div>
+<div class="field"><label>To Date</label><input type="date" name="date_to"></div>
+<div class="field"><label>Direction</label><select name="direction"><option value="">Inflows + Outflows</option><option value="INFLOW">Inflows</option><option value="OUTFLOW">Outflows</option></select></div>
+<div class="field"><label>Units</label><div class="checks">{% for x in units %}<label><input type="checkbox" name="unit" value="{{x.id}}"> {{x.name}}</label>{% endfor %}</div></div>
+<div class="field"><label>Internal Sections</label><div class="checks">{% for x in internal_sections %}<label><input type="checkbox" name="internal_section" value="{{x.id}}"> {{x.name}}</label>{% endfor %}</div></div>
+</div>
+<div class="actions"><button class="btn" type="submit">Generate Report</button><button class="btn secondary" type="button" id="excel">Export Giant Excel Workbook</button></div>
+</form>
+</div>
+<div class="card"><h2>Summary</h2><div class="metrics"><div class="metric">Transactions<b id="count">—</b></div><div class="metric">Inflows<b id="inflows">—</b></div><div class="metric">Outflows<b id="outflows">—</b></div><div class="metric">Net Movement<b id="net">—</b></div></div></div>
+<div class="card"><h2>Unit-wise Analysis</h2><table><thead><tr><th>Unit</th><th>Amount</th></tr></thead><tbody id="unitRows"></tbody></table></div>
+<div class="card"><h2>Internal Section-wise Analysis</h2><table><thead><tr><th>Internal Section</th><th>Amount</th></tr></thead><tbody id="sectionRows"></tbody></table></div>
+<div class="card"><h2>Unit + Internal Section Analysis</h2><table><thead><tr><th>Unit</th><th>Internal Section</th><th>Amount</th></tr></thead><tbody id="comboRows"></tbody></table></div>
+<div class="card"><h2>Existing Budget vs Actual</h2><table><thead><tr><th>Account Head</th><th>Sub Head</th><th>Approved Budget</th><th>Actual</th><th>Balance</th><th>Utilisation %</th></tr></thead><tbody id="budgetRows"></tbody></table></div>
+</div>
+<script>
+const form=document.getElementById('filters');
+function qs(){const p=new URLSearchParams(new FormData(form)); return p;}
+function money(v){return Number(v||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
+async function load(){const r=await fetch('{% url "core:report_center_data" %}?'+qs().toString());const d=await r.json();document.getElementById('count').textContent=d.summary.transaction_count;document.getElementById('inflows').textContent=money(d.summary.inflows);document.getElementById('outflows').textContent=money(d.summary.outflows);document.getElementById('net').textContent=money(d.summary.net);document.getElementById('unitRows').innerHTML=d.unit_summary.map(x=>`<tr><td>${x.unit}</td><td>${money(x.amount)}</td></tr>`).join('');document.getElementById('sectionRows').innerHTML=d.section_summary.map(x=>`<tr><td>${x.internal_section}</td><td>${money(x.amount)}</td></tr>`).join('');document.getElementById('comboRows').innerHTML=d.unit_section_summary.map(x=>`<tr><td>${x.unit}</td><td>${x.internal_section}</td><td>${money(x.amount)}</td></tr>`).join('');document.getElementById('budgetRows').innerHTML=(d.budget_vs_actual||[]).map(x=>`<tr><td>${x.account_head}</td><td>${x.sub_head}</td><td>${money(x.approved_budget)}</td><td>${money(x.budget_consumed)}</td><td>${money(x.balance_of_budget)}</td><td>${x.utilisation_pct==null?'—':Number(x.utilisation_pct).toFixed(2)+'%'}</td></tr>`).join('');}
+form.addEventListener('submit',e=>{e.preventDefault();load()});document.getElementById('excel').addEventListener('click',()=>{window.location.href='{% url "core:management_workbook_export" %}?'+qs().toString()});load();
+</script>
+</body></html>

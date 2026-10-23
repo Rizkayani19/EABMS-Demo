@@ -1,0 +1,28 @@
+﻿<div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-slate-200 text-left text-xs" data-bulk-delete-url="{% url 'masters:account_head_bulk_delete' %}">
+        <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider">
+            <tr>
+                <th class="w-10 px-3 py-3 text-center"><input type="checkbox" class="abms-select-all rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4" title="Select / Deselect All"></th>
+                <th class="px-4 py-3 w-12">#</th>
+                <th class="px-4 py-3 w-28">Code</th>
+                <th class="px-4 py-3 w-36">Division (Tier 1)</th>
+                <th class="px-4 py-3">Account Head Name</th>
+                <th class="px-4 py-3 w-28">Head Type</th>
+                <th class="px-4 py-3">Description</th>
+                <th class="px-4 py-3 w-28">Status</th>
+                <th class="px-4 py-3 w-36 text-right">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 bg-white" id="account-head-table-body">
+            {% for head in account_heads %}
+                {% include 'masters/partials/account_head_row.html' with head=head %}
+            {% empty %}
+            <tr>
+                <td colspan="9" class="px-4 py-8 text-center text-slate-400">
+                    No Account Heads found matching your filter criteria.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

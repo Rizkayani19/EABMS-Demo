@@ -1,0 +1,117 @@
+﻿{% extends 'base.html' %}
+{% block title %}Future Budget Inflow Proposal — {{ future_budget.target_fy.code }}{% endblock %}
+{% block content %}
+<div class="max-w-7xl mx-auto space-y-5 pb-16">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-4 border-b border-slate-200">
+    <div>
+      <div class="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-600">Future Budget · Inflow</div>
+      <h1 class="text-2xl font-bold text-slate-900">Management Inflow Proposal</h1>
+      <p class="text-xs text-slate-500 mt-1">{{ future_budget.account.name }} — FY {{ future_budget.source_fy.code }} → {{ future_budget.target_fy.code }}</p>
+    </div>
+    <a href="{% url 'core:future_budget_review' future_budget.pk %}" class="px-3 py-2 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100">← Back to Budget Review</a>
+  </div>
+
+  {% if future_budget.status == 'APPROVED' %}
+  <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">This Future Budget is Approved. Inflow proposals are published and read-only.</div>
+  {% endif %}
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Management Proposed Inflow</div>
+      <div class="text-lg font-extrabold text-emerald-800 mt-1">$ {{ proposed_inflow_total|floatformat:2 }}</div>
+      <div class="text-[10px] text-slate-500 mt-1">Current decision</div>
+    </div>
+    <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+      <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Approved Inflow</div>
+      <div class="text-lg font-extrabold text-slate-800 mt-1">$ {{ approved_inflow_total|floatformat:2 }}</div>
+      <div class="text-[10px] text-slate-500 mt-1">Published/approved value</div>
+    </div>
+    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-sm">
+      <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Decision Record</div>
+      <div class="text-sm font-bold text-slate-800 mt-1">{{ decision_history|length }} recent event(s)</div>
+      <div class="text-[10px] text-slate-500 mt-1">Inflow and outflow decisions are audited together</div>
+    </div>
+  </div>
+
+  <form method="post" class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+    {% csrf_token %}
+    <div class="px-5 py-4 border-b border-slate-200 bg-slate-50/75 flex items-center justify-between">
+      <div>
+        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-800">Inflow Planning & Management Proposal</h2>
+        <p class="text-xs text-slate-500 mt-1">Management Proposed Inflow is separate from the approved inflow amount published to the target budget.</p>
+      </div>
+      {% if future_budget.status != 'APPROVED' %}<button class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">Save Inflow Proposals</button>{% endif %}
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-xs">
+        <thead class="bg-slate-100 text-slate-600 uppercase tracking-wider font-bold">
+          <tr>
+            <th class="px-4 py-3 text-left">Account Head</th>
+            <th class="px-4 py-3 text-right">Previous Inflow Budget</th>
+            <th class="px-4 py-3 text-right">Previous Actual Received</th>
+            <th class="px-4 py-3 text-right bg-emerald-50 text-emerald-900">Management Proposed Inflow</th>
+            <th class="px-4 py-3 text-right bg-slate-100">Approved Inflow</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for row in rows %}
+          {% if row.line %}
+          <input type="hidden" name="line_ids" value="{{ row.line.pk }}">
+          <tr class="hover:bg-slate-50">
+            <td class="px-4 py-3 font-semibold text-slate-800">{{ row.head.name }}{% if row.head.code %}<span class="ml-2 text-[10px] text-slate-400">{{ row.head.code }}</span>{% endif %}</td>
+            <td class="px-4 py-3 text-right font-mono">$ {{ row.previous_budget|floatformat:2 }}</td>
+            <td class="px-4 py-3 text-right font-mono">$ {{ row.previous_actual|floatformat:2 }}</td>
+            <td class="px-4 py-2 bg-emerald-50/40">
+              {% if future_budget.status != 'APPROVED' %}
+              <div class="relative max-w-xs ml-auto"><span class="absolute left-2 top-1.5 text-slate-400">$</span><input type="number" min="0" step="0.01" name="inflow_proposed_{{ row.line.pk }}" value="{% if row.user_proposed_inflow != None %}{{ row.user_proposed_inflow }}{% endif %}" class="w-full pl-8 pr-2 py-1.5 rounded-lg border border-slate-300 text-right font-mono font-bold focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" placeholder="Enter proposed inflow"></div>
+              {% else %}<div class="text-right font-mono font-bold text-emerald-800">{% if row.user_proposed_inflow != None %}$ {{ row.user_proposed_inflow|floatformat:2 }}{% else %}—{% endif %}</div>{% endif %}
+            </td>
+            <td class="px-4 py-3 text-right font-mono font-bold">{% if row.approved_inflow != None %}$ {{ row.approved_inflow|floatformat:2 }}{% else %}—{% endif %}</td>
+          </tr>
+          {% endif %}
+          {% empty %}<tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">No INFLOW/BOTH account-head lines exist in this Future Budget. Rebuild the Draft after ensuring the required inflow heads are active.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </form>
+
+  <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+    <div class="px-5 py-4 border-b border-slate-200 bg-slate-50/75">
+      <h2 class="text-sm font-bold uppercase tracking-wider text-slate-800">Decision Audit — Inflow & Outflow</h2>
+      <p class="text-xs text-slate-500 mt-1">Immutable management decision events associated with this Future Budget.</p>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-xs">
+        <thead class="bg-slate-100 text-slate-600 uppercase tracking-wider font-bold">
+          <tr>
+            <th class="px-4 py-3 text-left">Date / Time</th>
+            <th class="px-4 py-3 text-left">Account Head</th>
+            <th class="px-4 py-3 text-left">Action</th>
+            <th class="px-4 py-3 text-left">Actor</th>
+            <th class="px-4 py-3 text-right">Proposed Inflow</th>
+            <th class="px-4 py-3 text-right">Approved Inflow</th>
+            <th class="px-4 py-3 text-right">Proposed Outflow</th>
+            <th class="px-4 py-3 text-right">Approved Outflow</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for event in decision_history %}
+          <tr class="hover:bg-slate-50">
+            <td class="px-4 py-3 whitespace-nowrap">{{ event.created_at|date:'d M Y H:i' }}</td>
+            <td class="px-4 py-3 font-semibold">{{ event.future_budget_line.account_head.name }}</td>
+            <td class="px-4 py-3">{{ event.get_action_display }}</td>
+            <td class="px-4 py-3">{% if event.actor %}{{ event.actor.get_username }}{% else %}—{% endif %}</td>
+            <td class="px-4 py-3 text-right font-mono">{% if event.new_proposed_inflow != None %}$ {{ event.new_proposed_inflow|floatformat:2 }}{% else %}—{% endif %}</td>
+            <td class="px-4 py-3 text-right font-mono">{% if event.new_approved_inflow != None %}$ {{ event.new_approved_inflow|floatformat:2 }}{% else %}—{% endif %}</td>
+            <td class="px-4 py-3 text-right font-mono">{% if event.new_proposed != None %}$ {{ event.new_proposed|floatformat:2 }}{% else %}—{% endif %}</td>
+            <td class="px-4 py-3 text-right font-mono">{% if event.new_approved != None %}$ {{ event.new_approved|floatformat:2 }}{% else %}—{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="8" class="px-4 py-8 text-center text-slate-500">No decision history recorded yet.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

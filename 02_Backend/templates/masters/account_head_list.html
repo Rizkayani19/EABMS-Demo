@@ -1,0 +1,93 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Account Heads — {{ selected_account.name|default:"NexGen Holdings Ltd." }} — EABMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <div class="flex items-center space-x-2">
+                <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Account Heads</h1>
+                <span class="bg-emerald-100 text-emerald-800 text-xs font-semibold px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    {{ selected_account.name|default:"NexGen Holdings Ltd." }}
+                </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">
+                Account-specific dynamic masters. Manage Tier-2 Account Heads categorized under Tier-1 Divisions.
+            </p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="{% url 'masters:account_head_create' %}" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition flex items-center">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                New Account Head
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter & Search Bar (HTMX Live Search) -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        <form method="get" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3"
+              hx-get="{% url 'masters:account_head_list' %}"
+              hx-target="#table-container"
+              hx-trigger="change, keyup delay:300ms from:input[name='q']">
+
+            <!-- Search Input -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Search</label>
+                <input type="text" name="q" value="{{ q }}" placeholder="Search name, code, description..."
+                       class="w-full px-3 py-2 border border-slate-300 rounded-md text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+            </div>
+
+            <!-- Division (Major Head) Filter -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Division (Tier 1)</label>
+                <select name="major_head_id" class="w-full px-3 py-2 border border-slate-300 rounded-md text-xs bg-white focus:ring-2 focus:ring-emerald-500">
+                    <option value="">All Divisions</option>
+                    {% for mh in available_major_heads %}
+                    <option value="{{ mh.id }}" {% if major_head_id == mh.id|stringformat:"i" %}selected{% endif %}>{{ mh.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Head Type Filter -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Head Type</label>
+                <select name="head_type" class="w-full px-3 py-2 border border-slate-300 rounded-md text-xs bg-white focus:ring-2 focus:ring-emerald-500">
+                    <option value="">All Types (Inflow & Outflow)</option>
+                    <option value="OUTFLOW" {% if head_type == 'OUTFLOW' %}selected{% endif %}>Outflow Only</option>
+                    <option value="INFLOW" {% if head_type == 'INFLOW' %}selected{% endif %}>Inflow Only</option>
+                    <option value="BOTH" {% if head_type == 'BOTH' %}selected{% endif %}>Both Inflow/Outflow</option>
+                </select>
+            </div>
+
+            <!-- Status Filter -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Status</label>
+                <select name="status" class="w-full px-3 py-2 border border-slate-300 rounded-md text-xs bg-white focus:ring-2 focus:ring-emerald-500">
+                    <option value="all" {% if status == 'all' %}selected{% endif %}>All Records</option>
+                    <option value="active" {% if status == 'active' %}selected{% endif %}>Active Only</option>
+                    <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive Only</option>
+                </select>
+            </div>
+
+            <!-- Account Filter (if multiple accounts exist) -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Account</label>
+                <select name="account_id" class="w-full px-3 py-2 border border-slate-300 rounded-md text-xs bg-white focus:ring-2 focus:ring-emerald-500">
+                    {% for acc in available_accounts %}
+                    <option value="{{ acc.id }}" {% if acc.id == selected_account.id %}selected{% endif %}>{{ acc.name }} ({{ acc.code }})</option>
+                    {% empty %}
+                    <option value="{{ selected_account.id }}" selected>{{ selected_account.name }} ({{ selected_account.code }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table Container -->
+    <div id="table-container" class="bg-white shadow-sm border border-slate-200 rounded-xl overflow-hidden">
+        {% include 'masters/partials/account_head_table.html' %}
+    </div>
+</div>
+{% endblock %}

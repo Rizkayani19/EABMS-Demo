@@ -1,0 +1,1000 @@
+﻿{% extends 'base.html' %}
+{% load abms_filters %}
+{% block title %}{{ report.title }} — EABMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Breadcrumbs and Action Toolbar -->
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-slate-200 no-print">
+        <div class="flex items-center gap-2">
+            <a href="{% url 'reports:report_center' %}" class="text-[10px] font-bold uppercase tracking-[0.16em] text-emerald-600 hover:underline">Report Center</a>
+            <span class="text-slate-300 text-xs">/</span>
+            <span class="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">{{ report.title }}</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{% url 'reports:report_center' %}" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold shadow-xs transition">
+                <span>←</span> Report Center
+            </a>
+            {% if not filter_errors %}
+            <button type="button" onclick="window.print()" class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold shadow-xs transition">
+                <span>🖨</span> Print (A4 Portrait)
+            </button>
+            <a href="?{{ request.GET.urlencode }}&format=pdf" class="inline-flex items-center gap-1.5 px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shadow-xs transition">Export PDF</a>
+            <a href="?{{ request.GET.urlencode }}&format=excel" class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow-xs transition">Export Excel</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <style>
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 12mm 8mm 12mm 8mm;
+            @top-center {
+                content: "Page " counter(page) " of " counter(pages) "\A CONFD";
+                white-space: pre-wrap;
+                font-family: 'Segoe UI', Arial, sans-serif;
+                font-size: 8pt;
+                font-weight: bold;
+                color: #be123c;
+                text-align: center;
+            }
+            @bottom-center {
+                content: "CONFD";
+                font-family: 'Segoe UI', Arial, sans-serif;
+                font-size: 8pt;
+                font-weight: bold;
+                color: #be123c;
+                text-align: center;
+            }
+        }
+        aside, header, nav, #app-sidebar, .sidebar, .no-print, button, a { display: none !important; }
+        body, main, section, .lg\:col-span-3, .grid { width: 100% !important; max-width: 100% !important; margin: 0 !important; padding: 0 !important; display: block !important; }
+        table { width: 100% !important; font-size: 9px !important; border-collapse: collapse !important; }
+        th { background-color: #e2e8f0 !important; color: #0f172a !important; font-weight: bold !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        th, td { padding: 4px 6px !important; border: 0.5pt solid #cbd5e1 !important; }
+        .print-doc-header { display: block !important; margin-bottom: 12px !important; text-align: center !important; }
+        .formal-sd-print-header { display: block !important; text-align: center !important; margin-bottom: 8px !important; }
+        .formal-sd-print-footer { display: block !important; text-align: center !important; margin-top: 14px !important; }
+    }
+    .formal-sd-print-header, .formal-sd-print-footer { display: none; }
+    @media print {
+        .formal-sd-print-header, .formal-sd-print-footer { display: block; }
+    }
+    </style>
+
+    <!-- formal SD Screen & Print Centered Running Header -->
+    <div class="text-center space-y-0.5 formal-sd-print-header">
+        <div class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Page 1 of 1</div>
+        <div class="text-xs font-black tracking-widest text-rose-700">CONFD</div>
+    </div>
+
+    {% if filter_errors %}
+    <div class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 no-print">
+        <div class="font-semibold">Please correct the report dates.</div>
+        <ul class="mt-1 list-disc pl-5">{% for error in filter_errors %}<li>{{ error }}</li>{% endfor %}</ul>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <!-- Filter Controls Sidebar (Hidden in Print) -->
+        <aside class="lg:col-span-1 no-print">
+            <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-5 lg:sticky lg:top-4">
+                <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+                    <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Filters</h3>
+                    <span class="abms-badge bg-slate-100 text-slate-600">Report Scope</span>
+                </div>
+                <form method="get" class="space-y-4">
+                    {% if available_fys %}
+                    <div>
+                        <label class="abms-filter-label">Fin Yr(s)</label>
+                        <select name="fy_ids" multiple size="{{ available_fys|length|default:3 }}" class="abms-filter-control">
+                            {% for f in available_fys %}
+                            <option value="{{ f.pk }}" {% if f.pk in selected_fy_ids %}selected{% endif %}>{{ f.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="text-[10px] text-slate-400 mt-1">Ctrl/Cmd-click for multiple Fin Yrs. Leave default for active Fin Yr.</p>
+                    </div>
+                    {% endif %}
+
+                    {% if 'start_date' in report.supported_filters %}<div><label class="abms-filter-label">Start Date</label><input type="date" name="start_date" value="{{ filters.start_date_raw|default:'' }}" class="abms-filter-control"></div>{% endif %}
+                    {% if 'end_date' in report.supported_filters %}<div><label class="abms-filter-label">End Date</label><input type="date" name="end_date" value="{{ filters.end_date_raw|default:'' }}" class="abms-filter-control"></div>{% endif %}
+
+                    {% if 'unit_ids' in report.supported_filters %}
+                    <div>
+                        <label class="abms-filter-label">Organisation(s)</label>
+                        <select name="unit_ids" multiple size="5" class="abms-filter-control">
+                            {% for unit in units %}<option value="{{ unit.pk }}" {% if unit.pk in selected_unit_ids %}selected{% endif %}>{{ unit.name }}</option>{% endfor %}
+                        </select>
+                        <p class="text-[10px] text-slate-400 mt-1">Ctrl/Cmd-click for multiple Organisations. Leave blank for All.</p>
+                    </div>
+                    {% endif %}
+
+                    {% if 'department_ids' in report.supported_filters %}
+                    <div>
+                        <label class="abms-filter-label">Internal Sec(s)</label>
+                        <select name="department_ids" multiple size="5" class="abms-filter-control">
+                            {% for section in departments %}<option value="{{ section.pk }}" {% if section.pk in selected_department_ids %}selected{% endif %}>{{ section.name }}</option>{% endfor %}
+                        </select>
+                        <p class="text-[10px] text-slate-400 mt-1">Ctrl/Cmd-click for multiple Secs. Leave blank for All.</p>
+                    </div>
+                    {% endif %}
+
+                    {% if 'direction' in report.supported_filters %}
+                    <div>
+                        <label class="abms-filter-label">Txn Type (Dir)</label>
+                        <select name="direction" class="abms-filter-control">
+                            <option value="" {% if not selected_direction %}selected{% endif %}>All (Inflows &amp; Outflows)</option>
+                            <option value="INFLOW" {% if selected_direction == 'INFLOW' %}selected{% endif %}>Inflows Only</option>
+                            <option value="OUTFLOW" {% if selected_direction == 'OUTFLOW' %}selected{% endif %}>Outflows Only</option>
+                        </select>
+                    </div>
+                    {% endif %}
+
+                    {% if 'major_head' in report.supported_filters %}
+                    <div>
+                        <label class="abms-filter-label">Division (Tier 1)</label>
+                        <select name="major_head" class="abms-filter-control">
+                            <option value="">All Divisions</option>
+                            {% for mh in major_heads %}
+                            <option value="{{ mh.pk }}" {% if selected_major_head == mh.pk|stringformat:"s" %}selected{% endif %}>{{ mh.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+
+                    {% if 'account_head' in report.supported_filters %}
+                    <div>
+                        <label class="abms-filter-label">Acct Head (Tier 2)</label>
+                        <select name="account_head" class="abms-filter-control">
+                            <option value="">All Acct Heads</option>
+                            {% for ah in account_heads %}
+                            <option value="{{ ah.pk }}" {% if selected_account_head == ah.pk|stringformat:"s" %}selected{% endif %}>{{ ah.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+
+                    {% if 'sub_head' in report.supported_filters %}
+                    <div>
+                        <label class="abms-filter-label">Sub Head (Tier 3)</label>
+                        <select name="sub_head" class="abms-filter-control">
+                            <option value="">All Sub Heads</option>
+                            {% for sh in sub_heads %}
+                            <option value="{{ sh.pk }}" {% if selected_sub_head == sh.pk|stringformat:"s" %}selected{% endif %}>{{ sh.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
+
+                    <!-- Fund-Specific Filter Dropdowns for Dynamic Transactions -->
+                    {% if report.slug == 'dynamic-transactions' %}
+                        {% if fund_code == 'CPF' %}
+                        <div>
+                            <label class="abms-filter-label">Cohort</label>
+                            <select name="cohort" class="abms-filter-control">
+                                <option value="">All Cohorts</option>
+                                {% for c in cohorts %}
+                                <option value="{{ c.pk }}" {% if selected_cohort == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.code }} - {{ c.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="abms-filter-label">Cohort Package</label>
+                            <select name="package" class="abms-filter-control">
+                                <option value="">All Packages</option>
+                                {% for pkg in packages %}
+                                <option value="{{ pkg.pk }}" {% if selected_package == pkg.pk|stringformat:"s" %}selected{% endif %}>{{ pkg.package_name }} ({{ pkg.package_code }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="abms-filter-label">Tour Operator</label>
+                            <select name="tour_operator" class="abms-filter-control">
+                                <option value="">All Tour Operators</option>
+                                {% for to in tour_operators %}
+                                <option value="{{ to.pk }}" {% if selected_tour_operator == to.pk|stringformat:"s" %}selected{% endif %}>{{ to.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="abms-filter-label">Pilgrim</label>
+                            <select name="pilgrim" class="abms-filter-control">
+                                <option value="">All Pilgrims</option>
+                                {% for p in pilgrims %}
+                                <option value="{{ p.pk }}" {% if selected_pilgrim == p.pk|stringformat:"s" %}selected{% endif %}>{{ p }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% elif fund_code == 'EWF' %}
+                        <div>
+                            <label class="abms-filter-label">Organisation / Organisation</label>
+                            <select name="unit" class="abms-filter-control">
+                                <option value="">All Organisations</option>
+                                {% for u in units %}
+                                <option value="{{ u.pk }}" {% if selected_unit == u.pk|stringformat:"s" %}selected{% endif %}>{{ u.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="abms-filter-label">Welfare Event</label>
+                            <select name="ceremony_event" class="abms-filter-control">
+                                <option value="">All Events</option>
+                                {% for pe in ceremony_events %}
+                                <option value="{{ pe.pk }}" {% if selected_ceremony_event == pe.pk|stringformat:"s" %}selected{% endif %}>{{ pe.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="abms-filter-label">Welfare Venue</label>
+                            <select name="ceremony_venue" class="abms-filter-control">
+                                <option value="">All Venues</option>
+                                {% for pv in ceremony_venues %}
+                                <option value="{{ pv.pk }}" {% if selected_ceremony_venue == pv.pk|stringformat:"s" %}selected{% endif %}>{{ pv.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% else %}
+                        <!-- NGL and Default: Organisation and Department Dropdowns -->
+                        <div>
+                            <label class="abms-filter-label">Organisation</label>
+                            <select name="unit" class="abms-filter-control">
+                                <option value="">All Organisations</option>
+                                {% for u in units %}
+                                <option value="{{ u.pk }}" {% if selected_unit == u.pk|stringformat:"s" %}selected{% endif %}>{{ u.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="abms-filter-label">Internal Sec</label>
+                            <select name="department" class="abms-filter-control">
+                                <option value="">All Internal Secs</option>
+                                {% for s in departments %}
+                                <option value="{{ s.pk }}" {% if selected_department == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+
+                        <div>
+                            <label class="abms-filter-label">Keyword / Txn ID</label>
+                            <input type="text" name="search" value="{{ filters.search|default:'' }}" placeholder="e.g. TX-00100, medical, tea..." class="abms-filter-control">
+                        </div>
+                    {% endif %}
+
+                    <p class="text-[11px] leading-4 text-slate-500">Dates filter by <strong>Txn Date</strong>. {% if report.display_in_millions %}Standardized in <strong>Millions (Mn)</strong>.{% else %}Shown in exact rupees.{% endif %}</p>
+                    <div class="pt-2 border-t border-slate-100">
+                        <button type="submit" class="w-full px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold transition shadow-xs">Apply Filters</button>
+                        <a href="{% url 'reports:view_report' report.slug %}" class="block text-center w-full mt-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg text-xs font-semibold transition">Reset</a>
+                    </div>
+                </form>
+            </div>
+        </aside>
+
+        <!-- Main Report Display Area -->
+        <section class="lg:col-span-3 space-y-5">
+            <!-- 1. Centered Document Header (Executive formal SD Standard) -->
+            <div class="bg-white rounded-2xl shadow-xs border border-slate-200 p-5 text-center print-doc-header">
+                <div class="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">EABMS — Accts &amp; Budget Mgmt Sys</div>
+                <h1 class="text-2xl sm:text-3xl font-black text-slate-900 mt-1 tracking-tight">Report: {{ report.title }}</h1>
+                <div class="mt-2 text-xs font-semibold text-slate-600 flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
+                    <span><strong class="text-slate-400 font-medium">Acct / Fund:</strong> <span class="text-slate-900 font-bold">{{ filters.account.name|default:'All Accts / Funds' }}</span></span>
+                    <span class="text-slate-300">•</span>
+                    <span><strong class="text-slate-400 font-medium">Fin Yr:</strong> <span class="text-slate-900 font-bold">{{ date_scope_label }}</span></span>
+                    <span class="text-slate-300">•</span>
+                    <span><strong class="text-slate-400 font-medium">Gen:</strong> <span class="text-slate-700">{% now "d-m-Y H:i" %} PKT (UTC+05:00)</span></span>
+                </div>
+                <div class="mt-1.5 text-[11px] text-slate-500 italic">
+                    {% if report.display_in_millions %}
+                    (Amounts standardized in PKR Millions [Mn] unless otherwise indicated)
+                    {% else %}
+                    (Amounts standardized in exact PKR [$] unless otherwise indicated)
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 2. "About This Report" Section -->
+            {% if report.description %}
+            <div class="rounded-xl border border-sky-200 bg-gradient-to-r from-sky-50/70 via-indigo-50/30 to-slate-50 p-4 shadow-xs">
+                <div class="flex items-start gap-3">
+                    <div class="w-8 h-8 rounded-lg bg-sky-100 text-sky-800 flex items-center justify-center font-bold text-sm shrink-0 shadow-2xs">ℹ️</div>
+                    <div class="flex-1">
+                        <div class="text-[11px] font-black uppercase tracking-wider text-sky-900">About This Report</div>
+                        <p class="text-xs text-slate-700 mt-0.5 leading-relaxed">{{ report.description }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 3. All Applied Filters Box -->
+            {% if applied_filters %}
+            <div class="rounded-xl border border-slate-200 bg-white p-3.5 shadow-xs">
+                <div class="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-slate-100">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-700">All Applied Filters</span>
+                    </div>
+                    <span class="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                        {{ applied_filters|length }} Filter{{ applied_filters|length|pluralize }} Set
+                    </span>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    {% for af in applied_filters %}
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs shadow-2xs">
+                        <strong class="text-slate-500 font-medium">{{ af.label }}:</strong>
+                        <span class="text-slate-900 font-bold">{{ af.value }}</span>
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 4. Top Summary KPI Cards (Standardized in PKR Millions [Mn] per User Specification) -->
+            {% if report.slug == 'dynamic-transactions' or report_kpis.is_financial_summary %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <!-- Card 1: Fund Balance & Transaction Count -->
+                <div class="bg-white rounded-xl p-3.5 border border-slate-200 shadow-xs flex flex-col justify-between">
+                    <div>
+                        <div class="text-[10px] uppercase font-bold text-slate-400">Total Records &amp; Fund Position</div>
+                        <div class="text-xl font-bold text-slate-800 mt-1 font-mono">{{ report_kpis.total_records }} <span class="text-xs font-normal text-slate-400">entries</span></div>
+                    </div>
+                    <div class="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-600 space-y-0.5">
+                        <div class="flex justify-between"><span>Opening Balance:</span> <strong class="text-slate-800">$ {{ report_kpis.opening_balance_mn }} Mn</strong></div>
+                        <div class="flex justify-between"><span>Closing Balance:</span> <strong class="text-emerald-700">$ {{ report_kpis.closing_balance_mn }} Mn</strong></div>
+                    </div>
+                </div>
+
+                <!-- Card 2: Total Inflows in Millions (Excl PT primary, PT sub-row, Grand Total incl PT) -->
+                <div class="bg-emerald-50/70 rounded-xl p-3.5 border border-emerald-200 shadow-xs flex flex-col justify-between">
+                    <div>
+                        <div class="text-[10px] uppercase font-bold text-emerald-800">Total Inflows excl Pass-Through (PKR Mn)</div>
+                        <div class="text-xl font-bold text-emerald-800 mt-1 font-mono">$ {{ report_kpis.dt_normal_inflows_mn }} Mn</div>
+                    </div>
+                    <div class="mt-2 pt-2 border-t border-emerald-100 text-[11px] text-emerald-900 space-y-0.5">
+                        <div class="flex justify-between"><span>Pass-Through Inflows:</span> <strong class="text-amber-700">$ {{ report_kpis.dt_pt_inflows_mn }} Mn</strong></div>
+                        <div class="flex justify-between border-t border-emerald-200 pt-0.5 font-bold"><span>Grand Total incl Pass-Through:</span> <span>$ {{ report_kpis.dt_total_inflows_mn }} Mn</span></div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Total Outflows in Millions (Excl PT primary, PT sub-row, Grand Total incl PT) -->
+                <div class="bg-rose-50/70 rounded-xl p-3.5 border border-rose-200 shadow-xs flex flex-col justify-between">
+                    <div>
+                        <div class="text-[10px] uppercase font-bold text-rose-800">Total Outflows excl Pass-Through (PKR Mn)</div>
+                        <div class="text-xl font-bold text-rose-800 mt-1 font-mono">$ {{ report_kpis.dt_normal_outflows_mn }} Mn</div>
+                    </div>
+                    <div class="mt-2 pt-2 border-t border-rose-100 text-[11px] text-rose-900 space-y-0.5">
+                        <div class="flex justify-between"><span>Pass-Through Outflows:</span> <strong class="text-amber-700">$ {{ report_kpis.dt_pt_outflows_mn }} Mn</strong></div>
+                        <div class="flex justify-between border-t border-rose-200 pt-0.5 font-bold"><span>Grand Total incl Pass-Through:</span> <span>$ {{ report_kpis.dt_total_outflows_mn }} Mn</span></div>
+                    </div>
+                </div>
+
+                <!-- Card 4: Net Movement (Excl PT primary, PT sub-row, Grand Total Net incl PT) -->
+                <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 shadow-xs flex flex-col justify-between">
+                    <div>
+                        <div class="text-[10px] uppercase font-bold text-slate-500">Net Movement excl Pass-Through (PKR Mn)</div>
+                        <div class="text-xl font-bold {% if report_kpis.dt_normal_net >= 0 %}text-emerald-700{% else %}text-rose-700{% endif %} mt-1 font-mono">
+                            {% if report_kpis.dt_normal_net >= 0 %}+{% endif %}$ {{ report_kpis.dt_normal_net_mn }} Mn
+                        </div>
+                    </div>
+                    <div class="mt-2 pt-2 border-t border-slate-200 text-[11px] text-slate-700 space-y-0.5">
+                        <div class="flex justify-between"><span>Pass-Through Tfrs:</span> <strong class="text-amber-700">$ {{ report_kpis.dt_pt_transfers_mn }} Mn</strong></div>
+                        <div class="flex justify-between border-t border-slate-300 pt-0.5 font-bold"><span>Grand Total Net incl Pass-Through:</span> <span>$ {{ report_kpis.dt_net_movement_mn }} Mn</span></div>
+                    </div>
+                </div>
+            </div>
+            {% elif report_kpis %}
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="bg-white rounded-xl p-3.5 border border-slate-200 shadow-xs">
+                    <div class="text-[10px] uppercase font-bold text-slate-400">Total Records</div>
+                    <div class="text-xl font-bold text-slate-800 mt-1 font-mono">{{ report_kpis.total_records }} <span class="text-xs font-normal text-slate-400">entries</span></div>
+                    <div class="text-[10px] text-slate-500 mt-1">Active Scope</div>
+                </div>
+                <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 shadow-xs">
+                    <div class="text-[10px] uppercase font-bold text-slate-600">Total Expenditure / Amount</div>
+                    <div class="text-xl font-bold text-slate-900 mt-1 font-mono">
+                        $ {% if report_kpis.report_total_mn %}{{ report_kpis.report_total_mn }}{% else %}{{ report_kpis.excl_pt_total_mn }}{% endif %} Mn
+                    </div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">Aggregated Scope Total</div>
+                </div>
+                <div class="bg-slate-100/90 rounded-xl p-3.5 border border-slate-200 shadow-xs">
+                    <div class="text-[10px] uppercase font-bold text-slate-600">Fund Opening Balance</div>
+                    <div class="text-xl font-bold text-slate-800 mt-1 font-mono">
+                        $ {{ report_kpis.opening_balance_mn }} Mn
+                    </div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">Starting Position</div>
+                </div>
+                <div class="bg-slate-100/90 rounded-xl p-3.5 border border-slate-300 shadow-xs">
+                    <div class="text-[10px] uppercase font-bold text-slate-600">Fund Closing Balance</div>
+                    <div class="text-xl font-bold text-emerald-800 mt-1 font-mono">
+                        $ {{ report_kpis.closing_balance_mn }} Mn
+                    </div>
+                    <div class="text-[10px] text-slate-500 mt-0.5">Available Cash Position</div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 5. Data Tables -->
+            {% if is_multi_fy %}
+                {% for section in fy_sections %}
+                <div class="bg-white shadow-xs border border-slate-200 rounded-2xl overflow-hidden mb-6">
+                    <div class="px-5 py-3 bg-slate-200 text-slate-900 border-b border-slate-300 flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-800 text-white">FY SECTION</span>
+                            <h2 class="text-sm font-bold">{{ section.fy.name }}</h2>
+                        </div>
+                        <span class="text-xs text-slate-600 font-mono">{{ section.dataset|length }} rows</span>
+                    </div>
+                    <div class="overflow-x-auto max-h-[60vh]">
+                        <!-- Laser printer friendly light-grey table header -->
+                        <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                            <thead class="sticky top-0 z-10 bg-slate-200 text-slate-900 font-bold uppercase tracking-wider shadow-xs border-b border-slate-300">
+                                <tr>{% for col in report.columns %}<th class="px-3.5 py-2.5 whitespace-nowrap">{{ col.label }}</th>{% endfor %}</tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 bg-white">
+                                {% for row in section.dataset %}
+                                <tr class="odd:bg-white even:bg-slate-50/70 hover:bg-slate-100/70 transition">
+                                    {% for col in report.columns %}
+                                    <td class="px-3.5 py-2.5 whitespace-nowrap">
+                                        {% for key, val in row.items %}
+                                        {% if key == col.key %}
+                                            {% if report.display_in_millions %}{{ val|abms_value_mn:col.key }}{% else %}{{ val|abms_value:col.key }}{% endif %}
+                                        {% endif %}
+                                        {% endfor %}
+                                    </td>
+                                    {% endfor %}
+                                </tr>
+                                {% empty %}
+                                <tr><td colspan="{{ report.columns|length }}" class="px-4 py-8 text-center text-slate-400">No data found for {{ section.fy.name }}.</td></tr>
+                                {% endfor %}
+
+                                 {% if report.totals and section.dataset %}
+                                 <!-- Reconciliation Row 1: Subtotal -->
+                                 <tr class="bg-slate-100 font-bold text-slate-800 border-t-2 border-slate-300">
+                                     {% for col in report.columns %}
+                                     <td class="px-3.5 py-2.5 whitespace-nowrap">
+                                         {% if forloop.first %}
+                                             {% if show_pt_reconciliation_footer %}Total All Txns less Pass-Through ({{ section.fy.code }}){% else %}Total ({{ section.fy.code }}){% endif %}
+                                         {% else %}
+                                         {% for key, val in section.totals.items %}
+                                         {% if key == col.key %}
+                                             {% if report.display_in_millions %}{{ val|abms_value_mn:col.key }}{% else %}{{ val|abms_value:col.key }}{% endif %}
+                                         {% endif %}
+                                         {% endfor %}
+                                         {% endif %}
+                                     </td>
+                                     {% endfor %}
+                                 </tr>
+                                 {% if section.pass_through and show_pt_reconciliation_footer %}
+                                 <!-- Reconciliation Row 2: Add Pass-Through Details -->
+                                 <tr class="bg-amber-50/90 font-bold text-amber-900 border-t border-amber-200">
+                                     <td class="px-3.5 py-2 whitespace-nowrap text-amber-800 flex items-center gap-1.5">
+                                         <span class="px-1.5 py-0.5 rounded bg-amber-500 text-white text-[10px] font-extrabold shadow-2xs">Pass-Through</span>
+                                         <span>Add: Pass-Through Tfrs ({{ section.fy.code }})</span>
+                                     </td>
+                                     {% for col in report.columns %}
+                                     {% if not forloop.first %}
+                                     <td class="px-3.5 py-2 whitespace-nowrap font-mono text-amber-900">
+                                         {% if col.key == 'amount' or col.key == 'total_outflows' or col.key == 'outflows' or col.key == 'budget_consumed' %}
+                                             {% if report.display_in_millions %}{{ section.pass_through|abms_value_mn:col.key }}{% else %}{{ section.pass_through|abms_value:col.key }}{% endif %}
+                                         {% else %}
+                                             —
+                                         {% endif %}
+                                     </td>
+                                     {% endif %}
+                                     {% endfor %}
+                                 </tr>
+                                 <!-- Reconciliation Row 3: Grand Total Incl. Pass-Through -->
+                                 <tr class="bg-slate-200 font-extrabold text-slate-900 border-t-2 border-slate-400">
+                                     <td class="px-3.5 py-2.5 whitespace-nowrap">Grand Total Incl. Pass-Through Txns ({{ section.fy.code }})</td>
+                                     {% for col in report.columns %}
+                                     {% if not forloop.first %}
+                                     <td class="px-3.5 py-2.5 whitespace-nowrap font-mono">
+                                         {% if col.key == 'amount' or col.key == 'total_outflows' or col.key == 'outflows' or col.key == 'budget_consumed' %}
+                                             {% if report.display_in_millions %}{{ section.gross_total|abms_value_mn:col.key }}{% else %}{{ section.gross_total|abms_value:col.key }}{% endif %}
+                                         {% else %}
+                                             —
+                                         {% endif %}
+                                     </td>
+                                     {% endif %}
+                                     {% endfor %}
+                                 </tr>
+                                 {% endif %}
+                                 {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endfor %}
+
+                {% if report.totals and grand_totals %}
+                <div class="bg-slate-100 text-slate-900 rounded-2xl p-5 shadow-xs border border-slate-300">
+                    <div class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-3">Reconciliation Summary Across All Selected Fin Yrs</div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        {% for key, val in grand_totals.items %}
+                        <div class="bg-white rounded-xl p-3 border border-slate-200 shadow-2xs">
+                            <div class="text-[10px] uppercase font-bold text-slate-500">{{ key|title }} {% if show_pt_reconciliation_footer %}(Excl. Pass-Through){% endif %}</div>
+                            <div class="text-lg font-bold text-slate-800 mt-0.5">
+                                {% if report.display_in_millions %}{{ val|abms_value_mn:key }}{% else %}{{ val|abms_value:key }}{% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if pass_through_total and show_pt_reconciliation_footer %}
+                        <div class="bg-amber-50 rounded-xl p-3 border border-amber-300 shadow-2xs">
+                            <div class="text-[10px] uppercase font-bold text-amber-700">Pass-Through Tfrs</div>
+                            <div class="text-lg font-bold text-amber-800 mt-0.5">
+                                {% if report.display_in_millions %}{{ pass_through_total|abms_value_mn:'amount' }}{% else %}{{ pass_through_total|abms_value:'amount' }}{% endif %}
+                            </div>
+                        </div>
+                        <div class="bg-slate-200 rounded-xl p-3 border border-slate-300 shadow-2xs">
+                            <div class="text-[10px] uppercase font-bold text-slate-700">Gross Total (Incl. Pass-Through)</div>
+                            <div class="text-lg font-bold text-slate-900 mt-0.5">
+                                {% if report.display_in_millions %}{{ gross_total|abms_value_mn:'amount' }}{% else %}{{ gross_total|abms_value:'amount' }}{% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
+            {% else %}
+                <!-- Single Financial Year Report -->
+                <div class="bg-white shadow-xs border border-slate-200 rounded-2xl overflow-hidden">
+                    <div class="px-5 py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-slate-50/50">
+                        <div>
+                            <div class="text-[10px] uppercase tracking-wider font-bold text-slate-400">Record Set</div>
+                            <div class="text-sm font-bold text-slate-800 mt-0.5">{{ dataset|length }} rows</div>
+                        </div>
+                        <div class="text-[10px] text-slate-500 font-medium">Amounts shown in {% if report.display_in_millions %}Millions (Mn){% else %}Exact Rupees ($){% endif %}</div>
+                    </div>
+                    <div class="overflow-x-auto max-h-[70vh]">
+                        {% if report.slug == 'dynamic-transactions' %}
+                        <!-- Dynamic Transactions Statement: Laser-Printer Friendly & Space-Optimized Combined Columns -->
+                        <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                            <thead class="sticky top-0 z-10 bg-slate-200 text-slate-900 font-bold uppercase tracking-wider shadow-xs border-b border-slate-300">
+                                <tr>
+                                    <th class="px-3.5 py-2.5 whitespace-nowrap w-28">Date &amp; Txn ID</th>
+                                    <th class="px-4 py-2.5 min-w-[280px]">Description &amp; Type</th>
+                                    <th class="px-4 py-2.5 min-w-[200px]">Acct Head</th>
+                                    <th class="px-4 py-2.5 whitespace-nowrap text-right w-36">Amount ($)</th>
+                                    {% if fund_code == 'CPF' %}
+                                    <th class="px-3.5 py-2.5 whitespace-nowrap">Cohort</th>
+                                    <th class="px-3.5 py-2.5 whitespace-nowrap">Package</th>
+                                    <th class="px-3.5 py-2.5 whitespace-nowrap">Tour Operator</th>
+                                    <th class="px-3.5 py-2.5 whitespace-nowrap">Pilgrim</th>
+                                    {% elif fund_code == 'EWF' %}
+                                    <th class="px-3.5 py-2.5 whitespace-nowrap">Organisation</th>
+                                    <th class="px-3.5 py-2.5 whitespace-nowrap">Event</th>
+                                    <th class="px-3.5 py-2.5 whitespace-nowrap">Venue</th>
+                                    {% else %}
+                                    <th class="px-3.5 py-2.5 whitespace-nowrap">Organisation</th>
+                                    <th class="px-3.5 py-2.5 whitespace-nowrap">Internal Sec</th>
+                                    {% endif %}
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 bg-white">
+                                <!-- 1. Normal Transactions (Excl. Pass-Through) -->
+                                {% for row in dataset %}
+                                {% if not row.pass_through %}
+                                <tr class="odd:bg-white even:bg-slate-50/70 hover:bg-slate-100/70 transition {% if row.direction == 'INFLOW' %}border-l-4 border-l-emerald-500{% else %}border-l-4 border-l-rose-500{% endif %}">
+                                    <!-- Date & Txn ID combined -->
+                                    <td class="px-3.5 py-2.5 whitespace-nowrap">
+                                        <div class="font-bold text-slate-800">{{ row.date|dmy }}</div>
+                                        <span class="inline-block mt-0.5 px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 font-mono text-[10px] text-slate-600">{{ row.tx_id }}</span>
+                                    </td>
+                                    <!-- Description & Direction badges combined -->
+                                    <td class="px-4 py-2.5 whitespace-normal text-slate-800">
+                                        <div class="flex items-start gap-1.5 flex-wrap">
+                                            {% if row.direction == 'INFLOW' %}
+                                             <span class="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+                                                ↓ INFLOW
+                                            </span>
+                                            {% else %}
+                                            <span class="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide bg-rose-100 text-rose-800 border border-rose-300 shadow-2xs">
+                                                ↑ OUTFLOW
+                                            </span>
+                                            {% endif %}
+                                            <span class="text-xs leading-relaxed text-slate-800 font-medium">{{ row.description }}</span>
+                                        </div>
+                                    </td>
+                                    <!-- Account Head with Division & Sub Head hierarchy combined -->
+                                    <td class="px-4 py-2.5 whitespace-normal">
+                                        <div class="font-bold text-xs text-slate-900">{{ row.account_head }}</div>
+                                        <div class="flex flex-wrap items-center gap-1.5 mt-0.5 text-[10px] text-slate-500">
+                                            <span class="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600 font-medium">Division: {{ row.major_head }}</span>
+                                            {% if row.sub_head and row.sub_head != '—' %}
+                                            <span class="text-slate-300">↳</span>
+                                            <span class="px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-700 font-medium">Sub Head: {{ row.sub_head }}</span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <!-- Amount with clear colour direction -->
+                                    <td class="px-4 py-2.5 whitespace-nowrap text-right font-mono text-xs font-bold {% if row.direction == 'INFLOW' %}text-emerald-700{% else %}text-rose-700{% endif %}">
+                                        {{ row.amount|rs }}
+                                    </td>
+                                    <!-- Fund-Specific Columns after Amount -->
+                                    {% if fund_code == 'CPF' %}
+                                    <td class="px-3.5 py-2.5 whitespace-nowrap text-slate-700">{{ row.cohort|default:'—' }}</td>
+                                    <td class="px-3.5 py-2.5 whitespace-nowrap text-slate-700">{{ row.package|default:'—' }}</td>
+                                    <td class="px-3.5 py-2.5 whitespace-nowrap text-slate-700">{{ row.tour_operator|default:'—' }}</td>
+                                    <td class="px-3.5 py-2.5 whitespace-nowrap text-slate-700">{{ row.pilgrim|default:'—' }}</td>
+                                    {% elif fund_code == 'EWF' %}
+                                    <td class="px-3.5 py-2.5 whitespace-nowrap text-slate-700">{{ row.unit|default:'—' }}</td>
+                                    <td class="px-3.5 py-2.5 whitespace-nowrap text-slate-700">{{ row.ceremony_event|default:'—' }}</td>
+                                    <td class="px-3.5 py-2.5 whitespace-nowrap text-slate-700">{{ row.ceremony_venue|default:'—' }}</td>
+                                    {% else %}
+                                    <td class="px-3.5 py-2.5 whitespace-nowrap text-slate-700">{{ row.unit|default:'—' }}</td>
+                                    <td class="px-3.5 py-2.5 whitespace-nowrap text-slate-700">{{ row.department|default:'—' }}</td>
+                                    {% endif %}
+                                </tr>
+                                {% endif %}
+                                {% empty %}
+                                <tr>
+                                    <td colspan="{% if fund_code == 'CPF' %}8{% elif fund_code == 'EWF' %}7{% else %}6{% endif %}" class="px-4 py-16 text-center text-slate-400">
+                                        <div class="text-3xl mb-2">📋</div>
+                                        <div class="text-sm font-semibold text-slate-700">No transactions match the selected criteria.</div>
+                                        <div class="text-xs text-slate-400 mt-1">Try adjusting the date range, transaction type, or head filters.</div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+
+                                <!-- 2. Subtotal Row (Excl. Pass-Through) -->
+                                {% if dataset %}
+                                <tr class="bg-slate-100 font-bold text-slate-800 border-t-2 border-slate-300">
+                                     <td class="px-3.5 py-2.5">Subtotal</td>
+                                     <td class="px-4 py-2.5">Total All Txns less Pass-Through</td>
+                                     <td class="px-4 py-2.5 text-slate-600 text-[11px]">
+                                         Inflows: <span class="text-emerald-700 font-mono">{{ report_kpis.dt_normal_inflows|rs }}</span> · Outflows: <span class="text-rose-700 font-mono">{{ report_kpis.dt_normal_outflows|rs }}</span>
+                                     </td>
+                                     <td class="px-4 py-2.5 text-right font-mono text-slate-900">
+                                         Net: {{ report_kpis.dt_normal_net|rs_signed }}
+                                     </td>
+                                     <td colspan="{% if fund_code == 'CPF' %}4{% elif fund_code == 'EWF' %}3{% else %}2{% endif %}"></td>
+                                </tr>
+
+                                <!-- 3. Detailed Pass-Through Transactions Section -->
+                                {% if report_kpis.dt_pt_inflows or report_kpis.dt_pt_outflows %}
+                                <tr class="bg-amber-100 text-amber-900 font-extrabold border-t-2 border-amber-300">
+                                     <td class="px-3.5 py-2 whitespace-nowrap">
+                                         <span class="px-1.5 py-0.5 rounded bg-amber-600 text-white text-[10px] font-bold">PASS-THROUGH</span>
+                                     </td>
+                                     <td colspan="{% if fund_code == 'CPF' %}7{% elif fund_code == 'EWF' %}6{% else %}5{% endif %}" class="px-4 py-2 uppercase tracking-wide text-xs text-amber-900">
+                                         PASS-THROUGH TXNS (INTERNAL TFRS) — DETAILED INFLOWS &amp; OUTFLOWS
+                                     </td>
+                                </tr>
+
+                                {% for row in dataset %}
+                                {% if row.pass_through %}
+                                <tr class="bg-amber-50/50 hover:bg-amber-100/60 transition border-l-4 border-l-amber-500">
+                                     <td class="px-3.5 py-2.5 whitespace-nowrap">
+                                         <div class="font-bold text-slate-800">{{ row.date|dmy }}</div>
+                                         <span class="inline-block mt-0.5 px-1.5 py-0.5 rounded bg-amber-100 border border-amber-200 font-mono text-[10px] text-amber-800">{{ row.tx_id }}</span>
+                                     </td>
+                                     <td class="px-4 py-2.5 whitespace-normal text-slate-800">
+                                         <div class="flex items-start gap-1.5 flex-wrap">
+                                             {% if row.direction == 'INFLOW' %}
+                                             <span class="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                                 ↓ INFLOW
+                                             </span>
+                                             {% else %}
+                                             <span class="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wide bg-rose-100 text-rose-800 border border-rose-300">
+                                                 ↑ OUTFLOW
+                                             </span>
+                                             {% endif %}
+                                             <span class="shrink-0 px-1.5 py-0.5 rounded-full text-[9.5px] font-bold uppercase tracking-wide bg-amber-200 text-amber-900 border border-amber-300">
+                                                 ↔ PASS-THROUGH
+                                             </span>
+                                             <span class="text-xs leading-relaxed text-slate-800 font-medium">{{ row.description }}</span>
+                                         </div>
+                                     </td>
+                                     <td class="px-4 py-2.5 whitespace-normal">
+                                         <div class="font-bold text-xs text-slate-900">{{ row.account_head }}</div>
+                                         <div class="flex flex-wrap items-center gap-1.5 mt-0.5 text-[10px] text-slate-500">
+                                             <span class="px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-600 font-medium">Division: {{ row.major_head }}</span>
+                                             {% if row.sub_head and row.sub_head != '—' %}
+                                             <span class="text-slate-300">↳</span>
+                                             <span class="px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-700 font-medium">Sub Head: {{ row.sub_head }}</span>
+                                             {% endif %}
+                                         </div>
+                                     </td>
+                                     <td class="px-4 py-2.5 whitespace-nowrap text-right font-mono text-xs font-bold {% if row.direction == 'INFLOW' %}text-emerald-700{% else %}text-rose-700{% endif %}">
+                                         {{ row.amount|rs }}
+                                     </td>
+                                     {% if fund_code == 'CPF' %}
+                                     <td class="px-3.5 py-2.5 whitespace-nowrap text-slate-700">{{ row.cohort|default:'—' }}</td>
+                                     <td class="px-3.5 py-2.5 whitespace-nowrap text-slate-700">{{ row.package|default:'—' }}</td>
+                                     <td class="px-3.5 py-2.5 whitespace-nowrap text-slate-700">{{ row.tour_operator|default:'—' }}</td>
+                                     <td class="px-3.5 py-2.5 whitespace-nowrap text-slate-700">{{ row.pilgrim|default:'—' }}</td>
+                                     {% elif fund_code == 'EWF' %}
+                                     <td class="px-3.5 py-2.5 whitespace-nowrap text-slate-700">{{ row.unit|default:'—' }}</td>
+                                     <td class="px-3.5 py-2.5 whitespace-nowrap text-slate-700">{{ row.ceremony_event|default:'—' }}</td>
+                                     <td class="px-3.5 py-2.5 whitespace-nowrap text-slate-700">{{ row.ceremony_venue|default:'—' }}</td>
+                                     {% else %}
+                                     <td class="px-3.5 py-2.5 whitespace-nowrap text-slate-700">{{ row.unit|default:'—' }}</td>
+                                     <td class="px-3.5 py-2.5 whitespace-nowrap text-slate-700">{{ row.department|default:'—' }}</td>
+                                     {% endif %}
+                                 </tr>
+                                 {% endif %}
+                                 {% endfor %}
+
+                                 <!-- Pass-Through Totals Row -->
+                                 <tr class="bg-amber-100/80 font-bold text-amber-900 border-t border-amber-300">
+                                     <td class="px-3.5 py-2.5">Pass-Through Total</td>
+                                     <td class="px-4 py-2.5">Total Pass-Through Tfrs</td>
+                                     <td class="px-4 py-2.5 text-amber-900 text-[11px]">
+                                         PT Inflows: <span class="font-mono">{{ report_kpis.dt_pt_inflows|rs }}</span> · PT Outflows: <span class="font-mono">{{ report_kpis.dt_pt_outflows|rs }}</span>
+                                     </td>
+                                     <td class="px-4 py-2.5 text-right font-mono font-bold text-amber-900">
+                                         {{ report_kpis.dt_pt_transfers|rs }}
+                                     </td>
+                                     <td colspan="{% if fund_code == 'CPF' %}4{% elif fund_code == 'EWF' %}3{% else %}2{% endif %}"></td>
+                                 </tr>
+                                 {% endif %}
+
+                                 <!-- 4. Grand Total Row (Incl. Pass-Through) -->
+                                 <tr class="bg-slate-200 text-slate-900 border-t-2 border-slate-400 font-black">
+                                     <td class="px-3.5 py-2.5">Grand Total</td>
+                                     <td class="px-4 py-2.5">Grand Total Incl. Pass-Through Txns ({{ dt_tx_count }} records)</td>
+                                     <td class="px-4 py-2.5 text-slate-700 text-[11px]">
+                                         All Inflows: <span class="text-emerald-700 font-mono">{{ dt_inflows_total|rs }}</span> · All Outflows: <span class="text-rose-700 font-mono">{{ dt_outflows_total|rs }}</span>
+                                     </td>
+                                     <td class="px-4 py-2.5 text-right font-mono text-slate-900 text-sm">
+                                         Net: {{ dt_net_movement|rs_signed }}
+                                     </td>
+                                     <td colspan="{% if fund_code == 'CPF' %}4{% elif fund_code == 'EWF' %}3{% else %}2{% endif %}"></td>
+                                 </tr>
+
+                                 <!-- 5. Fund Position & Balance Reconciliation Row -->
+                                 <tr class="bg-slate-50 text-slate-800 border-t border-slate-300 text-xs font-bold">
+                                     <td class="px-3.5 py-2.5">Fund Position</td>
+                                     <td class="px-4 py-2.5">
+                                         Opening Bal: <span class="font-mono text-slate-900">{{ report_kpis.opening_balance|rs }}</span> &nbsp;|&nbsp; Net Cash Movement: <span class="font-mono text-slate-900">{{ dt_net_movement|rs_signed }}</span>
+                                     </td>
+                                     <td class="px-4 py-2.5 text-right font-black uppercase text-slate-700">Closing Available Balance:</td>
+                                     <td class="px-4 py-2.5 text-right font-mono text-emerald-800 text-sm font-black">
+                                         {{ report_kpis.closing_balance|rs }}
+                                     </td>
+                                     <td colspan="{% if fund_code == 'CPF' %}4{% elif fund_code == 'EWF' %}3{% else %}2{% endif %}"></td>
+                                 </tr>
+                                 {% endif %}
+                             </tbody>
+                         </table>
+                         {% else %}
+                         <!-- Standard Report Table with B&W Laser Printer Optimization -->
+                         <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                             <thead class="sticky top-0 z-10 bg-slate-200 text-slate-900 font-bold uppercase tracking-wider shadow-xs border-b border-slate-300">
+                                 <tr>{% for col in report.columns %}<th class="px-3.5 py-2.5 whitespace-nowrap">{{ col.label }}</th>{% endfor %}</tr>
+                             </thead>
+                             <tbody class="divide-y divide-slate-100 bg-white">
+                                 {% for row in dataset %}
+                                 <tr class="odd:bg-white even:bg-slate-50/70 hover:bg-slate-100/70 transition">
+                                     {% for col in report.columns %}
+                                     <td class="px-3.5 py-2.5 whitespace-nowrap">
+                                         {% for key, val in row.items %}
+                                         {% if key == col.key %}
+                                             {% if report.display_in_millions %}{{ val|abms_value_mn:col.key }}{% else %}{{ val|abms_value:col.key }}{% endif %}
+                                         {% endif %}
+                                         {% endfor %}
+                                     </td>
+                                     {% endfor %}
+                                 </tr>
+                                 {% empty %}
+                                 <tr><td colspan="{{ report.columns|length }}" class="px-4 py-12 text-center text-slate-400">No data found for the selected filters.</td></tr>
+                                 {% endfor %}
+
+                                 {% if report.totals and dataset %}
+                                 <!-- Reconciliation Row 1: Subtotal -->
+                                 <tr class="bg-slate-100 font-bold text-slate-800 border-t-2 border-slate-300">
+                                     {% for col in report.columns %}
+                                     <td class="px-3.5 py-2.5 whitespace-nowrap">
+                                         {% if forloop.first %}
+                                             {% if show_pt_reconciliation_footer %}Total All Txns less Pass-Through{% else %}Total{% endif %}
+                                         {% else %}
+                                         {% for key, val in totals.items %}
+                                         {% if key == col.key %}
+                                             {% if report.display_in_millions %}{{ val|abms_value_mn:col.key }}{% else %}{{ val|abms_value:col.key }}{% endif %}
+                                         {% endif %}
+                                         {% endfor %}
+                                         {% endif %}
+                                     </td>
+                                     {% endfor %}
+                                 </tr>
+                                 {% if show_pt_reconciliation_footer %}
+                                 <!-- Reconciliation Row 2: Add Pass-Through Details -->
+                                 <tr class="bg-amber-50/90 font-bold text-amber-900 border-t border-amber-200">
+                                     <td class="px-3.5 py-2 whitespace-nowrap text-amber-800 flex items-center gap-1.5">
+                                         <span class="px-1.5 py-0.5 rounded bg-amber-500 text-white text-[10px] font-extrabold shadow-2xs">Pass-Through</span>
+                                         <span>Add: Pass-Through Tfrs (Internal)</span>
+                                     </td>
+                                     {% for col in report.columns %}
+                                     {% if not forloop.first %}
+                                     <td class="px-3.5 py-2 whitespace-nowrap font-mono text-amber-900">
+                                         {% if col.key == 'amount' or col.key == 'total_outflows' or col.key == 'outflows' or col.key == 'budget_consumed' %}
+                                             {% if report.display_in_millions %}{{ report_pass_through|abms_value_mn:col.key }}{% else %}{{ report_pass_through|abms_value:col.key }}{% endif %}
+                                         {% else %}
+                                             —
+                                         {% endif %}
+                                     </td>
+                                     {% endif %}
+                                     {% endfor %}
+                                 </tr>
+                                 <!-- Reconciliation Row 3: Grand Total Incl. Pass-Through -->
+                                 <tr class="bg-slate-200 font-extrabold text-slate-900 border-t-2 border-slate-400">
+                                     <td class="px-3.5 py-2.5 whitespace-nowrap">Grand Total Incl. Pass-Through Txns</td>
+                                     {% for col in report.columns %}
+                                     {% if not forloop.first %}
+                                     <td class="px-3.5 py-2.5 whitespace-nowrap font-mono">
+                                         {% if col.key == 'amount' or col.key == 'total_outflows' or col.key == 'outflows' or col.key == 'budget_consumed' %}
+                                             {% if report.display_in_millions %}{{ report_gross_total|abms_value_mn:col.key }}{% else %}{{ report_gross_total|abms_value:col.key }}{% endif %}
+                                         {% else %}
+                                             —
+                                         {% endif %}
+                                     </td>
+                                     {% endif %}
+                                     {% endfor %}
+                                 </tr>
+                                 {% endif %}
+                                 {% endif %}
+                            </tbody>
+                        </table>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if matrix_breakdown %}
+            <!-- Context-Specific Month-by-Month Matrix Table (Organisations, Sections, Account Heads) -->
+            <div class="bg-white shadow-xs border border-slate-200 rounded-2xl overflow-hidden mt-6">
+                <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                    <div class="text-xs font-bold uppercase tracking-wider text-slate-700">{{ matrix_breakdown.title }}</div>
+                    <span class="text-xs text-slate-500 font-mono">{{ matrix_breakdown.rows|length }} Months</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                        <thead class="bg-slate-200 text-slate-900 font-bold uppercase tracking-wider">
+                            <tr>
+                                <th class="px-3.5 py-2.5 whitespace-nowrap">Month</th>
+                                {% for col in matrix_breakdown.columns %}
+                                <th class="px-3 py-2.5 text-right whitespace-nowrap">{{ col }}</th>
+                                {% endfor %}
+                                <th class="px-3.5 py-2.5 text-right whitespace-nowrap font-black">Monthly Total</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 bg-white font-mono">
+                            {% for r in matrix_breakdown.rows %}
+                            <tr class="odd:bg-white even:bg-slate-50/70 hover:bg-slate-100/70 transition">
+                                <td class="px-3.5 py-2 font-bold text-slate-800 font-sans whitespace-nowrap">{{ r.month|ym }}</td>
+                                {% for col in matrix_breakdown.columns %}
+                                <td class="px-3 py-2 text-right whitespace-nowrap">
+                                    {% for c_key, c_val in r.cols.items %}
+                                    {% if c_key == col %}
+                                        {% if report.display_in_millions %}{{ c_val|abms_value_mn:col }}{% else %}{{ c_val|abms_value:col }}{% endif %}
+                                    {% endif %}
+                                    {% endfor %}
+                                </td>
+                                {% endfor %}
+                                <td class="px-3.5 py-2 text-right font-black text-rose-800 whitespace-nowrap">
+                                    {% if report.display_in_millions %}{{ r.total|abms_value_mn:'total' }}{% else %}{{ r.total|abms_value:'total' }}{% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            <!-- Matrix Totals Footer -->
+                            <tr class="bg-slate-200 text-slate-900 font-extrabold border-t-2 border-slate-400">
+                                <td class="px-3.5 py-2.5 font-sans whitespace-nowrap">Full Period Totals</td>
+                                {% for col in matrix_breakdown.columns %}
+                                <td class="px-3 py-2.5 text-right whitespace-nowrap font-mono">
+                                    {% for c_key, c_val in matrix_breakdown.totals.cols.items %}
+                                    {% if c_key == col %}
+                                        {% if report.display_in_millions %}{{ c_val|abms_value_mn:col }}{% else %}{{ c_val|abms_value:col }}{% endif %}
+                                    {% endif %}
+                                    {% endfor %}
+                                </td>
+                                {% endfor %}
+                                <td class="px-3.5 py-2.5 text-right whitespace-nowrap font-mono font-black text-rose-900">
+                                    {% if report.display_in_millions %}{{ matrix_breakdown.totals.total|abms_value_mn:'total' }}{% else %}{{ matrix_breakdown.totals.total|abms_value:'total' }}{% endif %}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if monthly_breakdown %}
+            <!-- Month-wise Breakdown Table -->
+            <div class="bg-white shadow-xs border border-slate-200 rounded-2xl overflow-hidden mt-6">
+                <div class="px-5 py-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                    <div class="text-xs font-bold uppercase tracking-wider text-slate-700">Detailed Monthly Cash Flow &amp; Balances</div>
+                    <span class="text-xs text-slate-500 font-mono">{{ monthly_breakdown|length }} Months</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-slate-200 text-left text-xs">
+                        <thead class="bg-slate-200 text-slate-900 font-bold uppercase tracking-wider">
+                            <tr>
+                                <th class="px-3 py-2.5">Month</th>
+                                <th class="px-3 py-2.5 text-right">Opening Balance</th>
+                                <th class="px-3 py-2.5 text-right text-emerald-700">Op. Inflows (Excl PT)</th>
+                                <th class="px-3 py-2.5 text-right text-amber-700">PT Inflows</th>
+                                <th class="px-3 py-2.5 text-right text-emerald-800">Total Inflows</th>
+                                <th class="px-3 py-2.5 text-right text-rose-800">Op. Outflows (Excl PT)</th>
+                                <th class="px-3 py-2.5 text-right text-amber-700">PT Outflows</th>
+                                <th class="px-3 py-2.5 text-right">Total Outflows</th>
+                                <th class="px-3 py-2.5 text-right">Net Movement</th>
+                                <th class="px-3 py-2.5 text-right">Closing Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 bg-white font-mono">
+                            {% for m in monthly_breakdown %}
+                            <tr class="odd:bg-white even:bg-slate-50/70 hover:bg-slate-100/70 transition">
+                                <td class="px-3 py-2 font-bold text-slate-800 font-sans">{{ m.month|ym }}</td>
+                                <td class="px-3 py-2 text-right text-slate-600">
+                                    {% if report.display_in_millions %}{{ m.opening_balance|rs_mn }}{% else %}{{ m.opening_balance|rs }}{% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-right text-emerald-600">
+                                    {% if report.display_in_millions %}{{ m.operational_inflows|rs_mn }}{% else %}{{ m.operational_inflows|rs }}{% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-right text-amber-600 font-semibold">
+                                    {% if report.display_in_millions %}{{ m.pass_through_inflows|rs_mn }}{% else %}{{ m.pass_through_inflows|rs }}{% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-right text-emerald-700 font-bold">
+                                    {% if report.display_in_millions %}{{ m.inflows|rs_mn }}{% else %}{{ m.inflows|rs }}{% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-right text-rose-700 font-semibold">
+                                    {% if report.display_in_millions %}{{ m.operational_outflows|rs_mn }}{% else %}{{ m.operational_outflows|rs }}{% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-right text-amber-600 font-semibold">
+                                    {% if report.display_in_millions %}{{ m.pass_through|rs_mn }}{% else %}{{ m.pass_through|rs }}{% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-right text-rose-800 font-bold">
+                                    {% if report.display_in_millions %}{{ m.outflows|rs_mn }}{% else %}{{ m.outflows|rs }}{% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-right {% if m.net_movement >= 0 %}text-emerald-700{% else %}text-rose-700{% endif %} font-bold">
+                                    {% if report.display_in_millions %}{{ m.net_movement|rs_mn }}{% else %}{{ m.net_movement|rs_signed }}{% endif %}
+                                </td>
+                                <td class="px-3 py-2 text-right text-slate-900 font-black">
+                                    {% if report.display_in_millions %}{{ m.closing_balance|rs_mn }}{% else %}{{ m.closing_balance|rs }}{% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            {% if monthly_totals %}
+                            <!-- Monthly Breakdown Totals Footer -->
+                            <tr class="bg-slate-200 text-slate-900 font-extrabold border-t-2 border-slate-400">
+                                <td class="px-3 py-2.5 font-sans">Full Period Totals</td>
+                                <td class="px-3 py-2.5 text-right font-mono text-slate-400">—</td>
+                                <td class="px-3 py-2.5 text-right font-mono text-emerald-700 font-bold">
+                                    {% if report.display_in_millions %}{{ monthly_totals.operational_inflows|rs_mn }}{% else %}{{ monthly_totals.operational_inflows|rs }}{% endif %}
+                                </td>
+                                <td class="px-3 py-2.5 text-right font-mono text-amber-700 font-bold">
+                                    {% if report.display_in_millions %}{{ monthly_totals.pass_through_inflows|rs_mn }}{% else %}{{ monthly_totals.pass_through_inflows|rs }}{% endif %}
+                                </td>
+                                <td class="px-3 py-2.5 text-right font-mono text-emerald-800 font-black">
+                                    {% if report.display_in_millions %}{{ monthly_totals.inflows|rs_mn }}{% else %}{{ monthly_totals.inflows|rs }}{% endif %}
+                                </td>
+                                <td class="px-3 py-2.5 text-right font-mono text-rose-800 font-semibold">
+                                    {% if report.display_in_millions %}{{ monthly_totals.operational_outflows|rs_mn }}{% else %}{{ monthly_totals.operational_outflows|rs }}{% endif %}
+                                </td>
+                                <td class="px-3 py-2.5 text-right font-mono text-amber-700 font-semibold">
+                                    {% if report.display_in_millions %}{{ monthly_totals.pass_through|rs_mn }}{% else %}{{ monthly_totals.pass_through|rs }}{% endif %}
+                                </td>
+                                <td class="px-3 py-2.5 text-right font-mono text-rose-900 font-black">
+                                    {% if report.display_in_millions %}{{ monthly_totals.outflows|rs_mn }}{% else %}{{ monthly_totals.outflows|rs }}{% endif %}
+                                </td>
+                                <td class="px-3 py-2.5 text-right font-mono text-slate-900 font-bold">
+                                    {% if report.display_in_millions %}{{ monthly_totals.net_movement|rs_mn }}{% else %}{{ monthly_totals.net_movement|rs_signed }}{% endif %}
+                                </td>
+                                <td class="px-3 py-2.5 text-right font-mono text-slate-400">—</td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- formal SD Screen & Print Centered Running Footer -->
+            <div class="text-center py-4 border-t border-slate-200 formal-sd-print-footer">
+                <div class="text-xs font-black tracking-widest text-rose-700">CONFD</div>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,77 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Opening Balances — EABMS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Opening Balances (D4)</h1>
+            <p class="text-xs text-slate-500 mt-1">Starting financial balance per Account and Financial Year. Must be confirmed by an authorized user.</p>
+        </div>
+        <a href="{% url 'masters:opening_balance_create' %}" class="bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold px-4 py-2.5 rounded-lg shadow-sm transition flex items-center self-start sm:self-auto">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+            New Opening Balance
+        </a>
+    </div>
+
+    <div class="bg-white shadow-sm border border-slate-200 rounded-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-left text-xs" data-bulk-delete-url="{% url 'masters:opening_balance_bulk_delete' %}">
+                <thead class="bg-slate-50 text-slate-600 font-semibold uppercase tracking-wider">
+                    <tr>
+                        <th class="w-10 px-3 py-3 text-center"><input type="checkbox" class="abms-select-all rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4" title="Select / Deselect All"></th>
+                        <th class="px-4 py-3">Account</th>
+                        <th class="px-4 py-3">Financial Year</th>
+                        <th class="px-4 py-3">Opening Balance Amount</th>
+                        <th class="px-4 py-3">Confirmation Status</th>
+                        <th class="px-4 py-3">Confirmed By / Date</th>
+                        <th class="px-4 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 bg-white">
+                    {% for bal in balances %}
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="w-10 px-3 py-3 text-center align-middle"><input type="checkbox" value="{{ bal.id }}" class="abms-row-select rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer w-4 h-4"></td>
+                        <td class="px-4 py-3 font-semibold text-slate-800">{{ bal.account.name }}</td>
+                        <td class="px-4 py-3 font-mono text-emerald-800 font-medium">{{ bal.financial_year.name }}</td>
+                        <td class="px-4 py-3 font-mono font-bold text-slate-800">{{ bal.balance_amount|rs }}</td>
+                        <td class="px-4 py-3">
+                            {% if bal.is_confirmed %}
+                            <span class="inline-flex items-center text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5"></span>
+                                Confirmed
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 mr-1.5"></span>
+                                Unconfirmed Proposed
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-slate-500 text-xs">
+                            {% if bal.is_confirmed %}
+                                {{ bal.confirmed_by.username|default:"Admin" }} on {{ bal.confirmed_at|dmy }}
+                            {% else %}
+                                Pending confirmation
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right space-x-2 whitespace-nowrap">
+                            <a href="{% url 'masters:opening_balance_edit' bal.id %}" class="text-xs text-slate-600 hover:text-emerald-700 font-medium px-2 py-1 bg-slate-100 hover:bg-emerald-50 rounded transition">
+                                {% if bal.is_confirmed %}View / Adjust{% else %}Review & Confirm{% endif %}
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-4 py-8 text-center text-slate-400">
+                            No opening balances recorded yet. Click "New Opening Balance" to set one.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

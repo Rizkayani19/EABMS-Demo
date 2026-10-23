@@ -1,0 +1,74 @@
+﻿{% extends 'base.html' %}
+{% load abms_filters %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-8">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-slate-800">Opening Balance Reconciliation</h1>
+        <p class="text-slate-500">Verify mathematical continuity between {{ previous_fy.name }} and {{ request.fy.name }}.</p>
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm mb-6">
+        <div class="bg-slate-50 px-6 py-4 border-b border-slate-200">
+            <h2 class="font-semibold text-slate-800">{{ request.fy.name }} Configuration</h2>
+        </div>
+        <div class="p-6">
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Calculated Balance -->
+                <div class="bg-slate-50 rounded-lg p-5 border border-slate-200">
+                    <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wider mb-2">System Calculated</h3>
+                    <div class="text-2xl font-bold text-slate-800 mb-1">{{ calculated_balance|abms_value }}</div>
+                    <p class="text-xs text-slate-500">Derived mathematically from {{ previous_fy.name }} closing balance.</p>
+                    
+                    <div class="mt-4 space-y-1 text-sm text-slate-600">
+                        <div class="flex justify-between"><span>Prior Opening:</span> <span>{{ previous_fy.opening_balances.first.balance_amount|abms_value }}</span></div>
+                        <div class="flex justify-between text-emerald-600"><span>+ Total Inflows:</span> <span>(Calculated)</span></div>
+                        <div class="flex justify-between text-rose-600"><span>- Total Outflows:</span> <span>(Calculated)</span></div>
+                    </div>
+                </div>
+                
+                <!-- Explicit Balance -->
+                <div class="bg-slate-50 rounded-lg p-5 border {% if has_variance %}border-rose-300 ring-1 ring-rose-300{% else %}border-emerald-300 ring-1 ring-emerald-300{% endif %}">
+                    <h3 class="text-sm font-medium text-slate-500 uppercase tracking-wider mb-2">Current Manual Entry</h3>
+                    <div class="text-2xl font-bold {% if has_variance %}text-rose-600{% else %}text-emerald-600{% endif %} mb-1">
+                        {% if current_ob %}{{ current_ob.balance_amount|abms_value }}{% else %}$ 0.00{% endif %}
+                    </div>
+                    <p class="text-xs text-slate-500">The explicit starting balance recorded for {{ request.fy.name }}.</p>
+                    
+                    {% if has_variance %}
+                    <div class="mt-4 bg-rose-100 text-rose-800 text-sm p-3 rounded font-medium">
+                        Variance detected: {{ variance_amount|abms_value }}
+                    </div>
+                    {% else %}
+                    <div class="mt-4 bg-emerald-100 text-emerald-800 text-sm p-3 rounded font-medium flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                        Perfectly synchronized.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="mt-8 pt-6 border-t border-slate-200 flex flex-col sm:flex-row gap-4">
+                <form method="post" action="">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="adopt_calculated">
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg shadow-sm w-full sm:w-auto transition-colors">
+                        Sync with System Calculated Balance
+                    </button>
+                </form>
+                
+                <form method="post" action="" class="flex-1 flex gap-2">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="edit_manual">
+                    <input type="number" step="0.01" name="new_amount" placeholder="Enter manual amount" required class="flex-1 border-slate-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                    <button type="submit" class="bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium py-2 px-4 rounded-lg shadow-sm transition-colors">
+                        Save Manual Override
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

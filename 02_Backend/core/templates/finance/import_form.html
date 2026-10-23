@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="max-w-3xl mx-auto p-6">
+  <h1 class="text-2xl font-bold mb-2">Import Financial Transactions</h1>
+  <p class="text-gray-600 mb-6">Supported source formats: XLSX, Excel 2003 XLS, and CSV. Upload first; nothing is committed until validation and confirmation.</p>
+  <form method="post" enctype="multipart/form-data" class="border rounded p-6 bg-gray-50">
+    {% csrf_token %}
+    <div class="mb-4"><label class="block font-medium">Source File</label><input type="file" name="source_file" accept=".xlsx,.xls,.csv" required class="w-full p-2 border rounded"></div>
+    <div class="mb-4"><label class="block font-medium">Source Type</label><select name="source_type" required class="w-full p-2 border rounded"><option value="XLSX">XLSX</option><option value="XLS">Excel 2003 (.xls)</option><option value="CSV">CSV</option></select></div>
+    <div class="mb-4"><label class="block font-medium">Remarks</label><textarea name="remarks" class="w-full p-2 border rounded"></textarea></div>
+    <button class="px-5 py-2 bg-gray-800 text-white rounded">Upload &amp; Review</button>
+  </form>
+</div>
+{% endblock %}

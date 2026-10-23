@@ -1,0 +1,563 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Division Distribution & Inter-Transfers — EABMS{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6 space-y-6">
+
+    <!-- Top Hub Navigation Tabs -->
+    <div class="flex items-center gap-2 border-b border-slate-200 pb-2">
+        <a href="{% url 'core:transaction_list' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-slate-100 text-slate-700 hover:bg-slate-200 transition">
+            <span>▤</span> General Ledger
+        </a>
+        <a href="{% url 'core:internal_transfer_create' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-slate-900 text-white shadow-xs">
+            <span class="text-amber-400">⇄</span> Division Distribution &amp; Inter-Transfers
+            <span class="px-2 py-0.5 rounded-full bg-amber-500/30 text-amber-300 text-[10px] font-extrabold">{{ distribution.divisions|length }} Divisions</span>
+        </a>
+        <a href="{% url 'reports:view_report' 'major-head-summary' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-slate-100 text-slate-700 hover:bg-slate-200 transition ml-auto">
+            <span>📄</span> Division Summary Report &rarr;
+        </a>
+    </div>
+
+    <!-- Page Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <div class="flex items-center gap-3 flex-wrap">
+                <h1 class="text-2xl font-black text-slate-900 tracking-tight">Division Distribution &amp; Inter-Transfers</h1>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                    ⇄ Contra / Book Adjustment
+                </span>
+                {% include 'partials/fund_badge.html' %}
+            </div>
+            <p class="text-xs text-slate-500 mt-1 font-semibold">
+                {{ request.account.name }} <span class="text-slate-300 mx-1">•</span> Fin Yr {{ request.fy.code|default:request.fy.name }}
+            </p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="{% url 'core:transaction_list' %}" class="inline-flex items-center px-3.5 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition">
+                &larr; Back to Ledger
+            </a>
+            <a href="#transfer-form-section" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl shadow-xs transition">
+                <span>⇄</span> Switch Funds Now
+            </a>
+        </div>
+    </div>
+
+    <!-- Zero Net Impact Notice Banner -->
+    <div class="p-4 rounded-2xl bg-gradient-to-r from-amber-50 via-orange-50 to-amber-50 border border-amber-200 shadow-xs flex items-start gap-3.5">
+        <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-base shrink-0 shadow-xs">
+            ⇄
+        </div>
+        <div class="text-xs leading-relaxed text-amber-950">
+            <div class="flex items-center gap-2 mb-0.5">
+                <p class="font-extrabold text-sm text-amber-900">Zero Net Cash Impact Guarantee</p>
+                <span class="inline-block px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">100% Cash Neutral</span>
+            </div>
+            Inter-head and inter-sub-fund transfers create matched <strong>Contra Outflow (Debit)</strong> and <strong>Contra Inflow (Credit)</strong> transactions flagged as <strong>Pass-Through</strong>. No funds exit the bank account; the total cash balance remains completely unaltered while reallocating financial authority between Divisions or Account Heads.
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- SECTION 1: PRESENT SUB-FUND DISTRIBUTION & RECONCILIATION TABLE -->
+    <!-- ================================================================= -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div class="px-5 py-4 bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="text-amber-400 font-bold text-base">▦</span>
+                    <h2 class="text-sm font-black uppercase tracking-wider text-white">Present Division Distribution &amp; Balances</h2>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-0.5">Live operational position across Divisions (Tier 1) for Fin Yr {{ request.fy.code|default:request.fy.name }}</p>
+            </div>
+            <div class="flex items-center gap-3">
+                {% if distribution.is_reconciled %}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                    <span>✓</span> Reconciled ($ 0.00 Variance)
+                </span>
+                {% else %}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                    <span>⚠</span> Variance: {{ distribution.variance|rs }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200 uppercase text-[10px] tracking-wider">
+                    <tr>
+                        <th class="px-4 py-3">Division (Tier 1)</th>
+                        <th class="px-3 py-3 text-right">Opening Balance</th>
+                        <th class="px-3 py-3 text-right">Inflows (Gross)</th>
+                        <th class="px-3 py-3 text-right">Outflows (Gross)</th>
+                        <th class="px-4 py-3 text-right">Present Net Balance</th>
+                        <th class="px-3 py-3 text-center">Fund Share</th>
+                        <th class="px-3 py-3 text-center">Status</th>
+                        <th class="px-4 py-3 text-center">Quick Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-medium">
+                    {% for sf in distribution.divisions %}
+                    <tr class="hover:bg-slate-50/80 transition {% if sf.is_deficit %}bg-rose-50/40{% endif %}" id="sub-fund-row-{{ sf.id }}">
+                        <td class="px-4 py-3.5">
+                            <div class="font-extrabold text-slate-900 text-xs flex items-center gap-1.5">
+                                <span>{{ sf.name }}</span>
+                                {% if sf.code %}<span class="px-1.5 py-0.2 rounded font-mono text-[9px] bg-slate-200 text-slate-700">{{ sf.code }}</span>{% endif %}
+                            </div>
+                            {% if sf.first_account_head_name %}
+                            <div class="text-[10px] text-slate-400 mt-0.5">Primary Head: {{ sf.first_account_head_name }}</div>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-3.5 text-right font-mono font-semibold text-slate-700">
+                            {{ sf.opening_balance|rs }}
+                        </td>
+                        <td class="px-3 py-3.5 text-right font-mono">
+                            <div class="font-bold text-emerald-700">{{ sf.total_inflows|rs }}</div>
+                            <div class="text-[9px] text-slate-400">Op: {{ sf.operational_inflows|rs }} | PT: {{ sf.pass_through_inflows|rs }}</div>
+                        </td>
+                        <td class="px-3 py-3.5 text-right font-mono">
+                            <div class="font-bold text-rose-700">{{ sf.total_outflows|rs }}</div>
+                            <div class="text-[9px] text-slate-400">Op: {{ sf.operational_outflows|rs }} | PT: {{ sf.pass_through_outflows|rs }}</div>
+                        </td>
+                        <td class="px-4 py-3.5 text-right font-mono">
+                            {% if sf.is_deficit %}
+                            <span class="inline-block px-2 py-0.5 rounded font-black text-sm text-rose-700 bg-rose-100">
+                                {{ sf.net_balance|rs }}
+                            </span>
+                            {% else %}
+                            <span class="inline-block px-2 py-0.5 rounded font-black text-sm text-emerald-800 bg-emerald-50">
+                                {{ sf.net_balance|rs }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-3.5 text-center">
+                            <div class="font-bold text-slate-700 text-xs">{{ sf.share_pct }}%</div>
+                            <div class="w-16 mx-auto bg-slate-200 rounded-full h-1.5 mt-1 overflow-hidden">
+                                <div class="bg-indigo-600 h-1.5 rounded-full" style="width: {{ sf.share_pct }}%;"></div>
+                            </div>
+                        </td>
+                        <td class="px-3 py-3.5 text-center">
+                            {% if sf.is_deficit %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                Deficit / Needs Funds
+                            </span>
+                            {% elif sf.net_balance > 0 %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                Solvent / Available
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                                Zero Balance
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3.5 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                <button type="button" 
+                                        onclick="prefillTransferSource('{{ sf.id }}', '{{ sf.name|escapejs }}', '{{ sf.net_balance }}')"
+                                        class="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition" 
+                                        title="Transfer funds out of this Division">
+                                    Transfer From
+                                </button>
+                                <button type="button" 
+                                        onclick="prefillTransferDest('{{ sf.id }}', '{{ sf.name|escapejs }}', '{{ sf.net_balance }}')"
+                                        class="px-2.5 py-1 rounded-lg text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition" 
+                                        title="Receive funds into this Division">
+                                    Transfer To
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-8 text-center text-slate-400">No Divisions registered for this account.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-slate-50 text-slate-900 font-extrabold border-t-2 border-slate-300">
+                    <tr>
+                        <td class="px-4 py-3">Grand Total</td>
+                        <td class="px-3 py-3 text-right font-mono">{{ distribution.totals.opening_balance|rs }}</td>
+                        <td class="px-3 py-3 text-right font-mono text-emerald-800">{{ distribution.totals.total_inflows|rs }}</td>
+                        <td class="px-3 py-3 text-right font-mono text-rose-800">{{ distribution.totals.total_outflows|rs }}</td>
+                        <td class="px-4 py-3 text-right font-mono text-indigo-900 text-sm">{{ distribution.totals.net_balance|rs }}</td>
+                        <td class="px-3 py-3 text-center text-xs font-bold text-slate-600">100.0%</td>
+                        <td colspan="2" class="px-4 py-3 text-right text-xs text-slate-500">
+                            Cash Balance: <span class="font-mono font-bold text-slate-900">{{ distribution.fund_balance_available|rs }}</span>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="px-5 py-3 bg-slate-50 border-t border-slate-100 text-[11px] text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div>
+                💡 <strong>Reconciliation Tip:</strong> Deficits in operational sub-funds (e.g. Canteen Division) can be reallocated from parent sub-funds with available liquidity using the transfer form below.
+            </div>
+            <div>
+                <a href="{% url 'masters:opening_balance_list' %}" class="text-indigo-600 font-bold hover:underline">
+                    Edit Opening Balance Breakdown in Masters &rarr;
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- SECTION 2: FAST FUND SWITCHER / INTER-TRANSFER EXECUTION FORM     -->
+    <!-- ================================================================= -->
+    <div id="transfer-form-section" class="bg-white rounded-2xl border-2 border-indigo-200 shadow-sm overflow-hidden scroll-mt-6">
+        <div class="px-6 py-4 bg-gradient-to-r from-indigo-900 via-slate-900 to-indigo-950 text-white flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-xl bg-indigo-500 text-white font-black flex items-center justify-center text-sm shadow-xs">⇄</span>
+                <div>
+                    <h2 class="text-sm font-black uppercase tracking-wider text-white">Inter-Division / Head Fund Switcher</h2>
+                    <p class="text-[11px] text-indigo-200">Reallocate financial authority between Divisions with zero net cash change</p>
+                </div>
+            </div>
+            <span class="text-xs font-bold bg-indigo-800 text-indigo-200 px-3 py-1 rounded-lg border border-indigo-700">
+                Authoritative Contra Posting
+            </span>
+        </div>
+
+        {% if form.non_field_errors %}
+        <div class="m-6 p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'core:internal_transfer_create' %}" id="internal-transfer-form" class="p-6">
+            {% csrf_token %}
+
+            <!-- Two Columns: Source (From) & Destination (To) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                
+                <!-- Source Head Panel (Debit / Outflow) -->
+                <div class="bg-slate-50 rounded-2xl border-2 border-rose-200 shadow-xs overflow-hidden flex flex-col">
+                    <div class="px-5 py-3 bg-gradient-to-r from-rose-600 to-rose-700 text-white flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-white/20 text-white text-xs font-black flex items-center justify-center">&uarr;</span>
+                            <h3 class="text-xs font-extrabold uppercase tracking-wider">Source (Debit / From Division)</h3>
+                        </div>
+                        <span class="text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded">Drawdown</span>
+                    </div>
+                    <div class="p-5 space-y-4 grow">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label for="id_source_major_head" class="block text-xs font-bold uppercase text-slate-700">
+                                    Source Division (Tier 1) <span class="text-rose-500">*</span>
+                                </label>
+                                <span id="source-balance-badge" class="text-[11px] font-mono font-bold text-slate-500"></span>
+                            </div>
+                            {{ form.source_major_head }}
+                            {% if form.source_major_head.errors %}<p class="text-xs text-rose-600 mt-1 font-semibold">{{ form.source_major_head.errors.0 }}</p>{% endif %}
+                        </div>
+                        <div>
+                            <label for="id_source_account_head" class="block text-xs font-bold uppercase text-slate-700 mb-1">
+                                Source Account Head (Tier 2) <span class="text-rose-500">*</span>
+                            </label>
+                            {{ form.source_account_head }}
+                            {% if form.source_account_head.errors %}<p class="text-xs text-rose-600 mt-1 font-semibold">{{ form.source_account_head.errors.0 }}</p>{% endif %}
+                        </div>
+                        <div>
+                            <label for="id_source_sub_head" class="block text-xs font-bold uppercase text-slate-700 mb-1">
+                                Source Sub Head (Tier 3, Optional)
+                            </label>
+                            {{ form.source_sub_head }}
+                            {% if form.source_sub_head.errors %}<p class="text-xs text-rose-600 mt-1 font-semibold">{{ form.source_sub_head.errors.0 }}</p>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Destination Head Panel (Credit / Inflow) -->
+                <div class="bg-slate-50 rounded-2xl border-2 border-emerald-200 shadow-xs overflow-hidden flex flex-col">
+                    <div class="px-5 py-3 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-white/20 text-white text-xs font-black flex items-center justify-center">&darr;</span>
+                            <h3 class="text-xs font-extrabold uppercase tracking-wider">Destination (Credit / To Division)</h3>
+                        </div>
+                        <span class="text-[10px] font-bold bg-white/20 px-2 py-0.5 rounded">Reallocation</span>
+                    </div>
+                    <div class="p-5 space-y-4 grow">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label for="id_dest_major_head" class="block text-xs font-bold uppercase text-slate-700">
+                                    Destination Division (Tier 1) <span class="text-emerald-500">*</span>
+                                </label>
+                                <span id="dest-balance-badge" class="text-[11px] font-mono font-bold text-slate-500"></span>
+                            </div>
+                            {{ form.dest_major_head }}
+                            {% if form.dest_major_head.errors %}<p class="text-xs text-rose-600 mt-1 font-semibold">{{ form.dest_major_head.errors.0 }}</p>{% endif %}
+                        </div>
+                        <div>
+                            <label for="id_dest_account_head" class="block text-xs font-bold uppercase text-slate-700 mb-1">
+                                Destination Account Head (Tier 2) <span class="text-emerald-500">*</span>
+                            </label>
+                            {{ form.dest_account_head }}
+                            {% if form.dest_account_head.errors %}<p class="text-xs text-rose-600 mt-1 font-semibold">{{ form.dest_account_head.errors.0 }}</p>{% endif %}
+                        </div>
+                        <div>
+                            <label for="id_dest_sub_head" class="block text-xs font-bold uppercase text-slate-700 mb-1">
+                                Destination Sub Head (Tier 3, Optional)
+                            </label>
+                            {{ form.dest_sub_head }}
+                            {% if form.dest_sub_head.errors %}<p class="text-xs text-rose-600 mt-1 font-semibold">{{ form.dest_sub_head.errors.0 }}</p>{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Transfer Execution Details & Live Calculation Preview -->
+            <div class="bg-slate-50 rounded-2xl border border-slate-200 p-6 mb-6">
+                <h3 class="text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-4 pb-2 border-b border-slate-200 flex items-center justify-between">
+                    <span>Financial &amp; Authority Details</span>
+                    <span class="text-[11px] text-slate-500 font-semibold">Real-Time Reallocation Preview</span>
+                </h3>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+                    <div>
+                        <label for="id_transaction_date" class="block text-xs font-bold uppercase text-slate-700 mb-1">
+                            Transfer Date <span class="text-indigo-500">*</span>
+                        </label>
+                        {{ form.transaction_date }}
+                        {% if form.transaction_date.errors %}<p class="text-xs text-rose-600 mt-1 font-semibold">{{ form.transaction_date.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div class="md:col-span-2">
+                        <label for="id_amount" class="block text-xs font-bold uppercase text-slate-700 mb-1">
+                            Transfer Amount (PKR) <span class="text-indigo-500">*</span>
+                        </label>
+                        {{ form.amount }}
+                        {% if form.amount.errors %}<p class="text-xs text-rose-600 mt-1 font-semibold">{{ form.amount.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+
+                <!-- Live Projection Cards -->
+                <div id="reallocation-preview-box" class="p-4 rounded-xl bg-white border border-indigo-100 shadow-xs mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                    <div class="p-2.5 rounded-lg bg-rose-50 border border-rose-100">
+                        <div class="text-[10px] font-bold uppercase text-rose-700">Projected Source Balance</div>
+                        <div id="projected-source-bal" class="text-sm font-black font-mono text-rose-900 mt-0.5">—</div>
+                    </div>
+                    <div class="p-2.5 rounded-lg bg-emerald-50 border border-emerald-100">
+                        <div class="text-[10px] font-bold uppercase text-emerald-700">Projected Dest Balance</div>
+                        <div id="projected-dest-bal" class="text-sm font-black font-mono text-emerald-900 mt-0.5">—</div>
+                    </div>
+                    <div class="p-2.5 rounded-lg bg-slate-100 border border-slate-200 flex flex-col items-center justify-center">
+                        <div class="text-[10px] font-bold uppercase text-slate-600">Net Cash Impact</div>
+                        <div class="text-sm font-black font-mono text-indigo-900 mt-0.5">$ 0.00 (Neutral)</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="id_sanction_reference" class="block text-xs font-bold uppercase text-slate-700 mb-1">
+                            Sanction / Authority Reference <span class="text-indigo-500">*</span>
+                        </label>
+                        {{ form.sanction_reference }}
+                        <p class="text-[11px] text-slate-400 mt-1 font-medium">Official minute sheet, letter number, or directive reference</p>
+                        {% if form.sanction_reference.errors %}<p class="text-xs text-rose-600 mt-1 font-semibold">{{ form.sanction_reference.errors.0 }}</p>{% endif %}
+                    </div>
+                    <div>
+                        <label for="id_description" class="block text-xs font-bold uppercase text-slate-700 mb-1">
+                            Remarks / Reallocation Rationale
+                        </label>
+                        {{ form.description }}
+                        {% if form.description.errors %}<p class="text-xs text-rose-600 mt-1 font-semibold">{{ form.description.errors.0 }}</p>{% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit & Actions Bar -->
+            <div class="flex items-center justify-between gap-3 pt-2">
+                <a href="{% url 'core:transaction_list' %}" class="px-5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-700 hover:bg-slate-100 transition">
+                    &larr; Cancel &amp; Return to Ledger
+                </a>
+                <button type="submit" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-md hover:shadow-lg transition flex items-center gap-2">
+                    <span>⇄</span> Post Contra Transfer &amp; Reallocate Divisions
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- SECTION 3: RECENT INTER-TRANSFERS AUDIT LOG                       -->
+    <!-- ================================================================= -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div class="px-5 py-4 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
+            <div>
+                <h3 class="text-xs font-black uppercase tracking-wider text-slate-800">Recent Inter-Head / Contra Transfers</h3>
+                <p class="text-[11px] text-slate-500 mt-0.5">Historical pass-through reallocations performed in Fin Yr {{ request.fy.code|default:request.fy.name }}</p>
+            </div>
+            <span class="text-xs font-bold bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg">
+                {{ distribution.transfers_history|length }} Transactions
+            </span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-50 text-slate-600 font-bold border-b border-slate-200 uppercase text-[10px]">
+                    <tr>
+                        <th class="px-4 py-2.5">Date / Ref</th>
+                        <th class="px-3 py-2.5">Txn Number</th>
+                        <th class="px-3 py-2.5">Dir</th>
+                        <th class="px-3 py-2.5">Division &amp; Head</th>
+                        <th class="px-4 py-2.5">Description / Purpose</th>
+                        <th class="px-3 py-2.5 text-right">Amount</th>
+                        <th class="px-3 py-2.5 text-center">Contra Link</th>
+                        <th class="px-3 py-2.5 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-medium">
+                    {% for tx in distribution.transfers_history %}
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="px-4 py-2.5">
+                            <div class="font-bold text-slate-800">{{ tx.transaction_date|dmy }}</div>
+                            {% if tx.reference %}<div class="text-[10px] text-slate-400">Ref: {{ tx.reference }}</div>{% endif %}
+                        </td>
+                        <td class="px-3 py-2.5 font-mono text-[10px] font-bold text-slate-700">
+                            {{ tx.transaction_number }}
+                        </td>
+                        <td class="px-3 py-2.5">
+                            {% if tx.direction == 'INFLOW' %}
+                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-100 text-emerald-800">IN (Credit)</span>
+                            {% else %}
+                            <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-rose-100 text-rose-800">OUT (Debit)</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-3 py-2.5">
+                            <div class="font-bold text-slate-800">{{ tx.major_head.name|default:"—" }}</div>
+                            <div class="text-[10px] text-slate-500">{{ tx.account_head.name|default:"—" }}</div>
+                        </td>
+                        <td class="px-4 py-2.5 text-slate-600 max-w-xs truncate" title="{{ tx.description }}">
+                            {{ tx.description|default:tx.purpose|default:"—" }}
+                        </td>
+                        <td class="px-3 py-2.5 text-right font-mono font-bold text-slate-900">
+                            {{ tx.amount|rs }}
+                        </td>
+                        <td class="px-3 py-2.5 text-center font-mono text-[10px] text-amber-700 font-bold">
+                            {{ tx.document_reference|default:"Contra Linked" }}
+                        </td>
+                        <td class="px-3 py-2.5 text-center">
+                            <a href="{% url 'core:transaction_detail' tx.pk %}" class="text-indigo-600 hover:text-indigo-800 font-bold text-xs">
+                                View &rarr;
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-8 text-center text-slate-400">No inter-head transfers recorded yet for this financial year.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// Live Division Balances Map
+const subFundBalances = {
+    {% for sf in distribution.divisions %}
+    "{{ sf.id }}": {{ sf.net_balance }},
+    {% endfor %}
+};
+
+function formatPKR(val) {
+    if (isNaN(val)) return "—";
+    const sign = val < 0 ? "-" : "";
+    return sign + "$ " + Math.abs(val).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+}
+
+function updateReallocationPreview() {
+    const srcMh = document.getElementById('id_source_major_head')?.value;
+    const dstMh = document.getElementById('id_dest_major_head')?.value;
+    const amtInput = document.getElementById('id_amount');
+    const amt = parseFloat(amtInput?.value) || 0;
+
+    const srcBal = subFundBalances[srcMh];
+    const dstBal = subFundBalances[dstMh];
+
+    const srcBadge = document.getElementById('source-balance-badge');
+    const dstBadge = document.getElementById('dest-balance-badge');
+    const projSrc = document.getElementById('projected-source-bal');
+    const projDst = document.getElementById('projected-dest-bal');
+
+    if (srcBal !== undefined) {
+        srcBadge.textContent = "Balance: " + formatPKR(srcBal);
+        srcBadge.className = "text-[11px] font-mono font-bold " + (srcBal < 0 ? "text-rose-600" : "text-emerald-700");
+    } else {
+        srcBadge.textContent = "";
+    }
+
+    if (dstBal !== undefined) {
+        dstBadge.textContent = "Balance: " + formatPKR(dstBal);
+        dstBadge.className = "text-[11px] font-mono font-bold " + (dstBal < 0 ? "text-rose-600" : "text-emerald-700");
+    } else {
+        dstBadge.textContent = "";
+    }
+
+    if (srcBal !== undefined && amt > 0) {
+        const newSrc = srcBal - amt;
+        projSrc.textContent = formatPKR(newSrc);
+        projSrc.className = "text-sm font-black font-mono mt-0.5 " + (newSrc < 0 ? "text-rose-700" : "text-slate-800");
+    } else if (srcBal !== undefined) {
+        projSrc.textContent = formatPKR(srcBal);
+        projSrc.className = "text-sm font-black font-mono mt-0.5 text-slate-800";
+    } else {
+        projSrc.textContent = "—";
+    }
+
+    if (dstBal !== undefined && amt > 0) {
+        const newDst = dstBal + amt;
+        projDst.textContent = formatPKR(newDst);
+        projDst.className = "text-sm font-black font-mono mt-0.5 " + (newDst < 0 ? "text-rose-700" : "text-emerald-800");
+    } else if (dstBal !== undefined) {
+        projDst.textContent = formatPKR(dstBal);
+        projDst.className = "text-sm font-black font-mono mt-0.5 text-slate-800";
+    } else {
+        projDst.textContent = "—";
+    }
+}
+
+function prefillTransferSource(mhId, mhName, bal) {
+    const sel = document.getElementById('id_source_major_head');
+    if (sel) {
+        sel.value = mhId;
+        sel.dispatchEvent(new Event('change'));
+        // Trigger HTMX if attached
+        if (typeof htmx !== 'undefined') {
+            htmx.trigger(sel, 'change');
+        }
+    }
+    updateReallocationPreview();
+    const section = document.getElementById('transfer-form-section');
+    if (section) section.scrollIntoView({ behavior: 'smooth' });
+}
+
+function prefillTransferDest(mhId, mhName, bal) {
+    const sel = document.getElementById('id_dest_major_head');
+    if (sel) {
+        sel.value = mhId;
+        sel.dispatchEvent(new Event('change'));
+        if (typeof htmx !== 'undefined') {
+            htmx.trigger(sel, 'change');
+        }
+    }
+    updateReallocationPreview();
+    const section = document.getElementById('transfer-form-section');
+    if (section) section.scrollIntoView({ behavior: 'smooth' });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const srcMh = document.getElementById('id_source_major_head');
+    const dstMh = document.getElementById('id_dest_major_head');
+    const amtInput = document.getElementById('id_amount');
+
+    if (srcMh) srcMh.addEventListener('change', updateReallocationPreview);
+    if (dstMh) dstMh.addEventListener('change', updateReallocationPreview);
+    if (amtInput) amtInput.addEventListener('input', updateReallocationPreview);
+
+    updateReallocationPreview();
+});
+</script>
+{% endblock %}

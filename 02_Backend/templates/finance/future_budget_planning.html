@@ -1,0 +1,746 @@
+﻿{% extends 'base.html' %}
+{% block title %}Future Budget Planning — EABMS{% endblock %}
+
+{% block content %}
+<div class="space-y-5">
+
+  <!-- Page Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-200">
+    <div>
+      <div class="text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-600 mb-1">Planning &amp; Analysis</div>
+      <h1 class="text-2xl font-bold text-slate-800 tracking-tight">Future Budget Planning</h1>
+      <p class="text-xs text-slate-500 mt-1">Comprehensive Inflow &amp; Outflow intelligence with dynamic Fiscal Balance Matrix. Live recalculations update instantly.</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <!-- Dynamic Allocation Basis Toggle -->
+      <div class="inline-flex rounded-lg border border-slate-300 p-0.5 bg-slate-100 shadow-xs">
+        <a href="?source_fy={{ source_fy.code|default:'' }}&target_fy={{ target_fy.code|default:'' }}&routine_adjustment={{ routine_adjustment }}&inflow_adjustment={{ inflow_adjustment }}&allocation_basis=SUB_FUND" 
+           class="px-3 py-1 text-xs font-bold rounded-md transition flex items-center gap-1 {% if allocation_basis == 'SUB_FUND' %}bg-white text-indigo-700 shadow-xs{% else %}text-slate-600 hover:text-slate-900{% endif %}">
+          <span>⚡</span> Division Basis
+        </a>
+        <a href="?source_fy={{ source_fy.code|default:'' }}&target_fy={{ target_fy.code|default:'' }}&routine_adjustment={{ routine_adjustment }}&inflow_adjustment={{ inflow_adjustment }}&allocation_basis=ACCOUNT_HEAD" 
+           class="px-3 py-1 text-xs font-bold rounded-md transition flex items-center gap-1 {% if allocation_basis == 'ACCOUNT_HEAD' %}bg-white text-indigo-700 shadow-xs{% else %}text-slate-600 hover:text-slate-900{% endif %}">
+          <span>📋</span> Account Head Basis
+        </a>
+      </div>
+      {% if approved_future %}
+      <a href="{% url 'core:future_budget_review' approved_future.pk %}" class="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-sm transition">
+        Open Authoritative Budget Review &rarr;
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Filter Form -->
+  <form method="get" class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+    <div>
+      <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Source FY</label>
+      <input name="source_fy" value="{{ source_fy.code|default:'' }}" placeholder="e.g. 2025-26" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+    </div>
+    <div>
+      <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Target FY</label>
+      <input name="target_fy" value="{{ target_fy.code|default:'' }}" placeholder="e.g. 2026-27" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+    </div>
+    <div>
+      <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Allocation Basis</label>
+      <select name="allocation_basis" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium">
+        <option value="SUB_FUND" {% if allocation_basis == 'SUB_FUND' %}selected{% endif %}>⚡ Division Basis</option>
+        <option value="ACCOUNT_HEAD" {% if allocation_basis == 'ACCOUNT_HEAD' %}selected{% endif %}>📋 Account Head Basis</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Outflow Adj. %</label>
+      <input type="number" step="0.01" name="routine_adjustment" value="{{ routine_adjustment }}" placeholder="0" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+    </div>
+    <div>
+      <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Inflow Growth %</label>
+      <input type="number" step="0.01" name="inflow_adjustment" value="{{ inflow_adjustment }}" placeholder="0" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+    </div>
+    <div>
+      <button type="submit" class="w-full bg-slate-800 hover:bg-slate-700 text-white rounded-lg px-4 py-2 text-xs font-semibold transition shadow-sm">Run Analysis</button>
+    </div>
+  </form>
+
+  {% if analysis %}
+
+  <!-- Executive Summary Cards — 3 Columns: Inflows | Outflows | Net Fiscal Position -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+    <!-- Inflow Trajectory Card -->
+    <div class="bg-gradient-to-br from-emerald-800 to-emerald-900 text-white rounded-2xl p-4 shadow-md space-y-2 border border-emerald-700">
+      <div class="flex items-center justify-between">
+        <span class="text-[10px] uppercase font-bold tracking-wider text-emerald-200">↓ Total Inflow Planning</span>
+        <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-700/60 font-bold text-emerald-100">{{ source_fy.code }} → {{ target_fy.code }}</span>
+      </div>
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <div>
+          <div class="text-[10px] text-emerald-300 font-medium">Prev Budget (Planned)</div>
+          <div class="text-xs font-bold font-mono">$ {{ total_planned_inflows|floatformat:2 }}</div>
+        </div>
+        <div>
+          <div class="text-[10px] text-emerald-300 font-medium">Prev Actual (Received)</div>
+          <div class="text-xs font-bold font-mono">$ {{ total_inflow_actual|floatformat:2 }}</div>
+        </div>
+      </div>
+      <div class="pt-2 border-t border-emerald-700/80">
+        <div class="text-[10px] text-emerald-300">Target Projected Inflows ({{ target_fy.code }})</div>
+        <div id="plan-inflow-total" class="text-2xl font-black font-mono tracking-tight text-white">$ {{ total_suggested_inflows|floatformat:2 }}</div>
+        <div class="flex items-center justify-between text-[10px] text-emerald-300 mt-1">
+          <span id="plan-inflow-mn">Mn —</span>
+          <span id="plan-inflow-diff-card" class="font-semibold">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Outflow Requirements Card -->
+    <div class="bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-2xl p-4 shadow-md space-y-2 border border-slate-700">
+      <div class="flex items-center justify-between">
+        <span class="text-[10px] uppercase font-bold tracking-wider text-slate-300">↑ Total Outflow Budget</span>
+        <span class="text-[10px] px-2 py-0.5 rounded-full bg-slate-700/60 font-bold text-slate-200">{{ source_fy.code }} → {{ target_fy.code }}</span>
+      </div>
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <div>
+          <div class="text-[10px] text-slate-400 font-medium">Approved Budget</div>
+          <div class="text-xs font-bold font-mono">$ {{ analysis.total_budget|floatformat:2 }}</div>
+        </div>
+        <div>
+          <div class="text-[10px] text-slate-400 font-medium">Actual Outflow</div>
+          <div class="text-xs font-bold font-mono">$ {{ analysis.total_actual|floatformat:2 }}</div>
+        </div>
+      </div>
+      <div class="pt-2 border-t border-slate-700/80">
+        <div class="text-[10px] text-slate-300">Target Proposed Budget ({{ target_fy.code }})</div>
+        <div id="plan-final-total" class="text-2xl font-black font-mono tracking-tight text-indigo-300">$ {{ suggested_total|floatformat:2 }}</div>
+        <div class="flex items-center justify-between text-[10px] text-slate-400 mt-1">
+          <span id="plan-final-mn">Mn —</span>
+          <span id="plan-outflow-diff-card" class="font-semibold">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Net Fiscal Position & Shift Card -->
+    <div class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-2xl p-4 shadow-md space-y-2 border border-indigo-700">
+      <div class="flex items-center justify-between">
+        <span class="text-[10px] uppercase font-bold tracking-wider text-indigo-200">⚖ Net Fiscal Position (Inflow − Outflow)</span>
+        <span id="plan-fiscal-badge" class="text-[10px] px-2 py-0.5 rounded-full font-bold bg-indigo-700 text-indigo-100">Calculating</span>
+      </div>
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <div>
+          <div class="text-[10px] text-indigo-300 font-medium">Prev Budget Net</div>
+          <div class="text-xs font-bold font-mono {% if net_budget_prev >= 0 %}text-emerald-300{% else %}text-rose-300{% endif %}">
+            {% if net_budget_prev >= 0 %}+{% endif %}$ {{ net_budget_prev|floatformat:2 }}
+          </div>
+        </div>
+        <div>
+          <div class="text-[10px] text-indigo-300 font-medium">Prev Actual Net</div>
+          <div class="text-xs font-bold font-mono {% if net_actual_prev >= 0 %}text-emerald-300{% else %}text-rose-300{% endif %}">
+            {% if net_actual_prev >= 0 %}+{% endif %}$ {{ net_actual_prev|floatformat:2 }}
+          </div>
+        </div>
+      </div>
+      <div class="pt-2 border-t border-indigo-700/80">
+        <div class="text-[10px] text-indigo-300">Target Year Projected Net ({{ target_fy.code }})</div>
+        <div id="plan-net-total" class="text-2xl font-black font-mono tracking-tight">—</div>
+        <div id="plan-net-shift" class="text-[10px] text-indigo-200 mt-1 font-semibold">Net Shift vs Prev Actual: —</div>
+      </div>
+    </div>
+
+  </div>
+
+  {% if approved_future %}
+  <div class="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-800 flex items-center justify-between gap-3">
+    <div class="flex items-center gap-2">
+      <span class="font-bold text-base text-amber-600">⚠</span>
+      <span>An approved Future Budget exists for <strong>{{ target_fy.code }}</strong>. Projections here are for live modeling.</span>
+    </div>
+    <a href="{% url 'core:future_budget_review' approved_future.pk %}" class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-semibold rounded-md transition whitespace-nowrap">Open Budget Review</a>
+  </div>
+  {% endif %}
+
+  <!-- Tab Navigation & Action Buttons -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200">
+    <div class="flex items-center gap-2">
+      <button type="button" class="tab-btn px-4 py-2.5 text-xs font-bold border-b-2 border-indigo-600 text-indigo-700 transition flex items-center gap-1.5" data-target="tab-outflows">
+        <span>↑ Outflow Planning Grid</span>
+        <span class="px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-[10px]">{{ rows|length }}</span>
+      </button>
+      <button type="button" class="tab-btn px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition flex items-center gap-1.5" data-target="tab-inflows">
+        <span>↓ Inflow Planning Grid</span>
+        <span class="px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px]">{{ inflow_rows|length }}</span>
+      </button>
+      <button type="button" class="tab-btn px-4 py-2.5 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition flex items-center gap-1.5" data-target="tab-matrix">
+        <span>⚖ Fiscal Balance &amp; Comparison Matrix</span>
+      </button>
+    </div>
+    
+    <div class="flex items-center gap-2 pb-2 sm:pb-0">
+      <button type="submit" form="planning-budget-form" name="action" value="save_draft" class="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-lg shadow-sm transition flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+        Save as Draft
+      </button>
+      <button type="submit" form="planning-budget-form" name="action" value="submit_proposed" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg shadow-sm transition flex items-center gap-1.5">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Submit for Management Review
+      </button>
+    </div>
+  </div>
+
+  <form method="post" action="{% url 'core:future_budget_planning' %}" id="planning-budget-form" class="space-y-4">
+    {% csrf_token %}
+    <input type="hidden" name="source_fy" value="{{ source_fy.code|default:'' }}">
+    <input type="hidden" name="target_fy" value="{{ target_fy.code|default:'' }}">
+    <input type="hidden" name="routine_adjustment" value="{{ routine_adjustment }}">
+    <input type="hidden" name="inflow_adjustment" value="{{ inflow_adjustment }}">
+    <input type="hidden" name="allocation_basis" value="{{ allocation_basis }}">
+
+  <!-- ═══════════ TAB 1: OUTFLOW TABLE ═══════════ -->
+  <div id="tab-outflows" class="tab-content block space-y-3">
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-5 py-3 border-b border-slate-200 bg-slate-50/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h2 class="text-xs font-bold text-slate-700 uppercase tracking-wider">↑ Outflow Planning Grid — {% if allocation_basis == 'SUB_FUND' %}Division-wise{% else %}Head-wise{% endif %}</h2>
+          <p class="text-[11px] text-slate-400 mt-0.5">Edit "Proposed Budget" to model requirements. Amounts shown in $ and (Mn).</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" id="plan-copy-all-suggested" class="px-3 py-1.5 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-800 text-xs font-semibold transition">↑ Fill All Suggested</button>
+          <button type="button" id="plan-reset-all" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold transition">Reset Outflows</button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto overflow-y-auto" style="max-height:540px; scrollbar-gutter:stable;">
+        <table class="min-w-full text-xs text-left">
+          <thead class="bg-slate-100 text-slate-600 font-bold uppercase tracking-wider sticky top-0 z-20 shadow-sm">
+            <tr>
+              <th class="px-4 py-2.5 sticky left-0 bg-slate-100 z-30 border-r border-slate-200 min-w-[180px]">{% if allocation_basis == 'SUB_FUND' %}Division{% else %}Account Head{% endif %}</th>
+              <th class="px-3 py-2.5 text-right bg-slate-50 whitespace-nowrap">Prev Budget<br><span class="text-[9px] normal-case font-normal text-slate-400">($ / Mn)</span></th>
+              <th class="px-3 py-2.5 text-right bg-slate-50 whitespace-nowrap">Hist Actual<br><span class="text-[9px] normal-case font-normal text-slate-400">($ / Mn)</span></th>
+              <th class="px-3 py-2.5 text-right bg-slate-50 whitespace-nowrap">Plan Actual<br><span class="text-[9px] normal-case font-normal text-slate-400">($ / Mn)</span></th>
+              <th class="px-3 py-2.5 text-right bg-amber-50 text-amber-800 whitespace-nowrap">Pass-Thru</th>
+              <th class="px-3 py-2.5 text-center bg-slate-50 border-r border-slate-200">Class</th>
+              <th class="px-3 py-2.5 text-right bg-indigo-50 text-indigo-800 font-extrabold whitespace-nowrap">Sys Suggested<br><span class="text-[9px] normal-case font-normal text-indigo-400">($ / Mn)</span></th>
+              <th class="px-3 py-2.5 text-left bg-indigo-50/50 text-indigo-950 font-extrabold border-l border-indigo-200 min-w-[180px]">Proposed Budget ($) ✎</th>
+              <th class="px-3 py-2.5 text-right bg-indigo-50/30 text-indigo-700 whitespace-nowrap text-[10px]">Mn</th>
+              <th class="px-3 py-2.5 text-right bg-indigo-50/30 text-[10px]">Diff vs Prev</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 bg-white">
+            {% for row in rows %}
+            <input type="hidden" name="outflow_head_ids" value="{{ row.head_id }}">
+            <tr class="hover:bg-slate-50/60 transition group align-middle">
+              <td class="px-4 py-2 font-semibold text-slate-800 sticky left-0 bg-white group-hover:bg-slate-50 border-r border-slate-200 whitespace-nowrap z-10">
+                {% if row.code %}<span class="text-slate-400 font-mono text-[10px] mr-1">[{{ row.code }}]</span>{% endif %}{{ row.head }}
+                {% if row.is_routine %}<span class="ml-1 text-[9px] font-bold text-white bg-emerald-600 px-1.5 py-0.5 rounded shadow-xs">Routine</span>{% endif %}
+                {% if row.is_onetime %}<span class="ml-1 text-[9px] font-bold text-white bg-rose-600 px-1.5 py-0.5 rounded shadow-xs">1-Time</span>{% endif %}
+              </td>
+              <td class="px-3 py-2 text-right font-mono text-slate-600">
+                <div>{{ row.previous_budget|floatformat:2 }}</div>
+                <div class="text-[9px] text-slate-400">Mn {{ row.previous_budget|floatformat:2 }}</div>
+              </td>
+              <td class="px-3 py-2 text-right font-mono text-slate-600">
+                <div>{{ row.historical_actual|floatformat:2 }}</div>
+                <div class="text-[9px] text-slate-400">Mn {{ row.historical_actual|floatformat:2 }}</div>
+              </td>
+              <td class="px-3 py-2 text-right font-mono text-slate-600">
+                <div>{{ row.planning_actual|floatformat:2 }}</div>
+                <div class="text-[9px] text-slate-400">Mn {{ row.planning_actual|floatformat:2 }}</div>
+              </td>
+              <td class="px-3 py-2 text-right font-mono text-amber-700 bg-amber-50/30">
+                {% if row.pass_through %}<span class="font-bold">{{ row.pass_through|floatformat:2 }}</span>{% else %}—{% endif %}
+              </td>
+              <td class="px-3 py-2 text-center border-r border-slate-200">
+                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full {% if row.is_onetime %}bg-rose-600 text-white{% elif row.is_routine %}bg-emerald-600 text-white{% else %}bg-slate-600 text-white{% endif %}">
+                  {% if row.is_onetime %}1-Time{% elif row.is_routine %}Routine{% else %}Other{% endif %}
+                </span>
+                {% if row.nature_breakdown %}
+                <div class="mt-1 flex flex-col gap-0.5 items-center">
+                  {% for nature, amt in row.nature_breakdown.items %}
+                  <span class="text-[8px] bg-slate-100 text-slate-600 px-1 rounded font-medium">{{ nature|truncatechars:12 }}</span>
+                  {% endfor %}
+                </div>
+                {% endif %}
+              </td>
+              <td class="px-3 py-2 text-right font-mono font-bold text-indigo-800 bg-indigo-50/30 whitespace-nowrap" data-suggested="{{ row.system_suggested }}">
+                <div>{{ row.system_suggested|floatformat:2 }}</div>
+                <div class="text-[9px] text-indigo-400 font-normal">Mn {{ row.system_suggested|floatformat:2 }}</div>
+              </td>
+              <td class="px-3 py-2 bg-indigo-50/20 border-l border-indigo-200">
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none text-slate-400 font-mono text-[11px]">$</span>
+                  <input type="number" step="0.01" min="0"
+                         name="outflow_proposed_{{ row.head_id }}"
+                         class="plan-final-input w-full pl-7 pr-2 py-1.5 text-right font-mono font-bold text-xs rounded-lg border border-slate-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 bg-white"
+                         value="{{ row.proposed_amount|floatformat:2 }}"
+                         data-original="{{ row.system_suggested }}"
+                         data-prev-actual="{{ row.planning_actual }}"
+                         placeholder="0.00">
+                </div>
+              </td>
+              <td class="px-3 py-2 text-right font-mono text-[10px] text-indigo-600 plan-mn-cell bg-indigo-50/10">—</td>
+              <td class="px-3 py-2 text-right font-mono text-[10px] plan-diff-cell text-slate-400 bg-indigo-50/10">—</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="10" class="px-4 py-10 text-center text-slate-400">No outflow data found for {{ source_fy.code }}.</td></tr>
+            {% endfor %}
+          </tbody>
+          {% if rows %}
+          <tfoot class="bg-slate-100 font-bold border-t-2 border-slate-300 sticky bottom-0 z-20">
+            <tr>
+              <td class="px-4 py-2.5 sticky left-0 bg-slate-100 border-r border-slate-200 text-slate-700">TOTAL OUTFLOWS ({{ rows|length }})</td>
+              <td class="px-3 py-2.5 text-right font-mono text-slate-600 text-[10px]">{{ analysis.total_budget|floatformat:2 }}</td>
+              <td class="px-3 py-2.5 text-right font-mono text-slate-600 text-[10px]">{{ analysis.total_actual|floatformat:2 }}</td>
+              <td class="px-3 py-2.5 text-right font-mono text-slate-600 text-[10px]">{{ planning_total|floatformat:2 }}</td>
+              <td class="px-3 py-2.5 text-right font-mono text-amber-700 text-[10px]">{{ analysis.pass_through_total|default:"0.00"|floatformat:2 }}</td>
+              <td></td>
+              <td class="px-3 py-2.5 text-right font-mono text-indigo-800 text-[10px]">{{ suggested_total|floatformat:2 }}</td>
+              <td id="plan-footer-final" class="px-3 py-2.5 text-right font-mono font-extrabold text-indigo-800 border-l border-indigo-200">{{ suggested_total|floatformat:2 }}</td>
+              <td id="plan-footer-mn" class="px-3 py-2.5 text-right font-mono text-indigo-600 text-[10px]">—</td>
+              <td id="plan-footer-diff" class="px-3 py-2.5 text-right font-mono text-slate-400 text-[10px]">—</td>
+            </tr>
+          </tfoot>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ TAB 2: INFLOW TABLE ═══════════ -->
+  <div id="tab-inflows" class="tab-content hidden space-y-3">
+    <div class="bg-white border border-emerald-200 rounded-2xl shadow-sm overflow-hidden">
+      <div class="px-5 py-3 border-b border-emerald-100 bg-emerald-50/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h2 class="text-xs font-bold text-emerald-800 uppercase tracking-wider">↓ Inflow Planning Grid — {% if allocation_basis == 'SUB_FUND' %}Division-wise{% else %}Comprehensive Heads{% endif %}</h2>
+          <p class="text-[11px] text-emerald-600 mt-0.5">Planned Inflows, Actual Receipts, Variance &amp; Target Projections. Amounts in $ and (Mn).</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" id="plan-copy-inflow-suggested" class="px-3 py-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs font-semibold transition">↓ Fill All Suggested</button>
+          <button type="button" id="plan-reset-inflows" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold transition">Reset Inflows</button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto overflow-y-auto" style="max-height:540px; scrollbar-gutter:stable;">
+        <table class="min-w-full text-xs text-left">
+          <thead class="bg-emerald-100/60 text-emerald-900 font-bold uppercase tracking-wider sticky top-0 z-20 shadow-sm">
+            <tr>
+              <th class="px-4 py-2.5 sticky left-0 bg-emerald-50 z-30 border-r border-emerald-200 min-w-[180px]">{% if allocation_basis == 'SUB_FUND' %}Division{% else %}Account Head{% endif %}</th>
+              <th class="px-3 py-2.5 text-right whitespace-nowrap">Planned Budget<br><span class="text-[9px] normal-case font-normal text-emerald-600">(Source FY)</span></th>
+              <th class="px-3 py-2.5 text-right whitespace-nowrap">Actual Receipts<br><span class="text-[9px] normal-case font-normal text-emerald-600">(Source FY)</span></th>
+              <th class="px-3 py-2.5 text-right whitespace-nowrap">Receipt Variance<br><span class="text-[9px] normal-case font-normal text-emerald-600">(Actual vs Plan)</span></th>
+              <th class="px-3 py-2.5 text-right whitespace-nowrap">Var %</th>
+              <th class="px-3 py-2.5 text-right bg-emerald-100 text-emerald-950 font-extrabold whitespace-nowrap">Suggested Proj.<br><span class="text-[9px] normal-case font-normal text-emerald-700">(Target FY)</span></th>
+              <th class="px-3 py-2.5 text-left bg-emerald-50 text-emerald-950 font-extrabold border-l border-emerald-200 min-w-[180px]">Projected Inflow ($) ✎</th>
+              <th class="px-3 py-2.5 text-right bg-emerald-50 text-emerald-700 whitespace-nowrap text-[10px]">Mn</th>
+              <th class="px-3 py-2.5 text-right bg-emerald-50 text-[10px]">Diff vs Prev</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-emerald-50 bg-white">
+            {% for row in inflow_rows %}
+            <input type="hidden" name="inflow_head_ids" value="{{ row.head_id }}">
+            <tr class="hover:bg-emerald-50/40 transition group align-middle">
+              <td class="px-4 py-2 font-semibold text-slate-800 sticky left-0 bg-white group-hover:bg-emerald-50/30 border-r border-emerald-100 whitespace-nowrap z-10">
+                {{ row.head }}
+                {% if row.code %}<span class="ml-1 text-[9px] font-mono text-slate-400">[{{ row.code }}]</span>{% endif %}
+                {% if row.is_inflow_only %}<span class="ml-1 text-[9px] font-bold text-white bg-emerald-600 px-1.5 py-0.5 rounded shadow-xs">Inflow Only</span>{% endif %}
+              </td>
+              <td class="px-3 py-2 text-right font-mono text-slate-600">
+                <div>{{ row.previous_budget|floatformat:2 }}</div>
+                <div class="text-[9px] text-slate-400">Mn {{ row.previous_budget|floatformat:2 }}</div>
+              </td>
+              <td class="px-3 py-2 text-right font-mono text-emerald-800 font-bold">
+                <div>{{ row.previous_actual|floatformat:2 }}</div>
+                <div class="text-[9px] text-emerald-500">Mn {{ row.previous_actual|floatformat:2 }}</div>
+              </td>
+              <td class="px-3 py-2 text-right font-mono font-medium {% if row.variance_amount >= 0 %}text-emerald-600{% else %}text-rose-600{% endif %}">
+                {% if row.variance_amount >= 0 %}+{% endif %}{{ row.variance_amount|floatformat:2 }}
+              </td>
+              <td class="px-3 py-2 text-right font-mono text-[10px] {% if row.variance_pct >= 0 %}text-emerald-700{% else %}text-rose-700{% endif %}">
+                {% if row.variance_pct >= 0 %}+{% endif %}{{ row.variance_pct|floatformat:1 }}%
+              </td>
+              <td class="px-3 py-2 text-right font-mono font-bold text-emerald-900 bg-emerald-50/50 whitespace-nowrap" data-inflow-suggested="{{ row.suggested_future }}">
+                <div>{{ row.suggested_future|floatformat:2 }}</div>
+                <div class="text-[9px] text-emerald-600 font-normal">Mn {{ row.suggested_future|floatformat:2 }}</div>
+              </td>
+              <td class="px-3 py-2 bg-emerald-50/30 border-l border-emerald-200">
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none text-emerald-600 font-mono text-[11px]">$</span>
+                  <input type="number" step="0.01" min="0"
+                         name="inflow_proposed_{{ row.head_id }}"
+                         class="plan-inflow-input w-full pl-7 pr-2 py-1.5 text-right font-mono font-bold text-xs rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 bg-white"
+                         value="{{ row.proposed_inflow|floatformat:2 }}"
+                         data-original="{{ row.suggested_future }}"
+                         data-prev-actual="{{ row.previous_actual }}"
+                         placeholder="0.00">
+                </div>
+              </td>
+              <td class="px-3 py-2 text-right font-mono text-[10px] text-emerald-700 plan-inflow-mn-cell bg-emerald-50/20">—</td>
+              <td class="px-3 py-2 text-right font-mono text-[10px] plan-inflow-diff-cell text-slate-400 bg-emerald-50/20">—</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="9" class="px-4 py-10 text-center text-slate-400">No inflow data or heads found for this account.</td></tr>
+            {% endfor %}
+          </tbody>
+          {% if inflow_rows %}
+          <tfoot class="bg-emerald-50 font-bold border-t-2 border-emerald-200 sticky bottom-0 z-20">
+            <tr>
+              <td class="px-4 py-2.5 sticky left-0 bg-emerald-50 border-r border-emerald-200 text-emerald-900">TOTAL INFLOWS ({{ inflow_rows|length }})</td>
+              <td class="px-3 py-2.5 text-right font-mono text-slate-600 text-[10px]">{{ total_planned_inflows|floatformat:2 }}</td>
+              <td class="px-3 py-2.5 text-right font-mono text-emerald-800 text-[10px]">{{ total_inflow_actual|floatformat:2 }}</td>
+              <td class="px-3 py-2.5 text-right font-mono text-[10px] {% if total_inflow_actual >= total_planned_inflows %}text-emerald-700{% else %}text-rose-700{% endif %}">
+                {% if total_inflow_actual >= total_planned_inflows %}+{% endif %}{{ total_inflow_actual|add:"-total_planned_inflows"|floatformat:2 }}
+              </td>
+              <td></td>
+              <td class="px-3 py-2.5 text-right font-mono text-emerald-900 text-[10px]">{{ total_suggested_inflows|floatformat:2 }}</td>
+              <td id="plan-footer-inflow" class="px-3 py-2.5 text-right font-mono font-extrabold text-emerald-900 border-l border-emerald-200">{{ total_suggested_inflows|floatformat:2 }}</td>
+              <td id="plan-footer-inflow-mn" class="px-3 py-2.5 text-right font-mono text-emerald-700 text-[10px]">—</td>
+              <td id="plan-footer-inflow-diff" class="px-3 py-2.5 text-right font-mono text-slate-400 text-[10px]">—</td>
+            </tr>
+          </tfoot>
+          {% endif %}
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ TAB 3: FISCAL BALANCE MATRIX ═══════════ -->
+  <div id="tab-matrix" class="tab-content hidden space-y-4">
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div>
+          <h2 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Executive Fiscal Comparison &amp; Balance Matrix</h2>
+          <p class="text-xs text-slate-500 mt-1">Multi-year comparison between Source FY (Budgeted &amp; Actual) and Target FY (Projected Budget).</p>
+        </div>
+        <span class="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-700 font-mono">{{ source_fy.code }} vs {{ target_fy.code }}</span>
+      </div>
+
+      <div class="overflow-x-auto mt-4">
+        <table class="min-w-full text-xs text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider">
+              <th class="p-3 border border-slate-200">Fiscal Dimension</th>
+              <th class="p-3 border border-slate-200 text-right">Source FY Budget</th>
+              <th class="p-3 border border-slate-200 text-right">Source FY Actual</th>
+              <th class="p-3 border border-slate-200 text-right bg-indigo-50/50 text-indigo-950">Target FY Projected</th>
+              <th class="p-3 border border-slate-200 text-right">Variance vs Prev Actual</th>
+              <th class="p-3 border border-slate-200 text-right">Variance vs Prev Budget</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-200">
+            <!-- Inflows Row -->
+            <tr class="hover:bg-slate-50 font-medium">
+              <td class="p-3 border border-slate-200 font-bold text-emerald-800 flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Total Inflows
+              </td>
+              <td class="p-3 border border-slate-200 text-right font-mono text-slate-700">{{ total_planned_inflows|rs }}</td>
+              <td class="p-3 border border-slate-200 text-right font-mono text-emerald-800 font-bold">{{ total_inflow_actual|rs }}</td>
+              <td id="matrix-proj-inflows" class="p-3 border border-slate-200 text-right font-mono font-extrabold text-emerald-700 bg-emerald-50/30">{{ total_suggested_inflows|rs }}</td>
+              <td id="matrix-inflow-diff-actual" class="p-3 border border-slate-200 text-right font-mono text-xs font-semibold">—</td>
+              <td id="matrix-inflow-diff-budget" class="p-3 border border-slate-200 text-right font-mono text-xs font-semibold">—</td>
+            </tr>
+
+            <!-- Outflows Row -->
+            <tr class="hover:bg-slate-50 font-medium">
+              <td class="p-3 border border-slate-200 font-bold text-rose-800 flex items-center gap-1.5">
+                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Total Outflows
+              </td>
+              <td class="p-3 border border-slate-200 text-right font-mono text-slate-700">{{ analysis.total_budget|rs }}</td>
+              <td class="p-3 border border-slate-200 text-right font-mono text-rose-800 font-bold">{{ analysis.total_actual|rs }}</td>
+              <td id="matrix-proj-outflows" class="p-3 border border-slate-200 text-right font-mono font-extrabold text-indigo-700 bg-indigo-50/30">{{ suggested_total|rs }}</td>
+              <td id="matrix-outflow-diff-actual" class="p-3 border border-slate-200 text-right font-mono text-xs font-semibold">—</td>
+              <td id="matrix-outflow-diff-budget" class="p-3 border border-slate-200 text-right font-mono text-xs font-semibold">—</td>
+            </tr>
+
+            <!-- Net Balance Row -->
+            <tr class="bg-slate-50 font-black text-sm">
+              <td class="p-3.5 border border-slate-300 text-slate-900 font-black uppercase">
+                ⚖ Net Balance (Surplus / Deficit)
+              </td>
+              <td class="p-3.5 border border-slate-300 text-right font-mono {% if net_budget_prev >= 0 %}text-emerald-700{% else %}text-rose-700{% endif %}">
+                {% if net_budget_prev >= 0 %}+{% endif %}{{ net_budget_prev|rs }}
+              </td>
+              <td class="p-3.5 border border-slate-300 text-right font-mono {% if net_actual_prev >= 0 %}text-emerald-700{% else %}text-rose-700{% endif %}">
+                {% if net_actual_prev >= 0 %}+{% endif %}{{ net_actual_prev|rs }}
+              </td>
+              <td id="matrix-proj-net" class="p-3.5 border border-slate-300 text-right font-mono text-base bg-indigo-100/60">—</td>
+              <td id="matrix-net-shift" class="p-3.5 border border-slate-300 text-right font-mono text-xs">—</td>
+              <td id="matrix-net-budget-diff" class="p-3.5 border border-slate-300 text-right font-mono text-xs">—</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6 pt-4 border-t border-slate-200 text-xs">
+        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+          <div class="font-bold text-slate-700 uppercase tracking-wide text-[10px]">Fiscal Viability Assessment</div>
+          <p id="viability-assessment" class="text-slate-600 leading-relaxed">Evaluating projected revenues against requested expenditure...</p>
+        </div>
+        <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+          <div class="font-bold text-slate-700 uppercase tracking-wide text-[10px]">Net Movement Trajectory</div>
+          <p id="movement-assessment" class="text-slate-600 leading-relaxed">Comparing target fiscal margin against previous year outcome...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Floating Action Bar -->
+  <div class="sticky bottom-4 z-30 bg-slate-900/95 backdrop-blur text-white p-3.5 rounded-2xl shadow-xl border border-slate-700 flex flex-col sm:flex-row items-center justify-between gap-3">
+    <div class="flex items-center gap-3 text-xs">
+      <div class="w-8 h-8 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-sm">✓</div>
+      <div>
+        <div class="font-bold text-slate-100">Ready to save or submit your budget model?</div>
+        <div class="text-[11px] text-slate-400">All custom adjustments to inflows and outflows will be saved.</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <button type="submit" name="action" value="save_draft" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl border border-slate-600 shadow-sm transition flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/></svg>
+        Save as Draft
+      </button>
+      <button type="submit" name="action" value="submit_proposed" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center gap-1.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Submit for Management Review
+      </button>
+    </div>
+  </div>
+  </form>
+
+  {% endif %}
+</div>
+
+{% if rows or inflow_rows %}
+<script>
+(function(){
+  var MN = 1000000;
+
+  // Tabs handling
+  var tabButtons = document.querySelectorAll('.tab-btn');
+  var tabContents = document.querySelectorAll('.tab-content');
+  tabButtons.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var target = btn.dataset.target;
+      tabButtons.forEach(function(b){
+        b.classList.remove('border-indigo-600', 'text-indigo-700');
+        b.classList.add('border-transparent', 'text-slate-500');
+      });
+      btn.classList.add('border-indigo-600', 'text-indigo-700');
+      btn.classList.remove('border-transparent', 'text-slate-500');
+
+      tabContents.forEach(function(content){
+        content.classList.toggle('hidden', content.id !== target);
+        content.classList.toggle('block', content.id === target);
+      });
+    });
+  });
+
+  // Outflow elements
+  var outflowInputs = document.querySelectorAll('.plan-final-input');
+  var cardOutflowTotal = document.getElementById('plan-final-total');
+  var cardOutflowMn = document.getElementById('plan-final-mn');
+  var cardOutflowDiff = document.getElementById('plan-outflow-diff-card');
+  var footerOutflowFinal = document.getElementById('plan-footer-final');
+  var footerOutflowMn = document.getElementById('plan-footer-mn');
+  var footerOutflowDiff = document.getElementById('plan-footer-diff');
+
+  // Inflow elements
+  var inflowInputs = document.querySelectorAll('.plan-inflow-input');
+  var cardInflowTotal = document.getElementById('plan-inflow-total');
+  var cardInflowMn = document.getElementById('plan-inflow-mn');
+  var cardInflowDiff = document.getElementById('plan-inflow-diff-card');
+  var footerInflowFinal = document.getElementById('plan-footer-inflow');
+  var footerInflowMn = document.getElementById('plan-footer-inflow-mn');
+  var footerInflowDiff = document.getElementById('plan-footer-inflow-diff');
+
+  // Fiscal elements
+  var netTotalEl = document.getElementById('plan-net-total');
+  var netShiftEl = document.getElementById('plan-net-shift');
+  var fiscalBadge = document.getElementById('plan-fiscal-badge');
+
+  // Matrix elements
+  var matrixProjInflows = document.getElementById('matrix-proj-inflows');
+  var matrixInflowDiffActual = document.getElementById('matrix-inflow-diff-actual');
+  var matrixInflowDiffBudget = document.getElementById('matrix-inflow-diff-budget');
+  var matrixProjOutflows = document.getElementById('matrix-proj-outflows');
+  var matrixOutflowDiffActual = document.getElementById('matrix-outflow-diff-actual');
+  var matrixOutflowDiffBudget = document.getElementById('matrix-outflow-diff-budget');
+  var matrixProjNet = document.getElementById('matrix-proj-net');
+  var matrixNetShift = document.getElementById('matrix-net-shift');
+  var matrixNetBudgetDiff = document.getElementById('matrix-net-budget-diff');
+  var viabilityEl = document.getElementById('viability-assessment');
+  var movementEl = document.getElementById('movement-assessment');
+
+  // Baseline figures
+  var prevActualInflows = {{ total_inflow_actual|default:"0.00" }};
+  var prevBudgetInflows = {{ total_planned_inflows|default:"0.00" }};
+  var prevActualOutflows = {{ analysis.total_actual|default:"0.00" }};
+  var prevBudgetOutflows = {{ analysis.total_budget|default:"0.00" }};
+  var prevActualNet = prevActualInflows - prevActualOutflows;
+  var prevBudgetNet = prevBudgetInflows - prevBudgetOutflows;
+
+  function fmtRs(v){
+    return '$ ' + Math.abs(parseFloat(v||0)).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  function fmtRsSigned(v){
+    var n = parseFloat(v||0);
+    return (n >= 0 ? '+$ ' : '-$ ') + Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+  function fmtMn(v){
+    return (parseFloat(v||0)/MN).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' Mn';
+  }
+
+  function styleSigned(el, val){
+    if(!el) return;
+    var n = parseFloat(val||0);
+    if(Math.abs(n) < 0.005){
+      el.textContent = '—';
+      el.className = el.className.replace(/text-\w+-\d+/g, '') + ' text-slate-400';
+    } else if(n > 0){
+      el.textContent = fmtRsSigned(n);
+      el.className = el.className.replace(/text-\w+-\d+/g, '') + ' text-emerald-600 font-bold';
+    } else {
+      el.textContent = fmtRsSigned(n);
+      el.className = el.className.replace(/text-\w+-\d+/g, '') + ' text-rose-600 font-bold';
+    }
+  }
+
+  function recalc(){
+    // 1. Recalculate Outflows
+    var totalOutflows = 0;
+    outflowInputs.forEach(function(inp){
+      var row = inp.closest('tr');
+      var orig = parseFloat(inp.dataset.original) || 0;
+      var cur = parseFloat(inp.value) || 0;
+      totalOutflows += cur;
+      var mnCell = row ? row.querySelector('.plan-mn-cell') : null;
+      var diffCell = row ? row.querySelector('.plan-diff-cell') : null;
+      if(mnCell) mnCell.textContent = fmtMn(cur);
+      if(diffCell) styleSigned(diffCell, cur - orig);
+    });
+
+    // 2. Recalculate Inflows
+    var totalInflows = 0;
+    inflowInputs.forEach(function(inp){
+      var row = inp.closest('tr');
+      var orig = parseFloat(inp.dataset.original) || 0;
+      var cur = parseFloat(inp.value) || 0;
+      totalInflows += cur;
+      var mnCell = row ? row.querySelector('.plan-inflow-mn-cell') : null;
+      var diffCell = row ? row.querySelector('.plan-inflow-diff-cell') : null;
+      if(mnCell) mnCell.textContent = fmtMn(cur);
+      if(diffCell) styleSigned(diffCell, cur - orig);
+    });
+
+    // 3. Outflow Card & Footers
+    if(cardOutflowTotal) cardOutflowTotal.textContent = fmtRs(totalOutflows);
+    if(cardOutflowMn) cardOutflowMn.textContent = fmtMn(totalOutflows);
+    if(cardOutflowDiff) {
+      var dOut = totalOutflows - prevActualOutflows;
+      cardOutflowDiff.textContent = 'vs Prev: ' + fmtRsSigned(dOut);
+      cardOutflowDiff.className = dOut <= 0 ? 'text-emerald-300 font-bold' : 'text-amber-300 font-bold';
+    }
+    if(footerOutflowFinal) footerOutflowFinal.textContent = fmtRs(totalOutflows);
+    if(footerOutflowMn) footerOutflowMn.textContent = fmtMn(totalOutflows);
+    if(footerOutflowDiff) styleSigned(footerOutflowDiff, totalOutflows - prevActualOutflows);
+
+    // 4. Inflow Card & Footers
+    if(cardInflowTotal) cardInflowTotal.textContent = fmtRs(totalInflows);
+    if(cardInflowMn) cardInflowMn.textContent = fmtMn(totalInflows);
+    if(cardInflowDiff) {
+      var dIn = totalInflows - prevActualInflows;
+      cardInflowDiff.textContent = 'vs Prev: ' + fmtRsSigned(dIn);
+      cardInflowDiff.className = dIn >= 0 ? 'text-emerald-300 font-bold' : 'text-rose-300 font-bold';
+    }
+    if(footerInflowFinal) footerInflowFinal.textContent = fmtRs(totalInflows);
+    if(footerInflowMn) footerInflowMn.textContent = fmtMn(totalInflows);
+    if(footerInflowDiff) styleSigned(footerInflowDiff, totalInflows - prevActualInflows);
+
+    // 5. Net Fiscal Position
+    var projNet = totalInflows - totalOutflows;
+    var netShift = projNet - prevActualNet;
+    var isSurplus = projNet >= 0;
+
+    if(netTotalEl){
+      netTotalEl.textContent = (isSurplus ? '+$ ' : '-$ ') + Math.abs(projNet).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+      netTotalEl.className = 'text-2xl font-black font-mono tracking-tight ' + (isSurplus ? 'text-emerald-300' : 'text-rose-400');
+    }
+    if(fiscalBadge){
+      fiscalBadge.textContent = isSurplus ? 'Net Surplus' : 'Fiscal Deficit';
+      fiscalBadge.className = 'text-[10px] px-2 py-0.5 rounded-full font-bold shadow-xs ' + (isSurplus ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white');
+    }
+    if(netShiftEl){
+      netShiftEl.textContent = 'Shift vs Prev Actual: ' + fmtRsSigned(netShift) + (netShift >= 0 ? ' (Improved)' : ' (Narrowed)');
+      netShiftEl.className = 'text-[10px] mt-1 font-semibold ' + (netShift >= 0 ? 'text-emerald-300' : 'text-amber-300');
+    }
+
+    // 6. Fiscal Overview Matrix Sync
+    if(matrixProjInflows) matrixProjInflows.textContent = fmtRs(totalInflows);
+    if(matrixInflowDiffActual) styleSigned(matrixInflowDiffActual, totalInflows - prevActualInflows);
+    if(matrixInflowDiffBudget) styleSigned(matrixInflowDiffBudget, totalInflows - prevBudgetInflows);
+
+    if(matrixProjOutflows) matrixProjOutflows.textContent = fmtRs(totalOutflows);
+    if(matrixOutflowDiffActual) styleSigned(matrixOutflowDiffActual, totalOutflows - prevActualOutflows);
+    if(matrixOutflowDiffBudget) styleSigned(matrixOutflowDiffBudget, totalOutflows - prevBudgetOutflows);
+
+    if(matrixProjNet){
+      matrixProjNet.textContent = fmtRsSigned(projNet);
+      matrixProjNet.className = 'p-3.5 border border-slate-300 text-right font-mono text-base font-extrabold ' + (isSurplus ? 'text-emerald-700 bg-emerald-50/60' : 'text-rose-700 bg-rose-50/60');
+    }
+    if(matrixNetShift) styleSigned(matrixNetShift, netShift);
+    if(matrixNetBudgetDiff) styleSigned(matrixNetBudgetDiff, projNet - prevBudgetNet);
+
+    // 7. Executive Narrative Assessment
+    if(viabilityEl){
+      if(isSurplus){
+        viabilityEl.innerHTML = '<strong class="text-emerald-700">Viable Surplus:</strong> Projected revenues exceed requested expenditure by <strong>' + fmtRs(projNet) + '</strong> (' + fmtMn(projNet) + '). Sufficient revenue headroom exists for proposed operations.';
+      } else {
+        viabilityEl.innerHTML = '<strong class="text-rose-700">Deficit Alert:</strong> Projected outflows exceed anticipated inflows by <strong>' + fmtRs(Math.abs(projNet)) + '</strong> (' + fmtMn(Math.abs(projNet)) + '). Consider rationalizing discretionary outlays or securing supplemental inflow authorizations.';
+      }
+    }
+    if(movementEl){
+      if(netShift >= 0){
+        movementEl.innerHTML = '<strong class="text-emerald-700">Fiscal Health Expanding:</strong> Net balance improves by <strong>' + fmtRs(netShift) + '</strong> relative to Source FY actual outcome.';
+      } else {
+        movementEl.innerHTML = '<strong class="text-amber-700">Margin Contracting:</strong> Net balance contracts by <strong>' + fmtRs(Math.abs(netShift)) + '</strong> compared to Source FY actual margin.';
+      }
+    }
+  }
+
+  // Bind input listeners
+  outflowInputs.forEach(function(inp){ inp.addEventListener('input', recalc); });
+  inflowInputs.forEach(function(inp){ inp.addEventListener('input', recalc); });
+
+  // Outflow buttons
+  var fillOutflowBtn = document.getElementById('plan-copy-all-suggested');
+  if(fillOutflowBtn){
+    fillOutflowBtn.addEventListener('click', function(){
+      outflowInputs.forEach(function(inp){ inp.value = parseFloat(inp.dataset.original).toFixed(2); });
+      recalc();
+    });
+  }
+  var resetOutflowBtn = document.getElementById('plan-reset-all');
+  if(resetOutflowBtn){
+    resetOutflowBtn.addEventListener('click', function(){
+      outflowInputs.forEach(function(inp){ inp.value = parseFloat(inp.dataset.original).toFixed(2); });
+      recalc();
+    });
+  }
+
+  // Inflow buttons
+  var fillInflowBtn = document.getElementById('plan-copy-inflow-suggested');
+  if(fillInflowBtn){
+    fillInflowBtn.addEventListener('click', function(){
+      inflowInputs.forEach(function(inp){ inp.value = parseFloat(inp.dataset.original).toFixed(2); });
+      recalc();
+    });
+  }
+  var resetInflowBtn = document.getElementById('plan-reset-inflows');
+  if(resetInflowBtn){
+    resetInflowBtn.addEventListener('click', function(){
+      inflowInputs.forEach(function(inp){ inp.value = parseFloat(inp.dataset.original).toFixed(2); });
+      recalc();
+    });
+  }
+
+  // Run initial calculation
+  recalc();
+})();
+</script>
+{% endif %}
+{% endblock %}

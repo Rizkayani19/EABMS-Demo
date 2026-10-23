@@ -1,0 +1,512 @@
+﻿{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Bulk Transaction Grid — EABMS{% endblock %}
+
+{% block content %}
+<div class="space-y-5" id="bulk-editor" data-save-url="{% url 'core:transaction_bulk_save' %}" data-delete-url="{% url 'core:transaction_bulk_delete' %}">
+    <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+            <div class="flex items-center gap-2 mb-1">
+                <span class="text-[10px] font-black uppercase tracking-[0.16em] text-emerald-600">High-Productivity Entry</span>
+                {% include 'partials/fund_badge.html' with size="sm" %}
+            </div>
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">Bulk Transaction Grid</h1>
+            <p class="text-xs text-slate-500 mt-1 font-bold">{{ account.name }} <span class="text-slate-300 mx-1">•</span> {{ fy.name }} <span class="text-slate-300 mx-1">•</span> Active / Draft, non-historical transactions only</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <input type="hidden" id="new-row-direction" value="OUTFLOW">
+            <div class="flex bg-slate-100 p-1 rounded-lg mr-4">
+                <button type="button" class="direction-tab px-4 py-1.5 text-xs font-semibold rounded-md bg-white shadow-sm text-slate-800" data-dir="OUTFLOW">Outflow</button>
+                <button type="button" class="direction-tab px-4 py-1.5 text-xs font-semibold rounded-md text-slate-500 hover:text-slate-700" data-dir="INFLOW">Inflow</button>
+            </div>
+            <a href="{% url 'core:transaction_list' %}" class="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">Back to Ledger</a>
+            {% if can_edit %}<button type="button" id="add-row" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm">+ Add Row</button>{% endif %}
+        </div>
+    </div>
+
+    {% if management_view %}
+    <div class="p-4 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-800 text-xs font-medium">Management access is view-only. Bulk editing is restricted to Administrator and Clerk roles.</div>
+    {% elif can_edit %}
+    <div class="p-4 rounded-xl border border-amber-200 bg-amber-50 text-amber-900 text-xs">
+        <strong>Bulk-entry rules:</strong> Historical transactions are protected. Account and Financial Year are fixed by the current session. All rows are validated before any row is committed. One invalid row means the whole batch is rejected.
+    </div>
+    {% endif %}
+
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3 items-end">
+            <div><label class="abms-filter-label">Month</label><select name="month" class="abms-filter-control"><option value="">All Months</option>{% for m in '123456789101112'|make_list %}{% endfor %}
+                {% for n,label in month_choices %}<option value="{{ n }}" {% if request.GET.month == n|stringformat:"s" %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select></div>
+            <div><label class="abms-filter-label">Direction</label><select name="direction" class="abms-filter-control"><option value="">All Directions</option><option value="INFLOW" {% if request.GET.direction == 'INFLOW' %}selected{% endif %}>Inflow</option><option value="OUTFLOW" {% if request.GET.direction == 'OUTFLOW' %}selected{% endif %}>Outflow</option></select></div>
+            <div><label class="abms-filter-label">Account Head</label><select name="account_head" class="abms-filter-control"><option value="">All Heads</option>{% for ah in options.account_heads %}<option value="{{ ah.id }}" {% if request.GET.account_head == ah.id|stringformat:"s" %}selected{% endif %}>{{ ah.code }} — {{ ah.name }}</option>{% endfor %}</select></div>
+            <div><label class="abms-filter-label">Search</label><input name="q" value="{{ request.GET.q }}" class="abms-filter-control" placeholder="Tx no., payee, reference…"></div>
+            <button class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg">Apply</button>
+        </form>
+        <div class="mt-3 text-[11px] text-slate-400">Maximum 500 rows are loaded at once. Use filters to work with a smaller batch.</div>
+    </div>
+
+    <div id="grid-error" class="hidden p-4 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 text-xs"></div>
+    <div id="grid-success" class="hidden p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 text-xs"></div>
+
+    <div class="bg-white border border-slate-200 shadow-sm overflow-hidden mb-4">
+        <div class="overflow-auto max-h-[68vh]">
+            <table class="min-w-[1800px] w-full text-xs border-collapse" id="bulk-table">
+                <thead class="sticky top-0 z-20 bg-slate-900 text-white">
+                    <tr>
+                        <th class="p-2 text-center w-8"><input type="checkbox" id="bulk-select-all" class="rounded border-slate-500 text-rose-500 focus:ring-rose-400 cursor-pointer w-3.5 h-3.5" title="Select / Deselect all rows to discard"></th>
+                        <th class="p-2 text-left w-10">#</th>
+                        <th class="p-2 text-left w-36">Transaction</th>
+                        <th class="p-2 text-left w-32">Date</th>
+                        <th class="p-2 text-left w-24">Dir</th>
+                        <th class="p-2 text-right w-40">Amount</th>
+                        <th class="p-2 text-left w-64">Account Head</th>
+                        <th class="p-2 text-left w-64">Sub Head</th>
+                        <th class="p-2 text-left w-44">Organisation</th>
+                        <th class="p-2 text-left w-44">Section</th>
+                        <th class="p-2 text-left w-52">Nature / Inflow Type</th>
+                        <th class="p-2 text-left w-56">Payee / Source</th>
+                        <th class="p-2 text-left w-52">Reference</th>
+                        <th class="p-2 text-left w-72">Description</th>
+                        <th class="p-2 text-left w-52">Remarks</th>
+                        <th class="p-2 text-center w-24">Pass</th>
+                        <th class="p-2 text-center w-24">State</th>
+                        <th class="p-2 text-center w-24">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="bulk-body">
+                {% for row in rows %}
+                <tr class="bulk-row bg-white hover:bg-slate-50 [&>td]:border [&>td]:border-slate-200" data-id="{{ row.id }}" data-state="clean">
+                    <td class="p-2 align-top text-center"><input type="checkbox" class="bulk-row-select rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer w-3.5 h-3.5" title="Select to discard"></td>
+                    <td class="p-2 align-top text-slate-400 row-number"></td>
+                    <td class="p-2 align-top"><span class="inline-block bg-emerald-700 text-white font-mono font-bold px-2 py-0.5 rounded shadow-sm text-[10px] transaction-number">{{ row.transaction_number }}</span></td>
+                    <td class="p-2 align-top"><input data-field="transaction_date" value="{{ row.transaction_date }}" class="grid-input" placeholder="DD-MM-YYYY"></td>
+                    <td class="p-2 align-top"><select data-field="direction" class="grid-input"><option value="INFLOW" {% if row.direction == 'INFLOW' %}selected{% endif %}>IN</option><option value="OUTFLOW" {% if row.direction == 'OUTFLOW' %}selected{% endif %}>OUT</option></select></td>
+                    <td class="p-2 align-top"><input data-field="amount" value="{{ row.amount }}" inputmode="decimal" class="grid-input text-right font-mono" placeholder="0.00"></td>
+                    <td class="p-2 align-top"><select data-field="account_head_id" class="grid-input"><option value="">Select</option>{% for x in options.account_heads %}<option value="{{ x.id }}" {% if row.account_head_id == x.id %}selected{% endif %}>{{ x.code }} — {{ x.name }}</option>{% endfor %}</select></td>
+                    <td class="p-2 align-top"><select data-field="sub_head_id" class="grid-input"><option value="">—</option>{% for x in options.sub_heads %}<option value="{{ x.id }}" {% if row.sub_head_id == x.id %}selected{% endif %}>{{ x.code }} — {{ x.name }}</option>{% endfor %}</select></td>
+                    <td class="p-2 align-top"><select data-field="unit_id" class="grid-input"><option value="">—</option>{% for x in options.units %}<option value="{{ x.id }}" {% if row.unit_id == x.id %}selected{% endif %}>{{ x.code }} — {{ x.name }}</option>{% endfor %}</select></td>
+                    <td class="p-2 align-top"><select data-field="department_id" class="grid-input"><option value="">—</option>{% for x in options.departments %}<option value="{{ x.id }}" {% if row.department_id == x.id %}selected{% endif %}>{{ x.code }} — {{ x.name }}</option>{% endfor %}</select></td>
+                    <td class="p-2 align-top">
+                        <select data-field="outflow_nature_id" class="grid-input nature-outflow"><option value="">Outflow Nature</option>{% for x in options.outflow_natures %}<option value="{{ x.id }}" {% if row.outflow_nature_id == x.id %}selected{% endif %}>{{ x.code }} — {{ x.name }}</option>{% endfor %}</select>
+                        <select data-field="inflow_type_id" class="grid-input nature-inflow hidden mt-1"><option value="">Inflow Type</option>{% for x in options.inflow_types %}<option value="{{ x.id }}" {% if row.inflow_type_id == x.id %}selected{% endif %}>{{ x.code }} — {{ x.name }}</option>{% endfor %}</select>
+                    </td>
+                    <td class="p-2 align-top"><input data-field="payee_or_source" value="{{ row.payee_or_source }}" class="grid-input"></td>
+                    <td class="p-2 align-top"><input data-field="reference" value="{{ row.reference }}" class="grid-input"></td>
+                    <td class="p-2 align-top"><textarea data-field="description" class="grid-input min-h-[58px]">{{ row.description }}</textarea></td>
+                    <td class="p-2 align-top"><input data-field="remarks" value="{{ row.remarks }}" class="grid-input" placeholder="Remarks…"></td>
+                    <td class="p-2 align-top text-center"><input data-field="pass_through" type="checkbox" {% if row.pass_through %}checked{% endif %} class="h-4 w-4"></td>
+                    <td class="p-2 align-top text-center"><span class="row-state px-2 py-0.5 rounded bg-slate-500 text-white text-[10px] font-bold shadow-xs">Clean</span></td>
+                    <td class="p-2 align-top text-center">
+                        {% if can_edit %}
+                        <button type="button" class="btn-discard-row inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-[11px] border border-rose-200 shadow-2xs transition cursor-pointer" title="Discard complete transaction">✕ Discard</button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% if can_edit %}
+        <div class="p-2 bg-slate-50 border-t border-slate-200">
+            <button type="button" id="add-row-bottom" class="w-full py-2 border border-dashed border-slate-300 hover:border-slate-400 hover:bg-slate-100 text-slate-500 font-semibold text-xs rounded transition flex items-center justify-center gap-2">
+                <span>+ Add Row</span>
+            </button>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if not rows %}
+    <div class="bg-white rounded-2xl border border-slate-200 p-12 text-center text-sm text-slate-500">No Active/Draft non-historical transactions match the selected filters.</div>
+    {% endif %}
+
+    <div class="sticky bottom-3 z-30 bg-slate-900 text-white rounded-2xl shadow-xl p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 border border-slate-700">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+            <div><div class="text-slate-400">Modified Rows</div><div id="modified-count" class="text-lg font-bold">0</div></div>
+            <div><div class="text-slate-400">New Rows</div><div id="new-count" class="text-lg font-bold">0</div></div>
+            <div><div class="text-slate-400">Batch Inflows</div><div id="batch-inflows" class="font-mono text-emerald-300">$ 0.00</div></div>
+            <div><div class="text-slate-400">Batch Outflows</div><div id="batch-outflows" class="font-mono text-rose-300">$ 0.00</div></div>
+        </div>
+        <div class="flex items-center gap-3">
+            {% if can_edit %}
+            <button type="button" id="discard-selected" class="hidden inline-flex items-center justify-center px-4 py-3 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl transition shadow-lg text-xs gap-2 cursor-pointer" title="Discard selected complete transactions">
+                <span>✕ Discard Selected</span>
+                <span id="selected-badge" class="bg-rose-800 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">0</span>
+            </button>
+            {% endif %}
+            <button type="button" id="discard-all" class="inline-flex items-center justify-center px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold rounded-xl transition border border-slate-700 text-xs cursor-pointer">Discard All Changes</button>
+            {% if can_edit %}<button type="button" id="save-all" class="inline-flex items-center justify-center px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl transition shadow-lg text-xs cursor-pointer">Save All Changes <span class="ml-2 text-[10px] opacity-70">Ctrl+S</span></button>{% endif %}
+        </div>
+    </div>
+</div>
+
+{{ options|json_script:"options-data" }}
+
+<template id="new-row-template">
+<tr class="bulk-row bg-emerald-50/40 [&>td]:border [&>td]:border-slate-200" data-id="" data-state="new">
+    <td class="p-2 align-top text-center"><input type="checkbox" class="bulk-row-select rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer w-3.5 h-3.5" title="Select to discard"></td>
+    <td class="p-2 align-top text-emerald-600 row-number"></td><td class="p-2"><span class="inline-block bg-emerald-600 text-white font-mono font-bold px-2 py-0.5 rounded shadow-sm text-[10px]">NEW</span></td>
+    <td class="p-2"><input data-field="transaction_date" class="grid-input" placeholder="DD-MM-YYYY"></td>
+    <td class="p-2"><select data-field="direction" class="grid-input"><option value="OUTFLOW">OUT</option><option value="INFLOW">IN</option></select></td>
+    <td class="p-2"><input data-field="amount" inputmode="decimal" class="grid-input text-right font-mono" placeholder="0.00"></td>
+    <td class="p-2"><select data-field="account_head_id" class="grid-input"><option value="">Select</option>{% for x in options.account_heads %}<option value="{{ x.id }}">{{ x.code }} — {{ x.name }}</option>{% endfor %}</select></td>
+    <td class="p-2"><select data-field="sub_head_id" class="grid-input"><option value="">—</option>{% for x in options.sub_heads %}<option value="{{ x.id }}">{{ x.code }} — {{ x.name }}</option>{% endfor %}</select></td>
+    <td class="p-2"><select data-field="unit_id" class="grid-input"><option value="">—</option>{% for x in options.units %}<option value="{{ x.id }}">{{ x.code }} — {{ x.name }}</option>{% endfor %}</select></td>
+    <td class="p-2"><select data-field="department_id" class="grid-input"><option value="">—</option>{% for x in options.departments %}<option value="{{ x.id }}">{{ x.code }} — {{ x.name }}</option>{% endfor %}</select></td>
+    <td class="p-2"><select data-field="outflow_nature_id" class="grid-input nature-outflow"><option value="">Outflow Nature</option>{% for x in options.outflow_natures %}<option value="{{ x.id }}">{{ x.code }} — {{ x.name }}</option>{% endfor %}</select><select data-field="inflow_type_id" class="grid-input nature-inflow hidden mt-1"><option value="">Inflow Type</option>{% for x in options.inflow_types %}<option value="{{ x.id }}">{{ x.code }} — {{ x.name }}</option>{% endfor %}</select></td>
+    <td class="p-2"><input data-field="payee_or_source" class="grid-input"></td><td class="p-2"><input data-field="reference" class="grid-input"></td><td class="p-2"><textarea data-field="description" class="grid-input min-h-[58px]"></textarea></td>
+    <td class="p-2"><input data-field="remarks" class="grid-input" placeholder="Remarks…"></td>
+    <td class="p-2 text-center"><input data-field="pass_through" type="checkbox" class="h-4 w-4"></td><td class="p-2 text-center"><span class="row-state px-2 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-bold shadow-xs">New</span></td>
+    <td class="p-2 text-center">
+        <button type="button" class="btn-discard-row inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-[11px] border border-rose-200 shadow-2xs transition cursor-pointer" title="Discard draft row">✕ Discard</button>
+    </td>
+</tr>
+</template>
+
+<script>
+(function () {
+  const root = document.getElementById('bulk-editor');
+  if (!root) return;
+  const body = document.getElementById('bulk-body');
+  const saveBtn = document.getElementById('save-all');
+  const addBtn = document.getElementById('add-row');
+  const errorBox = document.getElementById('grid-error');
+  const successBox = document.getElementById('grid-success');
+
+  const money = (n) => '$ ' + (Number(n || 0)).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  const rows = () => Array.from(body.querySelectorAll('.bulk-row'));
+
+  function setState(row, state) {
+    row.dataset.state = state;
+    const badge = row.querySelector('.row-state');
+    if (!badge) return;
+    if (state === 'new') badge.textContent = 'New';
+    else if (state === 'modified') badge.textContent = 'Modified';
+    else if (state === 'error') badge.textContent = 'Error';
+    else badge.textContent = 'Clean';
+    badge.className = 'row-state px-2 py-0.5 rounded text-[10px] font-bold shadow-xs ' + ({new:'bg-emerald-600 text-white', modified:'bg-amber-500 text-white', error:'bg-rose-600 text-white', clean:'bg-slate-500 text-white'}[state]);
+    row.classList.toggle('bg-amber-50/70', state === 'modified');
+    row.classList.toggle('bg-rose-50', state === 'error');
+  }
+
+  function updateTypes(row) {
+    const direction = row.querySelector('[data-field="direction"]')?.value;
+    row.querySelector('.nature-outflow')?.classList.toggle('hidden', direction !== 'OUTFLOW');
+    row.querySelector('.nature-inflow')?.classList.toggle('hidden', direction !== 'INFLOW');
+  }
+
+  function payloadRow(row) {
+    const data = {id: row.dataset.id || null};
+    row.querySelectorAll('[data-field]').forEach(el => data[el.dataset.field] = el.type === 'checkbox' ? el.checked : el.value);
+    return data;
+  }
+
+  function recalc() {
+    let modified = 0, fresh = 0, inflows = 0, outflows = 0;
+    rows().forEach((row, i) => {
+      row.querySelector('.row-number').textContent = i + 1;
+      updateTypes(row);
+      if (row.dataset.state === 'modified') modified++;
+      if (row.dataset.state === 'new') fresh++;
+      const dir = row.querySelector('[data-field="direction"]')?.value;
+      const amount = parseFloat(row.querySelector('[data-field="amount"]')?.value || 0) || 0;
+      if (dir === 'INFLOW') inflows += amount;
+      if (dir === 'OUTFLOW') outflows += amount;
+
+      // filled indicator
+      const dateVal = row.querySelector('[data-field="transaction_date"]')?.value;
+      if (amount > 0 && dateVal && dateVal.trim() !== '') {
+         row.classList.add('border-l-4', 'border-l-emerald-500');
+      } else {
+         row.classList.remove('border-l-4', 'border-l-emerald-500');
+      }
+
+    });
+    document.getElementById('modified-count').textContent = modified;
+    document.getElementById('new-count').textContent = fresh;
+    document.getElementById('batch-inflows').textContent = money(inflows);
+    document.getElementById('batch-outflows').textContent = money(outflows);
+  }
+
+  let optionsData = {account_heads: [], sub_heads: []};
+  try {
+    const optsEl = document.getElementById('options-data');
+    if (optsEl) optionsData = JSON.parse(optsEl.textContent);
+  } catch(e) { console.error('Error parsing options data', e); }
+
+  function filterSubHeads(row) {
+    const acctSelect = row.querySelector('[data-field="account_head_id"]');
+    const subSelect = row.querySelector('[data-field="sub_head_id"]');
+    if (!acctSelect || !subSelect) return;
+    const selectedHeadId = acctSelect.value;
+    const headObj = (optionsData.account_heads || []).find(h => String(h.id) === String(selectedHeadId));
+    const currentSubVal = subSelect.value;
+    subSelect.innerHTML = '<option value="">—</option>';
+    let matchingSubs = optionsData.sub_heads || [];
+    if (headObj && headObj.major_head_id) {
+      matchingSubs = matchingSubs.filter(s => s.major_head_id === headObj.major_head_id);
+    }
+    matchingSubs.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = (s.code ? s.code + ' — ' : '') + s.name;
+      if (String(s.id) === String(currentSubVal)) opt.selected = true;
+      subSelect.appendChild(opt);
+    });
+  }
+
+  body.addEventListener('input', e => {
+    const row = e.target.closest('.bulk-row');
+    if (!row) return;
+    if (row.dataset.state === 'clean') setState(row, 'modified');
+    recalc();
+  });
+  body.addEventListener('change', e => {
+    const row = e.target.closest('.bulk-row');
+    if (!row) return;
+    if (e.target.dataset.field === 'account_head_id') {
+      filterSubHeads(row);
+    }
+    if (row.dataset.state === 'clean') setState(row, 'modified');
+    recalc();
+  });
+
+  const selectAllBox = document.getElementById('bulk-select-all');
+  const discardSelectedBtn = document.getElementById('discard-selected');
+  const selectedBadge = document.getElementById('selected-badge');
+
+  function updateSelectionCount() {
+    const allRowBoxes = Array.from(body.querySelectorAll('.bulk-row-select'));
+    const checkedBoxes = allRowBoxes.filter(b => b.checked);
+    const count = checkedBoxes.length;
+    if (selectedBadge) selectedBadge.textContent = count;
+    if (discardSelectedBtn) {
+      discardSelectedBtn.classList.toggle('hidden', count === 0);
+    }
+    if (selectAllBox) {
+      selectAllBox.checked = allRowBoxes.length > 0 && count === allRowBoxes.length;
+    }
+  }
+
+  selectAllBox?.addEventListener('change', () => {
+    const allRowBoxes = body.querySelectorAll('.bulk-row-select');
+    allRowBoxes.forEach(b => b.checked = selectAllBox.checked);
+    updateSelectionCount();
+  });
+
+  body.addEventListener('change', e => {
+    if (e.target.classList.contains('bulk-row-select')) {
+      updateSelectionCount();
+    }
+  });
+
+  // Discard single transaction row
+  body.addEventListener('click', async e => {
+    const btn = e.target.closest('.btn-discard-row');
+    if (!btn) return;
+    const row = btn.closest('.bulk-row');
+    if (!row) return;
+
+    const txId = row.dataset.id;
+    const txNum = row.querySelector('.transaction-number')?.textContent?.trim() || '';
+
+    if (!txId) {
+      // Draft unsaved row
+      row.remove();
+      recalc();
+      updateSelectionCount();
+      return;
+    }
+
+    const promptMsg = txNum
+      ? `Are you sure you want to permanently discard/delete transaction ${txNum} from the database?`
+      : 'Are you sure you want to permanently discard/delete this complete transaction from the database?';
+
+    if (!confirm(promptMsg)) return;
+
+    btn.disabled = true;
+    btn.textContent = 'Discarding…';
+
+    try {
+      const resp = await fetch(root.dataset.deleteUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ ids: [txId] })
+      });
+      const data = await resp.json();
+      if (resp.ok && data.ok) {
+        row.remove();
+        recalc();
+        updateSelectionCount();
+        successBox.textContent = data.message || `Transaction ${txNum} discarded successfully.`;
+        successBox.classList.remove('hidden');
+        errorBox.classList.add('hidden');
+      } else {
+        btn.disabled = false;
+        btn.textContent = '✕ Discard';
+        errorBox.textContent = data.message || 'Failed to discard transaction.';
+        errorBox.classList.remove('hidden');
+        successBox.classList.add('hidden');
+      }
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = '✕ Discard';
+      errorBox.textContent = 'Unable to connect to server to discard transaction.';
+      errorBox.classList.remove('hidden');
+    }
+  });
+
+  // Discard selected transactions in bulk
+  discardSelectedBtn?.addEventListener('click', async () => {
+    const checkedBoxes = Array.from(body.querySelectorAll('.bulk-row-select:checked'));
+    if (!checkedBoxes.length) return;
+
+    const selectedRows = checkedBoxes.map(b => b.closest('.bulk-row')).filter(Boolean);
+    const draftRows = selectedRows.filter(r => !r.dataset.id);
+    const savedRows = selectedRows.filter(r => Boolean(r.dataset.id));
+    const savedIds = savedRows.map(r => r.dataset.id);
+
+    let confirmMsg = `Are you sure you want to completely discard ${selectedRows.length} selected transaction(s)?`;
+    if (savedIds.length > 0) {
+      confirmMsg += `\n\n${savedIds.length} saved transaction(s) will be permanently deleted from the database.`;
+    }
+    if (!confirm(confirmMsg)) return;
+
+    draftRows.forEach(r => r.remove());
+
+    if (savedIds.length > 0) {
+      discardSelectedBtn.disabled = true;
+      discardSelectedBtn.textContent = 'Discarding…';
+      try {
+        const resp = await fetch(root.dataset.deleteUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}'
+          },
+          body: JSON.stringify({ ids: savedIds })
+        });
+        const data = await resp.json();
+        if (resp.ok && data.ok) {
+          const deletedIdsSet = new Set(data.deleted_ids || savedIds);
+          savedRows.forEach(r => {
+            if (deletedIdsSet.has(r.dataset.id)) {
+              r.remove();
+            }
+          });
+          successBox.textContent = data.message || `Successfully discarded ${selectedRows.length} transaction(s).`;
+          successBox.classList.remove('hidden');
+          errorBox.classList.add('hidden');
+        } else {
+          errorBox.textContent = data.message || 'Failed to discard some transactions.';
+          errorBox.classList.remove('hidden');
+          successBox.classList.add('hidden');
+        }
+      } catch (err) {
+        errorBox.textContent = 'Unable to connect to server to discard transactions.';
+        errorBox.classList.remove('hidden');
+      } finally {
+        discardSelectedBtn.disabled = false;
+        discardSelectedBtn.innerHTML = '<span>✕ Discard Selected</span> <span id="selected-badge" class="bg-rose-800 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">0</span>';
+      }
+    } else {
+      successBox.textContent = `Discarded ${draftRows.length} draft transaction(s).`;
+      successBox.classList.remove('hidden');
+      errorBox.classList.add('hidden');
+    }
+
+    recalc();
+    updateSelectionCount();
+  });
+
+  const discardBtn = document.getElementById('discard-all');
+  if (discardBtn) {
+    discardBtn.addEventListener('click', () => {
+      const changed = rows().filter(r => r.dataset.state !== 'clean');
+      if (changed.length > 0) {
+        if (confirm('Discard all unsaved edits (' + changed.length + ' rows)? The page will reload to original state.')) {
+          window.location.reload();
+        }
+      } else {
+        window.location.reload();
+      }
+    });
+  }
+
+
+  const dirTabs = document.querySelectorAll('.direction-tab');
+  const dirInput = document.getElementById('new-row-direction');
+  dirTabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      dirTabs.forEach(t => {
+        t.classList.remove('bg-white', 'shadow-sm', 'text-slate-800');
+        t.classList.add('text-slate-500', 'hover:text-slate-700');
+      });
+      tab.classList.remove('text-slate-500', 'hover:text-slate-700');
+      tab.classList.add('bg-white', 'shadow-sm', 'text-slate-800');
+      dirInput.value = tab.dataset.dir;
+    });
+  });
+
+  const addRowFn = () => {
+    const tpl = document.getElementById('new-row-template');
+    body.insertAdjacentHTML('beforeend', tpl.innerHTML);
+    const newRow = body.lastElementChild;
+    const dirVal = document.getElementById('new-row-direction')?.value;
+    const dirSelect = newRow.querySelector('[data-field="direction"]');
+    if(dirSelect && dirVal) dirSelect.value = dirVal;
+    recalc();
+    updateSelectionCount();
+    newRow.querySelector('[data-field="transaction_date"]')?.focus();
+  };
+
+  addBtn?.addEventListener('click', addRowFn);
+  document.getElementById('add-row-bottom')?.addEventListener('click', addRowFn);
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Tab') {
+      const inputs = Array.from(body.querySelectorAll('input:not([type="hidden"]), select, textarea'));
+      if (!inputs.length) return;
+      if (document.activeElement === inputs[inputs.length - 1]) {
+        e.preventDefault();
+        addRowFn();
+      }
+    }
+  });
+
+
+  async function saveAll() {
+    if (!saveBtn) return;
+    errorBox.classList.add('hidden');
+    successBox.classList.add('hidden');
+    const changed = rows().filter(r => r.dataset.state !== 'clean');
+    if (!changed.length) { successBox.textContent = 'No changes to save.'; successBox.classList.remove('hidden'); return; }
+    saveBtn.disabled = true; saveBtn.textContent = 'Validating…';
+    try {
+      const response = await fetch(root.dataset.saveUrl, {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken':document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}'}, body:JSON.stringify({rows:changed.map(payloadRow)})});
+      const data = await response.json();
+      if (!response.ok || !data.ok) {
+        (data.errors || []).forEach(err => { const r = changed[err.row]; if (r) setState(r, 'error'); });
+        errorBox.innerHTML = '<strong>' + (data.message || 'Batch save failed.') + '</strong>' + ((data.errors || []).map(e => '<div class="mt-1">Row ' + (Number(e.row)+1) + ': ' + e.errors.join('; ') + '</div>').join(''));
+        errorBox.classList.remove('hidden');
+      } else {
+        changed.forEach(r => setState(r, 'clean'));
+        successBox.textContent = data.message;
+        successBox.classList.remove('hidden');
+        if (data.saved?.some(x => !document.querySelector('.bulk-row[data-id="' + x.id + '"]'))) location.reload();
+      }
+    } catch (err) {
+      errorBox.textContent = 'Unable to contact the server. No changes were committed.';
+      errorBox.classList.remove('hidden');
+    } finally { saveBtn.disabled = false; saveBtn.innerHTML = 'Save All Changes <span class="ml-2 text-[10px] opacity-70">Ctrl+S</span>'; recalc(); }
+  }
+
+  saveBtn?.addEventListener('click', saveAll);
+  document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveAll(); }});
+  recalc();
+})();
+</script>
+{% endblock %}
