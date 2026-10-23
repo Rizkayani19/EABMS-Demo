@@ -10,9 +10,10 @@ Standards:
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 from datetime import datetime, date
 from django import template
+from django.conf import settings
 
 register = template.Library()
-CURRENCY_SYMBOL = '$'
+CURRENCY_SYMBOL = getattr(settings, 'ABMS_CURRENCY_SYMBOL', 'Rs')
 TWO_PLACES = Decimal('0.01')
 
 

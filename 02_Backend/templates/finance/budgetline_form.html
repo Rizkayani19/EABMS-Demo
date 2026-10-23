@@ -47,15 +47,15 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                     <div class="bg-white border border-slate-200 rounded-lg p-3">
                         <div class="text-[10px] uppercase font-bold text-slate-400">Outflow</div>
-                        <div class="mt-1">Actual: <strong id="actual-outflow">$ 0.00</strong></div>
-                        <div>Planned: <strong id="planned-outflow">$ 0.00</strong></div>
-                        <div>Difference: <strong id="diff-outflow">$ 0.00</strong></div>
+                        <div class="mt-1">Actual: <strong id="actual-outflow">{{ currency_symbol }} 0.00</strong></div>
+                        <div>Planned: <strong id="planned-outflow">{{ currency_symbol }} 0.00</strong></div>
+                        <div>Difference: <strong id="diff-outflow">{{ currency_symbol }} 0.00</strong></div>
                     </div>
                     <div class="bg-white border border-slate-200 rounded-lg p-3">
                         <div class="text-[10px] uppercase font-bold text-slate-400">Inflow</div>
-                        <div class="mt-1">Actual: <strong id="actual-inflow">$ 0.00</strong></div>
-                        <div>Planned: <strong id="planned-inflow">$ 0.00</strong></div>
-                        <div>Difference: <strong id="diff-inflow">$ 0.00</strong></div>
+                        <div class="mt-1">Actual: <strong id="actual-inflow">{{ currency_symbol }} 0.00</strong></div>
+                        <div>Planned: <strong id="planned-inflow">{{ currency_symbol }} 0.00</strong></div>
+                        <div>Difference: <strong id="diff-inflow">{{ currency_symbol }} 0.00</strong></div>
                     </div>
                 </div>
                 <p class="text-[10px] text-slate-400 mt-3">Difference = Planned Budget − Active Actuals for the selected Financial Year.</p>
@@ -83,7 +83,7 @@
     const panel = document.getElementById('variance-panel');
 
     function money(v) {
-        return '$ ' + (Number(v) || 0).toLocaleString('en-PK', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        return '{{ currency_symbol }} ' + (Number(v) || 0).toLocaleString('en-PK', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     }
     function update() {
         const id = head && head.value;

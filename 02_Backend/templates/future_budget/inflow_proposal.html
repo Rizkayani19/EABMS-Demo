@@ -18,12 +18,12 @@
   <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
     <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
       <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Management Proposed Inflow</div>
-      <div class="text-lg font-extrabold text-emerald-800 mt-1">$ {{ proposed_inflow_total|floatformat:2 }}</div>
+      <div class="text-lg font-extrabold text-emerald-800 mt-1">{{ currency_symbol }} {{ proposed_inflow_total|floatformat:2 }}</div>
       <div class="text-[10px] text-slate-500 mt-1">Current decision</div>
     </div>
     <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
       <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Approved Inflow</div>
-      <div class="text-lg font-extrabold text-slate-800 mt-1">$ {{ approved_inflow_total|floatformat:2 }}</div>
+      <div class="text-lg font-extrabold text-slate-800 mt-1">{{ currency_symbol }} {{ approved_inflow_total|floatformat:2 }}</div>
       <div class="text-[10px] text-slate-500 mt-1">Published/approved value</div>
     </div>
     <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 shadow-sm">
@@ -59,14 +59,14 @@
           <input type="hidden" name="line_ids" value="{{ row.line.pk }}">
           <tr class="hover:bg-slate-50">
             <td class="px-4 py-3 font-semibold text-slate-800">{{ row.head.name }}{% if row.head.code %}<span class="ml-2 text-[10px] text-slate-400">{{ row.head.code }}</span>{% endif %}</td>
-            <td class="px-4 py-3 text-right font-mono">$ {{ row.previous_budget|floatformat:2 }}</td>
-            <td class="px-4 py-3 text-right font-mono">$ {{ row.previous_actual|floatformat:2 }}</td>
+            <td class="px-4 py-3 text-right font-mono">{{ currency_symbol }} {{ row.previous_budget|floatformat:2 }}</td>
+            <td class="px-4 py-3 text-right font-mono">{{ currency_symbol }} {{ row.previous_actual|floatformat:2 }}</td>
             <td class="px-4 py-2 bg-emerald-50/40">
               {% if future_budget.status != 'APPROVED' %}
-              <div class="relative max-w-xs ml-auto"><span class="absolute left-2 top-1.5 text-slate-400">$</span><input type="number" min="0" step="0.01" name="inflow_proposed_{{ row.line.pk }}" value="{% if row.user_proposed_inflow != None %}{{ row.user_proposed_inflow }}{% endif %}" class="w-full pl-8 pr-2 py-1.5 rounded-lg border border-slate-300 text-right font-mono font-bold focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" placeholder="Enter proposed inflow"></div>
-              {% else %}<div class="text-right font-mono font-bold text-emerald-800">{% if row.user_proposed_inflow != None %}$ {{ row.user_proposed_inflow|floatformat:2 }}{% else %}—{% endif %}</div>{% endif %}
+              <div class="relative max-w-xs ml-auto"><span class="absolute left-2 top-1.5 text-slate-400">{{ currency_symbol }}</span><input type="number" min="0" step="0.01" name="inflow_proposed_{{ row.line.pk }}" value="{% if row.user_proposed_inflow != None %}{{ row.user_proposed_inflow }}{% endif %}" class="w-full pl-8 pr-2 py-1.5 rounded-lg border border-slate-300 text-right font-mono font-bold focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" placeholder="Enter proposed inflow"></div>
+              {% else %}<div class="text-right font-mono font-bold text-emerald-800">{% if row.user_proposed_inflow != None %}{{ currency_symbol }} {{ row.user_proposed_inflow|floatformat:2 }}{% else %}—{% endif %}</div>{% endif %}
             </td>
-            <td class="px-4 py-3 text-right font-mono font-bold">{% if row.approved_inflow != None %}$ {{ row.approved_inflow|floatformat:2 }}{% else %}—{% endif %}</td>
+            <td class="px-4 py-3 text-right font-mono font-bold">{% if row.approved_inflow != None %}{{ currency_symbol }} {{ row.approved_inflow|floatformat:2 }}{% else %}—{% endif %}</td>
           </tr>
           {% endif %}
           {% empty %}<tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">No INFLOW/BOTH account-head lines exist in this Future Budget. Rebuild the Draft after ensuring the required inflow heads are active.</td></tr>{% endfor %}
@@ -101,10 +101,10 @@
             <td class="px-4 py-3 font-semibold">{{ event.future_budget_line.account_head.name }}</td>
             <td class="px-4 py-3">{{ event.get_action_display }}</td>
             <td class="px-4 py-3">{% if event.actor %}{{ event.actor.get_username }}{% else %}—{% endif %}</td>
-            <td class="px-4 py-3 text-right font-mono">{% if event.new_proposed_inflow != None %}$ {{ event.new_proposed_inflow|floatformat:2 }}{% else %}—{% endif %}</td>
-            <td class="px-4 py-3 text-right font-mono">{% if event.new_approved_inflow != None %}$ {{ event.new_approved_inflow|floatformat:2 }}{% else %}—{% endif %}</td>
-            <td class="px-4 py-3 text-right font-mono">{% if event.new_proposed != None %}$ {{ event.new_proposed|floatformat:2 }}{% else %}—{% endif %}</td>
-            <td class="px-4 py-3 text-right font-mono">{% if event.new_approved != None %}$ {{ event.new_approved|floatformat:2 }}{% else %}—{% endif %}</td>
+            <td class="px-4 py-3 text-right font-mono">{% if event.new_proposed_inflow != None %}{{ currency_symbol }} {{ event.new_proposed_inflow|floatformat:2 }}{% else %}—{% endif %}</td>
+            <td class="px-4 py-3 text-right font-mono">{% if event.new_approved_inflow != None %}{{ currency_symbol }} {{ event.new_approved_inflow|floatformat:2 }}{% else %}—{% endif %}</td>
+            <td class="px-4 py-3 text-right font-mono">{% if event.new_proposed != None %}{{ currency_symbol }} {{ event.new_proposed|floatformat:2 }}{% else %}—{% endif %}</td>
+            <td class="px-4 py-3 text-right font-mono">{% if event.new_approved != None %}{{ currency_symbol }} {{ event.new_approved|floatformat:2 }}{% else %}—{% endif %}</td>
           </tr>
           {% empty %}
           <tr><td colspan="8" class="px-4 py-8 text-center text-slate-500">No decision history recorded yet.</td></tr>

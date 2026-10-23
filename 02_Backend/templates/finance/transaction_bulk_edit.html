@@ -124,8 +124,8 @@
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
             <div><div class="text-slate-400">Modified Rows</div><div id="modified-count" class="text-lg font-bold">0</div></div>
             <div><div class="text-slate-400">New Rows</div><div id="new-count" class="text-lg font-bold">0</div></div>
-            <div><div class="text-slate-400">Batch Inflows</div><div id="batch-inflows" class="font-mono text-emerald-300">$ 0.00</div></div>
-            <div><div class="text-slate-400">Batch Outflows</div><div id="batch-outflows" class="font-mono text-rose-300">$ 0.00</div></div>
+            <div><div class="text-slate-400">Batch Inflows</div><div id="batch-inflows" class="font-mono text-emerald-300">{{ currency_symbol }} 0.00</div></div>
+            <div><div class="text-slate-400">Batch Outflows</div><div id="batch-outflows" class="font-mono text-rose-300">{{ currency_symbol }} 0.00</div></div>
         </div>
         <div class="flex items-center gap-3">
             {% if can_edit %}
@@ -173,7 +173,7 @@
   const errorBox = document.getElementById('grid-error');
   const successBox = document.getElementById('grid-success');
 
-  const money = (n) => '$ ' + (Number(n || 0)).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  const money = (n) => '{{ currency_symbol }} ' + (Number(n || 0)).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
   const rows = () => Array.from(body.querySelectorAll('.bulk-row'));
 
   function setState(row, state) {

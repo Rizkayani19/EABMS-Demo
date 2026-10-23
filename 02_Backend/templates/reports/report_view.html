@@ -339,8 +339,8 @@
                         <div class="text-xl font-bold text-slate-800 mt-1 font-mono">{{ report_kpis.total_records }} <span class="text-xs font-normal text-slate-400">entries</span></div>
                     </div>
                     <div class="mt-2 pt-2 border-t border-slate-100 text-[11px] text-slate-600 space-y-0.5">
-                        <div class="flex justify-between"><span>Opening Balance:</span> <strong class="text-slate-800">$ {{ report_kpis.opening_balance_mn }} Mn</strong></div>
-                        <div class="flex justify-between"><span>Closing Balance:</span> <strong class="text-emerald-700">$ {{ report_kpis.closing_balance_mn }} Mn</strong></div>
+                        <div class="flex justify-between"><span>Opening Balance:</span> <strong class="text-slate-800">{{ currency_symbol }} {{ report_kpis.opening_balance_mn }} Mn</strong></div>
+                        <div class="flex justify-between"><span>Closing Balance:</span> <strong class="text-emerald-700">{{ currency_symbol }} {{ report_kpis.closing_balance_mn }} Mn</strong></div>
                     </div>
                 </div>
 
@@ -348,11 +348,11 @@
                 <div class="bg-emerald-50/70 rounded-xl p-3.5 border border-emerald-200 shadow-xs flex flex-col justify-between">
                     <div>
                         <div class="text-[10px] uppercase font-bold text-emerald-800">Total Inflows excl Pass-Through (PKR Mn)</div>
-                        <div class="text-xl font-bold text-emerald-800 mt-1 font-mono">$ {{ report_kpis.dt_normal_inflows_mn }} Mn</div>
+                        <div class="text-xl font-bold text-emerald-800 mt-1 font-mono">{{ currency_symbol }} {{ report_kpis.dt_normal_inflows_mn }} Mn</div>
                     </div>
                     <div class="mt-2 pt-2 border-t border-emerald-100 text-[11px] text-emerald-900 space-y-0.5">
-                        <div class="flex justify-between"><span>Pass-Through Inflows:</span> <strong class="text-amber-700">$ {{ report_kpis.dt_pt_inflows_mn }} Mn</strong></div>
-                        <div class="flex justify-between border-t border-emerald-200 pt-0.5 font-bold"><span>Grand Total incl Pass-Through:</span> <span>$ {{ report_kpis.dt_total_inflows_mn }} Mn</span></div>
+                        <div class="flex justify-between"><span>Pass-Through Inflows:</span> <strong class="text-amber-700">{{ currency_symbol }} {{ report_kpis.dt_pt_inflows_mn }} Mn</strong></div>
+                        <div class="flex justify-between border-t border-emerald-200 pt-0.5 font-bold"><span>Grand Total incl Pass-Through:</span> <span>{{ currency_symbol }} {{ report_kpis.dt_total_inflows_mn }} Mn</span></div>
                     </div>
                 </div>
 
@@ -360,11 +360,11 @@
                 <div class="bg-rose-50/70 rounded-xl p-3.5 border border-rose-200 shadow-xs flex flex-col justify-between">
                     <div>
                         <div class="text-[10px] uppercase font-bold text-rose-800">Total Outflows excl Pass-Through (PKR Mn)</div>
-                        <div class="text-xl font-bold text-rose-800 mt-1 font-mono">$ {{ report_kpis.dt_normal_outflows_mn }} Mn</div>
+                        <div class="text-xl font-bold text-rose-800 mt-1 font-mono">{{ currency_symbol }} {{ report_kpis.dt_normal_outflows_mn }} Mn</div>
                     </div>
                     <div class="mt-2 pt-2 border-t border-rose-100 text-[11px] text-rose-900 space-y-0.5">
-                        <div class="flex justify-between"><span>Pass-Through Outflows:</span> <strong class="text-amber-700">$ {{ report_kpis.dt_pt_outflows_mn }} Mn</strong></div>
-                        <div class="flex justify-between border-t border-rose-200 pt-0.5 font-bold"><span>Grand Total incl Pass-Through:</span> <span>$ {{ report_kpis.dt_total_outflows_mn }} Mn</span></div>
+                        <div class="flex justify-between"><span>Pass-Through Outflows:</span> <strong class="text-amber-700">{{ currency_symbol }} {{ report_kpis.dt_pt_outflows_mn }} Mn</strong></div>
+                        <div class="flex justify-between border-t border-rose-200 pt-0.5 font-bold"><span>Grand Total incl Pass-Through:</span> <span>{{ currency_symbol }} {{ report_kpis.dt_total_outflows_mn }} Mn</span></div>
                     </div>
                 </div>
 
@@ -373,12 +373,12 @@
                     <div>
                         <div class="text-[10px] uppercase font-bold text-slate-500">Net Movement excl Pass-Through (PKR Mn)</div>
                         <div class="text-xl font-bold {% if report_kpis.dt_normal_net >= 0 %}text-emerald-700{% else %}text-rose-700{% endif %} mt-1 font-mono">
-                            {% if report_kpis.dt_normal_net >= 0 %}+{% endif %}$ {{ report_kpis.dt_normal_net_mn }} Mn
+                            {% if report_kpis.dt_normal_net >= 0 %}+{% endif %}{{ currency_symbol }} {{ report_kpis.dt_normal_net_mn }} Mn
                         </div>
                     </div>
                     <div class="mt-2 pt-2 border-t border-slate-200 text-[11px] text-slate-700 space-y-0.5">
-                        <div class="flex justify-between"><span>Pass-Through Tfrs:</span> <strong class="text-amber-700">$ {{ report_kpis.dt_pt_transfers_mn }} Mn</strong></div>
-                        <div class="flex justify-between border-t border-slate-300 pt-0.5 font-bold"><span>Grand Total Net incl Pass-Through:</span> <span>$ {{ report_kpis.dt_net_movement_mn }} Mn</span></div>
+                        <div class="flex justify-between"><span>Pass-Through Tfrs:</span> <strong class="text-amber-700">{{ currency_symbol }} {{ report_kpis.dt_pt_transfers_mn }} Mn</strong></div>
+                        <div class="flex justify-between border-t border-slate-300 pt-0.5 font-bold"><span>Grand Total Net incl Pass-Through:</span> <span>{{ currency_symbol }} {{ report_kpis.dt_net_movement_mn }} Mn</span></div>
                     </div>
                 </div>
             </div>
@@ -392,21 +392,21 @@
                 <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 shadow-xs">
                     <div class="text-[10px] uppercase font-bold text-slate-600">Total Expenditure / Amount</div>
                     <div class="text-xl font-bold text-slate-900 mt-1 font-mono">
-                        $ {% if report_kpis.report_total_mn %}{{ report_kpis.report_total_mn }}{% else %}{{ report_kpis.excl_pt_total_mn }}{% endif %} Mn
+                        {{ currency_symbol }} {% if report_kpis.report_total_mn %}{{ report_kpis.report_total_mn }}{% else %}{{ report_kpis.excl_pt_total_mn }}{% endif %} Mn
                     </div>
                     <div class="text-[10px] text-slate-500 mt-0.5">Aggregated Scope Total</div>
                 </div>
                 <div class="bg-slate-100/90 rounded-xl p-3.5 border border-slate-200 shadow-xs">
                     <div class="text-[10px] uppercase font-bold text-slate-600">Fund Opening Balance</div>
                     <div class="text-xl font-bold text-slate-800 mt-1 font-mono">
-                        $ {{ report_kpis.opening_balance_mn }} Mn
+                        {{ currency_symbol }} {{ report_kpis.opening_balance_mn }} Mn
                     </div>
                     <div class="text-[10px] text-slate-500 mt-0.5">Starting Position</div>
                 </div>
                 <div class="bg-slate-100/90 rounded-xl p-3.5 border border-slate-300 shadow-xs">
                     <div class="text-[10px] uppercase font-bold text-slate-600">Fund Closing Balance</div>
                     <div class="text-xl font-bold text-emerald-800 mt-1 font-mono">
-                        $ {{ report_kpis.closing_balance_mn }} Mn
+                        {{ currency_symbol }} {{ report_kpis.closing_balance_mn }} Mn
                     </div>
                     <div class="text-[10px] text-slate-500 mt-0.5">Available Cash Position</div>
                 </div>

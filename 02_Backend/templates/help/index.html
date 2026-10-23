@@ -110,9 +110,9 @@
             <h3 class="font-semibold text-slate-900 mt-5">Standard Card Sequence Across Reports</h3>
             <p>Whenever you look at a summary card (such as Total Inflows or Total Outflows):</p>
             <ol class="list-decimal list-inside space-y-1 mt-2">
-                <li><strong>Top Big Font:</strong> Operational Total excluding Pass-Through (e.g., <code class="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">$ 270.80 Mn</code>).</li>
-                <li><strong>Middle Line:</strong> Pass-Through Transfers (e.g., <code class="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">$ 108.66 Mn</code>).</li>
-                <li><strong>Bottom Bold Separator:</strong> Grand Total including Pass-Through (e.g., <code class="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">$ 379.46 Mn</code>).</li>
+                <li><strong>Top Big Font:</strong> Operational Total excluding Pass-Through (e.g., <code class="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">{{ currency_symbol }} 270.80 Mn</code>).</li>
+                <li><strong>Middle Line:</strong> Pass-Through Transfers (e.g., <code class="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">{{ currency_symbol }} 108.66 Mn</code>).</li>
+                <li><strong>Bottom Bold Separator:</strong> Grand Total including Pass-Through (e.g., <code class="text-xs bg-slate-100 px-1 py-0.5 rounded font-mono">{{ currency_symbol }} 379.46 Mn</code>).</li>
             </ol>
             <p class="mt-2 text-slate-600"><strong>Why?</strong> If pass-through transfers were mixed into the main headline, leadership would see inflated numbers that give a misleading impression of operational volume.</p>
 
@@ -120,11 +120,11 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
                     <b>Millions [Mn] for Executive Overviews</b><br>
-                    <span class="text-slate-600">Dashboard cards, top report KPI blocks, and summary headers show amounts in PKR Millions (e.g., <code>$ 12.34 Mn</code>).</span>
+                    <span class="text-slate-600">Dashboard cards, top report KPI blocks, and summary headers show amounts in PKR Millions (e.g., <code>{{ currency_symbol }} 12.34 Mn</code>).</span>
                 </div>
                 <div class="bg-slate-50 border border-slate-200 rounded-xl p-3">
                     <b>Exact Rupees [$] for Audit &amp; Ledger</b><br>
-                    <span class="text-slate-600">Detailed transaction tables, voucher breakdown, and CSV downloads retain full rupee precision (e.g., <code>$ 12,345,678.90</code>).</span>
+                    <span class="text-slate-600">Detailed transaction tables, voucher breakdown, and CSV downloads retain full rupee precision (e.g., <code>{{ currency_symbol }} 12,345,678.90</code>).</span>
                 </div>
             </div>
         </section>
@@ -465,8 +465,8 @@
             <h2 class="text-xl font-bold text-slate-900">Standard Formats Quick Reference</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3 text-sm">
                 <div class="bg-slate-50 rounded-lg p-3"><b>Standard Date</b><br>20-08-2026</div>
-                <div class="bg-slate-50 rounded-lg p-3"><b>Detailed Rupee Amount</b><br>$ 1,234,567.89</div>
-                <div class="bg-slate-50 rounded-lg p-3"><b>Executive Millions Amount</b><br>$ 1.23 Mn</div>
+                <div class="bg-slate-50 rounded-lg p-3"><b>Detailed Rupee Amount</b><br>{{ currency_symbol }} 1,234,567.89</div>
+                <div class="bg-slate-50 rounded-lg p-3"><b>Executive Millions Amount</b><br>{{ currency_symbol }} 1.23 Mn</div>
             </div>
         </section>
     </div>

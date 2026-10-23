@@ -202,9 +202,9 @@ class Command(BaseCommand):
             f"  Demo Data Summary — NexGen Holdings Ltd. (NGL)\n"
             f"{'='*55}\n"
             f"  Opening Balance : $71,250,000.00\n"
-            f"  Total Inflows   : ${total_in:>14,.2f}\n"
-            f"  Total Outflows  : ${total_out:>14,.2f}\n"
-            f"  Net Movement    : ${total_in - total_out:>14,.2f}\n"
+            f"  Total Inflows   : Rs {total_in:>14,.2f}\n"
+            f"  Total Outflows  : Rs {total_out:>14,.2f}\n"
+            f"  Net Movement    : Rs {total_in - total_out:>14,.2f}\n"
             f"  Transactions    : {len(all_txns)}\n"
             f"{'='*55}"
         ))

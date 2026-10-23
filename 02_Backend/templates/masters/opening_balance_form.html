@@ -71,7 +71,7 @@
                     </div>
                     <div class="text-right">
                         <span class="text-[10px] uppercase font-bold text-slate-500 block">Divisions Total</span>
-                        <span id="subFundTotalBadge" class="font-mono text-xs font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">$ 0.00</span>
+                        <span id="subFundTotalBadge" class="font-mono text-xs font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded border border-emerald-300">{{ currency_symbol }} 0.00</span>
                     </div>
                 </div>
 
@@ -103,7 +103,7 @@
                         <tfoot class="bg-slate-100 font-bold text-slate-800 border-t-2 border-slate-300">
                             <tr>
                                 <td colspan="2" class="px-3 py-2 font-sans">Total Across Divisions</td>
-                                <td class="px-3 py-2 text-right font-mono text-emerald-800 font-black text-sm" id="subFundTableFooterTotal">$ 0.00</td>
+                                <td class="px-3 py-2 text-right font-mono text-emerald-800 font-black text-sm" id="subFundTableFooterTotal">{{ currency_symbol }} 0.00</td>
                             </tr>
                         </tfoot>
                     </table>
@@ -148,7 +148,7 @@
 const ACCOUNT_SUB_FUNDS = {{ account_divisions_json|safe }};
 
 function formatRs(num) {
-    return '$ ' + Number(num).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    return '{{ currency_symbol }} ' + Number(num).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
 function calculateSubFundSum() {

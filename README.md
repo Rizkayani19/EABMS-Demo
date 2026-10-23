@@ -5,7 +5,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15%2B-336791.svg)](https://www.postgresql.org/)
 [![TailwindCSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC.svg)](https://tailwindcss.com/)
 [![Server](https://img.shields.io/badge/Server-Waitress%20WSGI-orange.svg)](https://docs.pylonsproject.org/projects/waitress/)
-[![Tests](https://img.shields.io/badge/Tests-214%20passing-brightgreen.svg)](#testing)
+[![Tests](https://img.shields.io/badge/Tests-219%20passing-brightgreen.svg)](#testing)
 
 > **Multi-fund accounting, budgeting and reporting for organisations that still run their finances on spreadsheets.**
 > Runs offline on a single Windows PC or a LAN, with one-click launchers for non-technical staff.
@@ -116,20 +116,19 @@ python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 
-$env:DB_ENGINE = "sqlite3"
-$env:DJANGO_ENV = "development"
 python manage.py migrate
 python manage.py seed_eabms_corporate
 python manage.py seed_eabms_ewf_masters
 python manage.py seed_eabms_cpf_masters
 python manage.py seed_eabms_demo_transactions
+python manage.py seed_eabms_demo_budget
 python manage.py runserver 8020
 ```
 
-Open http://127.0.0.1:8020/ and sign in with a demo account below.
+With no `.env` file the app runs in development mode on SQLite. Open http://127.0.0.1:8020/ and sign in with a demo account below.
 
 ### Option B — Windows deployment (PostgreSQL)
-1. `copy 02_Backend\.env.example 02_Backend\.env` and set the secret key and database password.
+1. `copy 02_Backend\.env.example 02_Backend\.env` and set the secret key and database password. Amounts display in rupees (`Rs`); set `ABMS_CURRENCY_SYMBOL` in `.env` to change it.
 2. Run **`Start-All.bat`** (or `Start-NGL.bat`, `Start-EWF.bat`, `Start-CPF.bat`).
 3. Each fund opens in its own window at ports 8020 / 8021 / 8022. Stop with **`Stop-All.bat`**.
 
@@ -149,11 +148,10 @@ These exist only in the seeded demo database. Change them before any real use.
 
 ```powershell
 cd 02_Backend
-$env:DB_ENGINE = "sqlite3"; $env:DJANGO_ENV = "development"
 pytest
 ```
 
-214 tests cover fund isolation, budget allocation and revision logic, future-budget suggestions, imports, reports and exports, organisational attribution, user management and production-hardening settings.
+219 tests cover fund isolation, budget allocation and revision logic, future-budget suggestions, imports, reports and exports, organisational attribution, user management and production-hardening settings.
 
 ---
 

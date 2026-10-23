@@ -33,5 +33,5 @@ def abms_context(request):
         'available_fys': FinancialYear.objects.filter(status=FinancialYear.Status.OPEN).order_by('-start_date'),
         'user_role': user_role,
         'system_name': getattr(settings, 'ABMS_SYSTEM_NAME', 'Enterprise Accounts & Business Management System (EABMS)'),
-        'currency_symbol': getattr(settings, 'ABMS_CURRENCY_SYMBOL', '$'),
+        'currency_symbol': getattr(settings, 'ABMS_CURRENCY_SYMBOL', 'Rs'),
     }

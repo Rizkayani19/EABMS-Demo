@@ -85,7 +85,7 @@
           Revised Amount <span class="text-red-500">*</span>
         </label>
         <div class="relative">
-          <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 text-sm">$</span>
+          <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-500 text-sm">{{ currency_symbol }}</span>
           {{ form.revised_amount }}
         </div>
         {% if form.revised_amount.errors %}

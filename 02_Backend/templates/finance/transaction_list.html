@@ -458,9 +458,9 @@ function renderSavedRow(tr, data, pk) {
         const num = Number(data.amount);
         const formatted = num.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         if (data.direction === 'INFLOW') {
-            amtTd.innerHTML = `<div class="font-mono font-bold text-sm text-emerald-700 whitespace-nowrap" data-amount="${data.amount}">+$ ${formatted}</div>`;
+            amtTd.innerHTML = `<div class="font-mono font-bold text-sm text-emerald-700 whitespace-nowrap" data-amount="${data.amount}">+{{ currency_symbol }} ${formatted}</div>`;
         } else {
-            amtTd.innerHTML = `<div class="font-mono font-bold text-sm text-rose-700 whitespace-nowrap" data-amount="${data.amount}">-$ ${formatted}</div>`;
+            amtTd.innerHTML = `<div class="font-mono font-bold text-sm text-rose-700 whitespace-nowrap" data-amount="${data.amount}">-{{ currency_symbol }} ${formatted}</div>`;
         }
     }
 

@@ -72,7 +72,7 @@
             <div class="flex items-center gap-3">
                 {% if distribution.is_reconciled %}
                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                    <span>✓</span> Reconciled ($ 0.00 Variance)
+                    <span>✓</span> Reconciled ({{ currency_symbol }} 0.00 Variance)
                 </span>
                 {% else %}
                 <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-rose-500/20 text-rose-300 border border-rose-500/40">
@@ -343,7 +343,7 @@
                     </div>
                     <div class="p-2.5 rounded-lg bg-slate-100 border border-slate-200 flex flex-col items-center justify-center">
                         <div class="text-[10px] font-bold uppercase text-slate-600">Net Cash Impact</div>
-                        <div class="text-sm font-black font-mono text-indigo-900 mt-0.5">$ 0.00 (Neutral)</div>
+                        <div class="text-sm font-black font-mono text-indigo-900 mt-0.5">{{ currency_symbol }} 0.00 (Neutral)</div>
                     </div>
                 </div>
 
@@ -465,7 +465,7 @@ const subFundBalances = {
 function formatPKR(val) {
     if (isNaN(val)) return "—";
     const sign = val < 0 ? "-" : "";
-    return sign + "$ " + Math.abs(val).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    return sign + "{{ currency_symbol }} " + Math.abs(val).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
 function updateReallocationPreview() {

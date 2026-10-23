@@ -80,7 +80,9 @@ SHORT_DATE_FORMAT = 'd-m-Y'
 
 WSGI_APPLICATION = 'abms_config.wsgi.application'
 
-DB_ENGINE = os.environ.get('DB_ENGINE', 'postgresql').lower()
+# Production defaults to PostgreSQL. Development falls back to SQLite when no
+# database is configured, so a fresh clone runs without any setup.
+DB_ENGINE = os.environ.get('DB_ENGINE', 'postgresql' if IS_PRODUCTION else 'sqlite3').strip().lower()
 
 FUND_DB_MAP = {
     'NGL': 'eabms_ngl',
@@ -178,7 +180,7 @@ SESSION_COOKIE_AGE = 43200  # 12 hours max
 ABMS_SYSTEM_NAME = 'Enterprise Accounts & Business Management System (EABMS)'
 ABMS_DEFAULT_ACCOUNT_CODE = 'NGL'
 ABMS_DEFAULT_FY_CODE = '2026-27'
-ABMS_CURRENCY_SYMBOL = '$'
+ABMS_CURRENCY_SYMBOL = os.environ.get('ABMS_CURRENCY_SYMBOL', 'Rs').strip() or 'Rs'
 
 if IS_PRODUCTION:
     SECURE_CONTENT_TYPE_NOSNIFF = True

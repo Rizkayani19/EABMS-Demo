@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                     if (hintDiv) {
                         hintDiv.classList.remove('hidden');
-                        hintDiv.innerHTML = `Auto-calculated tariff: <strong>$ ${Number(data.calculated_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</strong> (${persons} person(s) @ ${data.sharing_type} sharing $ ${Number(data.selected_rate).toLocaleString('en-US', {minimumFractionDigits: 2})}/person)`;
+                        hintDiv.innerHTML = `Auto-calculated tariff: <strong>{{ currency_symbol }} ${Number(data.calculated_total).toLocaleString('en-US', {minimumFractionDigits: 2})}</strong> (${persons} person(s) @ ${data.sharing_type} sharing {{ currency_symbol }} ${Number(data.selected_rate).toLocaleString('en-US', {minimumFractionDigits: 2})}/person)`;
                     }
                 }
             })
